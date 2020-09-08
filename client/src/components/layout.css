@@ -6,3 +6,9 @@
 .left {
   width: 30%;
 }
+
+.border {
+  border: 1px;
+  border-color: black;
+  border-style: solid;
+}

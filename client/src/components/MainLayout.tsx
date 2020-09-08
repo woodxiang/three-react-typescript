@@ -7,8 +7,12 @@ export class MainLayout extends React.Component {
   render() {
     return (
       <div className="layout">
-        <DisplayingTargets />
-        <RenderingView />
+        <div className="border left">
+          <DisplayingTargets />
+        </div>
+        <div className="border">
+          <RenderingView />
+        </div>
       </div>
     );
   }
