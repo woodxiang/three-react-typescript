@@ -1,8 +1,8 @@
 import {
   OpenDBRequest2Promise,
   Transaction2Promise,
-  Request2Promise,
-} from "./indexdbwrap";
+  Request2Promise
+} from './indexdbwrap';
 
 interface DataItem<T> {
   indexKey: string;
@@ -10,11 +10,15 @@ interface DataItem<T> {
   data: T;
 }
 
-export class BlobCache<T> {
+export default class BlobCache<T> {
   db: IDBDatabase | undefined;
+
   dbName: string;
+
   storeName: string;
+
   dbVersion: number;
+
   constructor(dbName: string, storeName: string, dbVersion: number) {
     this.dbName = dbName;
     this.storeName = storeName;
@@ -23,15 +27,15 @@ export class BlobCache<T> {
 
   async open(): Promise<IDBDatabase> {
     if (this.db !== undefined) {
-      throw new Error("db already opened.");
+      throw new Error('db already opened.');
     }
     const openReqest = indexedDB.open(this.dbName, this.dbVersion);
     const openPromise = OpenDBRequest2Promise(openReqest, (newdb) => {
-      console.warn("db upgrade needed.");
+      console.warn('db upgrade needed.');
       const store = newdb.createObjectStore(this.storeName, {
-        keyPath: "indexKey",
+        keyPath: 'indexKey'
       });
-      store.createIndex("lastAccess", "lastAccess", { unique: false });
+      store.createIndex('lastAccess', 'lastAccess', { unique: false });
     });
 
     this.db = await openPromise;
@@ -44,43 +48,45 @@ export class BlobCache<T> {
     }
 
     if (this.db === undefined) {
-      throw Error("db not opened.");
+      throw Error('db not opened.');
     }
 
-    const req = this.db.transaction([this.storeName], "readwrite");
+    const req = this.db.transaction([this.storeName], 'readwrite');
     const promise = Transaction2Promise(req);
     promise
       .then((finished) => {
         if (finished) {
-          console.log("insert transaction finished.");
+          console.log('insert transaction finished.');
         } else {
-          console.log("insert transaction aborted.");
+          console.log('insert transaction aborted.');
         }
       })
       .catch((reason) => {
-        console.error("insert transaction failed.");
+        console.error('insert transaction failed.', reason);
       });
 
-    let newItem: DataItem<T> = {
+    const newItem: DataItem<T> = {
       indexKey: key,
       lastAccess: new Date(),
-      data: data,
+      data
     };
 
-    let store = req.objectStore(this.storeName);
-    var addReq = store.add(newItem);
+    const store = req.objectStore(this.storeName);
+    const addReq = store.add(newItem);
 
     const addRequestPromise = Request2Promise<IDBValidKey>(addReq);
     addRequestPromise
       .then(() => {
-        console.log("new data added.");
+        console.log('new data added.');
       })
       .catch((reason) => {
-        console.error("Add data failed.", (reason as DOMException).message);
+        console.error('Add data failed.', (reason as DOMException).message);
       });
 
     await addRequestPromise;
-    return await promise;
+    const ret = await promise;
+
+    return ret;
   }
 
   async pick(key: string): Promise<T | undefined> {
@@ -89,29 +95,29 @@ export class BlobCache<T> {
     }
 
     if (this.db === undefined) {
-      throw new Error("db not open");
+      throw new Error('db not open');
     }
 
-    const req = this.db.transaction([this.storeName], "readwrite");
+    const req = this.db.transaction([this.storeName], 'readwrite');
     const promise = Transaction2Promise(req);
     promise
       .then((finished) => {
         if (finished) {
-          console.log("get data transaction finished.");
+          console.log('get data transaction finished.');
         }
       })
       .catch((reason) => {
-        console.error("get data failed.", reason);
+        console.error('get data failed.', reason);
       });
 
-    let store = req.objectStore(this.storeName);
-    let getReq = store.get(key);
-    let result = await Request2Promise<DataItem<T>>(getReq);
+    const store = req.objectStore(this.storeName);
+    const getReq = store.get(key);
+    const result = await Request2Promise<DataItem<T>>(getReq);
 
     if (result) {
       result.lastAccess = new Date();
 
-      let putReq = store.put(result);
+      const putReq = store.put(result);
       await Request2Promise<IDBValidKey>(putReq);
     }
 
