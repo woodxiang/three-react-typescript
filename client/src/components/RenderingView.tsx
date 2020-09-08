@@ -1,7 +1,6 @@
-import React from "react";
-import * as THREE from 'three';
+import React from 'react';
 
-export class RenderingView extends React.Component {
+export default class RenderingView extends React.PureComponent {
   render() {
     return <div>Main Panel</div>;
   }

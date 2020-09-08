@@ -1,11 +1,9 @@
-import React from "react";
-import { MainLayout } from "./components/MainLayout";
-import CssBaseline from "@material-ui/core/CssBaseline";
+import React from 'react';
+import MainLayout from './components/MainLayout';
 
 function App() {
   return (
     <div>
-      <CssBaseline />
       <MainLayout />
     </div>
   );
