@@ -6,7 +6,7 @@ module.exports = {
   module: {
     rules: [
       { test: /\.html$/, use: { loader: "html-loader" } },
-      { test: /\.css$/, use: ["style-loader", "css_loader"] },
+      { test: /\.css$/i, use: ["style-loader", "css-loader"] },
       { test: /\.tsx$/, loader: "awesome-typescript-loader" },
     ],
   },

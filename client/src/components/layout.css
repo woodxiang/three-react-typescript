@@ -1,0 +1,8 @@
+.layout {
+  width: 100%;
+  display: flex;
+}
+
+.left {
+  width: 30%;
+}
