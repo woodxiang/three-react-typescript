@@ -1,5 +1,6 @@
 import React from 'react';
 import * as THREE from 'three';
+import { WEBGL } from 'three/examples/jsm/WebGL';
 
 export default class RenderingView extends React.Component {
   private renderDiv: HTMLDivElement | null = null;
@@ -26,6 +27,10 @@ export default class RenderingView extends React.Component {
 
       const animate = () => {
         requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.02;
+        cube.rotation.z += 0.03;
+
         renderer.render(scene, camera);
       };
       animate();
@@ -33,6 +38,10 @@ export default class RenderingView extends React.Component {
   }
 
   render() {
+    if (!WEBGL.isWebGL2Available()) {
+      return <div ref={(element) => this.init(element)} />;
+    }
+
     return <div ref={(element) => this.init(element)} />;
   }
 }
