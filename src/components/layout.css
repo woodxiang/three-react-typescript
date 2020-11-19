@@ -1,0 +1,14 @@
+.layout {
+  width: 100%;
+  display: flex;
+}
+
+.left {
+  width: 30%;
+}
+
+.border {
+  border: 1px;
+  border-color: black;
+  border-style: solid;
+}

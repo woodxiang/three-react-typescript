@@ -1,4 +1,5 @@
-client/dist
-client/node_modules
-server/dist
-server/node_modules
+node_modules
+dist
+package-lock.json
+yarn.lock
+debug.log
