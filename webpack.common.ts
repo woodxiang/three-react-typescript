@@ -55,7 +55,10 @@ const clientConfig: webpack.Configuration = {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
   },
-  resolve: { extensions: ['.ts', '.tsx', '.js', '.jsx'] },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+    modules: ['src', 'node_modules'],
+  },
   module: {
     rules: [
       {

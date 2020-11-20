@@ -1,14 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createStyles, Grid, makeStyles, Theme } from '@material-ui/core';
 import axios from 'axios';
-import BlobCache from '../utilities/BlobCache/BlobCache';
+import BlobCache from 'blobcache';
 import DisplayingTargets from './DisplayingTargets';
 import RenderingView from './RenderingView';
+import { DataRefUrl, GeometryDataType } from '../engine/UrlRefObjectFactory';
+import preDefinedColors from './preDefinedColors';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       flexGrow: 1,
+      height: '100%',
+      width: '100%',
+    },
+    full: {
+      height: '100%',
+      width: '100%',
     },
     paper: {
       padding: theme.spacing(1),
@@ -21,60 +29,44 @@ const useStyles = makeStyles((theme: Theme) =>
 export default function MainLayout(): JSX.Element {
   const [stlLoaded, setStlLoaded] = useState(false); // state to indicate all stl loaded.
   const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
-  const [selectedStl, setSelectedStl] = useState<string | null>(null); // state to keep the selected stl
-  const [stlDisplaying, setStlDisplaying] = useState<ArrayBuffer | null>(null); // state to keep the displaying stl.
+  const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
+  const [dataRefUrls, setDataRefUrls] = useState<DataRefUrl[]>([]);
 
-  const blobCache = useRef(
-    new BlobCache<ArrayBuffer>('demoApp', 'stlFiles', 1)
-  ); // cache of the stl files.
+  const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
+
+  const stlPrefix = '/api/stls/';
 
   // handle the event when selected stl changed.
-  const handleSelectedStlChanged = async (item: string | null) => {
-    setSelectedStl(item);
-    if (item != null) {
-      const data = await blobCache.current.pickAsync(item);
-      setStlDisplaying(data || null);
+  const handleSelectedStlChanged = async (item: string) => {
+    const index = selectedStls.indexOf(item);
+    const newSelectedStls = [...selectedStls];
+    const newDataRefUrls = [...dataRefUrls];
+    if (index !== -1) {
+      newSelectedStls.splice(index, 1);
+      newDataRefUrls.splice(index, 1);
     } else {
-      setStlDisplaying(null);
+      newSelectedStls.push(item);
+      newDataRefUrls.push({
+        url: stlPrefix + item,
+        color: preDefinedColors[stlFiles.indexOf(item)],
+        dataType: GeometryDataType.STLMesh,
+      });
     }
+
+    setSelectedStls(newSelectedStls);
+    setDataRefUrls(newDataRefUrls);
   };
 
   // init effect when mount.
   useEffect(() => {
     // load all stl files if file is not in cache.
     async function loadStlFiles() {
-      const result = await axios('/api/stls/');
+      const result = await axios(stlPrefix);
 
       await blobCache.current.openAsync();
       console.log('BlobCache opened.');
 
-      const results: Promise<boolean>[] = [];
-
       const newFiles = result.data as string[];
-
-      newFiles.forEach((stlFile) => {
-        const url = `/api/stls/${stlFile}`;
-        const promise = blobCache.current
-          .existAsync(stlFile)
-          .then((isExists) => {
-            if (!isExists) {
-              return axios(url, { responseType: 'arraybuffer' }).then((res) => {
-                return res.data;
-              });
-            }
-
-            return false;
-          })
-          .then((lastResult) => {
-            if (lastResult) {
-              return blobCache.current.insertAsync(stlFile, lastResult);
-            }
-            return false;
-          });
-        results.push(promise);
-      });
-
-      await Promise.all(results);
 
       setStlFiles(newFiles);
       setStlLoaded(true);
@@ -87,17 +79,17 @@ export default function MainLayout(): JSX.Element {
 
   return (
     <div className={classes.root}>
-      <Grid container spacing={4}>
-        <Grid item md={2}>
+      <Grid container spacing={4} className={classes.full}>
+        <Grid item md={2} className={classes.full}>
           <DisplayingTargets
             stlLoaded={stlLoaded}
             stlFiles={stlFiles}
-            selectedStl={selectedStl}
+            selectedStls={selectedStls}
             onSelctedStlChanged={handleSelectedStlChanged}
           />
         </Grid>
-        <Grid item md={10}>
-          <RenderingView displayingSTL={stlDisplaying} />
+        <Grid item md={10} className={classes.full}>
+          <RenderingView dataRefUrls={dataRefUrls} />
         </Grid>
       </Grid>
     </div>

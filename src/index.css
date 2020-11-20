@@ -17,7 +17,7 @@ body {
 }
 
 /* full-sized  container that fills up the page */
-div {
+div.full {
   height: 100%;
   width: 100%;
 }

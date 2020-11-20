@@ -1,17 +1,37 @@
-import { List, ListItem, ListItemText } from '@material-ui/core';
+import {
+  Checkbox,
+  createStyles,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  makeStyles,
+  Theme,
+} from '@material-ui/core';
 import React from 'react';
 
 interface IDisplayingTargetsProps {
   stlLoaded: boolean;
   stlFiles: string[];
-  selectedStl: string | null;
-  onSelctedStlChanged: (newSelection: string) => void;
+  selectedStls: string[];
+  onSelctedStlChanged: (newSelections: string) => void;
 }
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: theme.palette.background.paper,
+    },
+  })
+);
 
 export default function DisplayingTargets(
   props: IDisplayingTargetsProps
 ): JSX.Element {
-  const { stlLoaded, stlFiles, selectedStl, onSelctedStlChanged } = props;
+  const { stlLoaded, stlFiles, selectedStls, onSelctedStlChanged } = props;
+  const classes = useStyles();
   if (!stlLoaded) {
     return <div>Loading</div>;
   }
@@ -21,18 +41,29 @@ export default function DisplayingTargets(
   };
 
   return (
-    <List>
-      {stlFiles.map((item) => (
-        <ListItem
-          key={item}
-          button
-          dense
-          selected={selectedStl === item}
-          onClick={() => handleListItemClick(item)}
-        >
-          <ListItemText primary={item} />
-        </ListItem>
-      ))}
+    <List className={classes.root}>
+      {stlFiles.map((item) => {
+        return (
+          <ListItem
+            key={item}
+            role={undefined}
+            button
+            dense
+            onClick={() => handleListItemClick(item)}
+          >
+            <ListItemIcon>
+              <Checkbox
+                edge="start"
+                checked={selectedStls.indexOf(item) !== -1}
+                tabIndex={-1}
+                disableRipple
+                inputProps={{ 'aria-labelledby': item }}
+              />
+            </ListItemIcon>
+            <ListItemText id={item} primary={item} />
+          </ListItem>
+        );
+      })}
     </List>
   );
 }
