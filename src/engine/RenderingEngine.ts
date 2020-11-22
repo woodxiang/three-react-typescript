@@ -14,10 +14,16 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { FrontSide } from 'three/src/constants';
 import { Raycaster } from 'three/src/core/Raycaster';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as dat from 'dat.gui';
 import UrlRefObjectFactory, { DataRefUrl } from './UrlRefObjectFactory';
 import LiteEvent from './event';
+import {
+  IActionCallback,
+  STATE,
+  CURSORTYPE,
+  IActionHandler,
+} from './controls/interfaces';
+import RotationHandler from './RotationHandler';
 
 interface IInternalControlObject {
   fov: number;
@@ -32,7 +38,59 @@ interface IHistTestResult {
 /**
  * Rendering Engine
  */
-export default class RenderingEngine {
+export default class RenderingEngine implements IActionCallback {
+  /**
+   * Current State: moving or rotation or picking.
+   */
+  public state: STATE = STATE.NONE;
+
+  private cursorTypeInternal: CURSORTYPE = CURSORTYPE.ARRAW;
+
+  get cursorType(): CURSORTYPE {
+    return this.cursorTypeInternal;
+  }
+
+  set cursorType(newType: CURSORTYPE) {
+    if (!this.renderer) {
+      throw Error('not initilaized.');
+    }
+    this.cursorTypeInternal = newType;
+    switch (newType) {
+      case CURSORTYPE.CROSS:
+        this.renderer.domElement.style.cursor = 'crosshair';
+        break;
+      case CURSORTYPE.HAND:
+        this.renderer.domElement.style.cursor = 'move';
+        break;
+      default:
+        this.renderer.domElement.style.cursor = 'pointer';
+        break;
+    }
+  }
+
+  private capturedPointerId = -1;
+
+  public capturePointer(pointerId: number): void {
+    if (!this.renderer) {
+      throw Error('not initilaized.');
+    }
+    if (this.capturedPointerId >= 0) {
+      return;
+    }
+    this.renderer.domElement.setPointerCapture(pointerId);
+    this.capturedPointerId = pointerId;
+  }
+
+  public ReleasePointer(): void {
+    if (!this.renderer) {
+      throw Error('not initilaized.');
+    }
+    if (this.capturedPointerId >= 0) {
+      this.renderer.domElement.releasePointerCapture(this.capturedPointerId);
+      this.capturedPointerId = -1;
+    }
+  }
+
   private parentDiv: HTMLDivElement | undefined;
 
   private scene: Scene | undefined;
@@ -40,8 +98,6 @@ export default class RenderingEngine {
   private camera: PerspectiveCamera | undefined;
 
   private renderer: WebGLRenderer | undefined;
-
-  private orbit: OrbitControls | undefined;
 
   private targetObject3D: Object3D | undefined;
 
@@ -57,6 +113,8 @@ export default class RenderingEngine {
     fov: 15,
     showAxesHelper: true,
   };
+
+  private actionHandlers: IActionHandler[] = [new RotationHandler()];
 
   public readonly histTestEvent = new LiteEvent<IHistTestResult>();
 
@@ -101,9 +159,6 @@ export default class RenderingEngine {
 
     this.prepareEnvironment();
 
-    this.orbit = new OrbitControls(this.camera, div);
-    this.orbit.update();
-
     this.targetObject3D = new Object3D();
     this.targetObject3D.matrixAutoUpdate = false;
     this.scene.add(this.targetObject3D);
@@ -141,6 +196,56 @@ export default class RenderingEngine {
           }
         });
     }
+
+    this.initEvents();
+  }
+
+  private initEvents() {
+    if (!this.renderer) {
+      throw Error('Not initliazed.');
+    }
+
+    this.renderer.domElement.addEventListener('pointerdown', (event) => {
+      this.actionHandlers.forEach((handler) => {
+        switch (event.button) {
+          case 0:
+            handler.handleLeftButtonDown(event, this);
+            break;
+          case 1:
+            handler.handleMiddleButtonDown(event, this);
+            break;
+          case 2:
+            handler.handleRightButtonDown(event, this);
+            break;
+          default:
+            throw Error('invalid button.');
+        }
+      });
+    });
+
+    this.renderer.domElement.addEventListener('pointerup', (event) => {
+      this.actionHandlers.forEach((handler) => {
+        switch (event.button) {
+          case 0:
+            handler.handleLeftButtonUp(event, this);
+            break;
+          case 1:
+            handler.handleMiddleButtonUp(event, this);
+            break;
+          case 2:
+            handler.handleRightButtonUp(event, this);
+            break;
+          default:
+            throw Error('invalid button.');
+        }
+      });
+    });
+
+    this.renderer.domElement.addEventListener('pointermove', (event) => {
+      this.actionHandlers.forEach((handler) => {
+        handler.handleMouseMove(event, this);
+      });
+    });
   }
 
   private initHistTest(div: HTMLDivElement) {
