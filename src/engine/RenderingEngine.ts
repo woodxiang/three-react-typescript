@@ -45,53 +45,6 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
    */
   public state: STATE = STATE.NONE;
 
-  private cursorTypeInternal: CURSORTYPE = CURSORTYPE.ARRAW;
-
-  get cursorType(): CURSORTYPE {
-    return this.cursorTypeInternal;
-  }
-
-  set cursorType(newType: CURSORTYPE) {
-    if (!this.renderer) {
-      throw Error('not initilaized.');
-    }
-    this.cursorTypeInternal = newType;
-    switch (newType) {
-      case CURSORTYPE.CROSS:
-        this.renderer.domElement.style.cursor = 'crosshair';
-        break;
-      case CURSORTYPE.HAND:
-        this.renderer.domElement.style.cursor = 'move';
-        break;
-      default:
-        this.renderer.domElement.style.cursor = 'pointer';
-        break;
-    }
-  }
-
-  private capturedPointerId = -1;
-
-  public capturePointer(pointerId: number): void {
-    if (!this.renderer) {
-      throw Error('not initilaized.');
-    }
-    if (this.capturedPointerId >= 0) {
-      return;
-    }
-    this.renderer.domElement.setPointerCapture(pointerId);
-    this.capturedPointerId = pointerId;
-  }
-
-  public releasePointer(): void {
-    if (!this.renderer) {
-      throw Error('not initilaized.');
-    }
-    if (this.capturedPointerId >= 0) {
-      this.renderer.domElement.releasePointerCapture(this.capturedPointerId);
-      this.capturedPointerId = -1;
-    }
-  }
-
   private parentDiv: HTMLDivElement | undefined;
 
   private scene: Scene | undefined;
@@ -116,6 +69,10 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
   };
 
   private actionHandlers: IActionHandler[] = [];
+
+  private cursorTypeInternal: CURSORTYPE = CURSORTYPE.ARRAW;
+
+  private capturedPointerId = -1;
 
   public readonly hitTestEvent = new LiteEvent<IHitTestResult>();
 
@@ -205,93 +162,54 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     this.initEvents();
   }
 
-  private initEvents() {
-    if (!this.renderer) {
-      throw Error('Not initliazed.');
-    }
-
-    this.renderer.domElement.addEventListener('pointerdown', (event) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
-        let isTerminated = false;
-        switch (event.button) {
-          case 0:
-            isTerminated = handler.handleLeftButtonDown(event, this);
-            break;
-          case 1:
-            isTerminated = handler.handleMiddleButtonDown(event, this);
-            break;
-          case 2:
-            isTerminated = handler.handleRightButtonDown(event, this);
-            break;
-          default:
-            throw Error('invalid button.');
-        }
-        if (isTerminated) {
-          break;
-        }
-      }
-    });
-
-    this.renderer.domElement.addEventListener('pointerup', (event) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
-        let isTerminated = false;
-        switch (event.button) {
-          case 0:
-            isTerminated = handler.handleLeftButtonUp(event, this);
-            break;
-          case 1:
-            isTerminated = handler.handleMiddleButtonUp(event, this);
-            break;
-          case 2:
-            isTerminated = handler.handleRightButtonUp(event, this);
-            break;
-          default:
-            throw Error('invalid button.');
-        }
-        if (isTerminated) {
-          break;
-        }
-      }
-    });
-
-    this.renderer.domElement.addEventListener('pointermove', (event) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
-        if (handler.handleMouseMove(event, this)) break;
-      }
-    });
-
-    this.renderer.domElement.addEventListener('keydown', (event) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
-        if (handler.handleKeyDown(event, this)) break;
-      }
-    });
-
-    this.renderer.domElement.addEventListener('keyup', (event) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
-        if (handler.handleKeyUp(event, this)) break;
-      }
-    });
+  get cursorType(): CURSORTYPE {
+    return this.cursorTypeInternal;
   }
 
-  private prepareEnvironment(): void {
-    if (!this.scene) {
-      throw new Error('scene not intialized.');
+  set cursorType(newType: CURSORTYPE) {
+    if (!this.renderer) {
+      throw Error('not initilaized.');
     }
-    this.scene.background = new Color(0xaaaaaa);
-    const ambientLight = new AmbientLight(0x333333);
-    const light = new DirectionalLight(0xffffff, 1.0);
+    this.cursorTypeInternal = newType;
+    switch (newType) {
+      case CURSORTYPE.CROSS:
+        this.renderer.domElement.style.cursor = 'crosshair';
+        break;
+      case CURSORTYPE.HAND:
+        this.renderer.domElement.style.cursor = 'move';
+        break;
+      default:
+        this.renderer.domElement.style.cursor = 'pointer';
+        break;
+    }
+  }
 
-    this.scene.add(ambientLight);
-    this.scene.add(light);
+  /**
+   * capture a point.
+   * @param pointerId the device captured.
+   */
+  public capturePointer(pointerId: number): void {
+    if (!this.renderer) {
+      throw Error('not initilaized.');
+    }
+    if (this.capturedPointerId >= 0) {
+      return;
+    }
+    this.renderer.domElement.setPointerCapture(pointerId);
+    this.capturedPointerId = pointerId;
+  }
 
-    const axesHelper = new AxesHelper(1);
-    this.scene.add(axesHelper);
-    this.axesHelper = axesHelper;
+  /**
+   * release captured pointer.
+   */
+  public releasePointer(): void {
+    if (!this.renderer) {
+      throw Error('not initilaized.');
+    }
+    if (this.capturedPointerId >= 0) {
+      this.renderer.domElement.releasePointerCapture(this.capturedPointerId);
+      this.capturedPointerId = -1;
+    }
   }
 
   /**
@@ -317,45 +235,6 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     const toRemove = this.targetObject3D.children.find((v) => v.name === url);
     if (toRemove) {
       this.targetObject3D.remove(toRemove);
-    }
-  }
-
-  private updateScales(): void {
-    if (!this.targetObject3D) {
-      throw Error('object not ready');
-    }
-    let boundingBox: Box3 | null = null;
-
-    for (let i = 0; i < this.targetObject3D.children.length; i += 1) {
-      const thisMesh = this.targetObject3D.children[i] as Mesh;
-      if (thisMesh) {
-        const thisGeometry = thisMesh.geometry;
-        if (!thisGeometry.boundingBox) thisGeometry.computeBoundingBox();
-        const thisBox = thisGeometry.boundingBox;
-        if (thisBox) {
-          if (!boundingBox) {
-            boundingBox = thisBox;
-          } else {
-            boundingBox.union(thisBox);
-          }
-        }
-      }
-    }
-
-    if (boundingBox) {
-      const center = new Vector3();
-      boundingBox.getCenter(center);
-      const size = new Vector3();
-      boundingBox.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const matTranslate = new Matrix4();
-      matTranslate.makeTranslation(-center.x, -center.y, -center.z);
-      const matScale = new Matrix4();
-      matScale.makeScale(1.0 / maxDim, 1.0 / maxDim, 1.0 / maxDim);
-
-      matScale.multiply(matTranslate);
-      this.targetObject3D.matrix = matScale;
-      this.targetObject3D.matrixWorldNeedsUpdate = true;
     }
   }
 
@@ -409,6 +288,11 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     animate();
   }
 
+  /**
+   * test the triangle on specified position.
+   * @param xPos hit position x
+   * @param yPos hit position y
+   */
   public testTriangle(xPos: number, yPos: number): IHitTestResult | null {
     if (!this.targetObject3D) {
       throw Error('invalid target object');
@@ -444,5 +328,137 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     }
 
     if (this.renderer) this.renderer.setSize(width, height);
+  }
+
+  private initEvents() {
+    if (!this.renderer) {
+      throw Error('Not initliazed.');
+    }
+
+    this.renderer.domElement.addEventListener('pointerdown', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (handler.isEnabled) {
+          let isTerminated = false;
+          switch (event.button) {
+            case 0:
+              isTerminated = handler.handleLeftButtonDown(event, this);
+              break;
+            case 1:
+              isTerminated = handler.handleMiddleButtonDown(event, this);
+              break;
+            case 2:
+              isTerminated = handler.handleRightButtonDown(event, this);
+              break;
+            default:
+              throw Error('invalid button.');
+          }
+          if (isTerminated) {
+            break;
+          }
+        }
+      }
+    });
+
+    this.renderer.domElement.addEventListener('pointerup', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (handler.isEnabled) {
+          let isTerminated = false;
+          switch (event.button) {
+            case 0:
+              isTerminated = handler.handleLeftButtonUp(event, this);
+              break;
+            case 1:
+              isTerminated = handler.handleMiddleButtonUp(event, this);
+              break;
+            case 2:
+              isTerminated = handler.handleRightButtonUp(event, this);
+              break;
+            default:
+              throw Error('invalid button.');
+          }
+          if (isTerminated) {
+            break;
+          }
+        }
+      }
+    });
+
+    this.renderer.domElement.addEventListener('pointermove', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (handler.isEnabled && handler.handleMouseMove(event, this)) break;
+      }
+    });
+
+    this.renderer.domElement.addEventListener('keydown', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (handler.isEnabled && handler.handleKeyDown(event, this)) break;
+      }
+    });
+
+    this.renderer.domElement.addEventListener('keyup', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (handler.isEnabled && handler.handleKeyUp(event, this)) break;
+      }
+    });
+  }
+
+  private prepareEnvironment(): void {
+    if (!this.scene) {
+      throw new Error('scene not intialized.');
+    }
+    this.scene.background = new Color(0xaaaaaa);
+    const ambientLight = new AmbientLight(0x333333);
+    const light = new DirectionalLight(0xffffff, 1.0);
+
+    this.scene.add(ambientLight);
+    this.scene.add(light);
+
+    const axesHelper = new AxesHelper(1);
+    this.scene.add(axesHelper);
+    this.axesHelper = axesHelper;
+  }
+
+  private updateScales(): void {
+    if (!this.targetObject3D) {
+      throw Error('object not ready');
+    }
+    let boundingBox: Box3 | null = null;
+
+    for (let i = 0; i < this.targetObject3D.children.length; i += 1) {
+      const thisMesh = this.targetObject3D.children[i] as Mesh;
+      if (thisMesh) {
+        const thisGeometry = thisMesh.geometry;
+        if (!thisGeometry.boundingBox) thisGeometry.computeBoundingBox();
+        const thisBox = thisGeometry.boundingBox;
+        if (thisBox) {
+          if (!boundingBox) {
+            boundingBox = thisBox;
+          } else {
+            boundingBox.union(thisBox);
+          }
+        }
+      }
+    }
+
+    if (boundingBox) {
+      const center = new Vector3();
+      boundingBox.getCenter(center);
+      const size = new Vector3();
+      boundingBox.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const matTranslate = new Matrix4();
+      matTranslate.makeTranslation(-center.x, -center.y, -center.z);
+      const matScale = new Matrix4();
+      matScale.makeScale(1.0 / maxDim, 1.0 / maxDim, 1.0 / maxDim);
+
+      matScale.multiply(matTranslate);
+      this.targetObject3D.matrix = matScale;
+      this.targetObject3D.matrixWorldNeedsUpdate = true;
+    }
   }
 }
