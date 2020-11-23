@@ -33,9 +33,6 @@ export default class RotationHandler implements IActionHandler {
     if (this.isEnabled) {
       const callbacker = callback;
       if (callbacker.state === STATE.NONE) {
-        callbacker.state = STATE.ROTATE;
-        callbacker.capturePointer(event.pointerId);
-        callbacker.cursorType = CURSORTYPE.HAND;
         this.previousPosition = new Vector2(event.offsetX, event.offsetY);
         return true;
       }
@@ -59,6 +56,13 @@ export default class RotationHandler implements IActionHandler {
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
       const callbacker = callback;
+      if (callbacker.state === STATE.NONE) {
+        if (event.buttons === 1) {
+          callbacker.capturePointer(event.pointerId);
+          callbacker.state = STATE.ROTATE;
+          callbacker.cursorType = CURSORTYPE.HAND;
+        }
+      }
       if (callbacker.state === STATE.ROTATE) {
         const newPosition = new Vector2(event.offsetX, event.offsetY);
         this.rotate(
