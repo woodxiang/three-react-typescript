@@ -23,23 +23,21 @@ import {
   STATE,
   CURSORTYPE,
   IActionHandler,
+  IHitTest,
+  IHitTestResult,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
+import ClickHandler from './ClickHandler';
 
 interface IInternalControlObject {
   fov: number;
   showAxesHelper: boolean;
 }
 
-interface IHistTestResult {
-  name: string;
-  index: number;
-}
-
 /**
  * Rendering Engine
  */
-export default class RenderingEngine implements IActionCallback {
+export default class RenderingEngine implements IActionCallback, IHitTest {
   public viewPortSize: Vector2 = new Vector2();
 
   /**
@@ -119,7 +117,7 @@ export default class RenderingEngine implements IActionCallback {
 
   private actionHandlers: IActionHandler[] = [];
 
-  public readonly histTestEvent = new LiteEvent<IHistTestResult>();
+  public readonly hitTestEvent = new LiteEvent<IHitTestResult>();
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -169,10 +167,9 @@ export default class RenderingEngine implements IActionCallback {
     this.scene.add(this.targetObject3D);
 
     this.actionHandlers.push(
+      new ClickHandler(),
       new RotationHandler(this.camera, this.targetObject3D)
     );
-    // create hit test
-    this.initHistTest(div);
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -262,37 +259,21 @@ export default class RenderingEngine implements IActionCallback {
     this.renderer.domElement.addEventListener('pointermove', (event) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
-        if (!handler.handleMouseMove(event, this)) break;
+        if (handler.handleMouseMove(event, this)) break;
       }
     });
 
     this.renderer.domElement.addEventListener('keydown', (event) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
-        if (!handler.handleKeyDown(event, this)) break;
+        if (handler.handleKeyDown(event, this)) break;
       }
     });
 
     this.renderer.domElement.addEventListener('keyup', (event) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
-        if (!handler.handleKeyUp(event, this)) break;
-      }
-    });
-  }
-
-  private initHistTest(div: HTMLDivElement) {
-    div.addEventListener('click', (event: MouseEvent) => {
-      if (!this.renderer) {
-        throw Error('no render');
-      }
-      const result = this.HitTest(
-        (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1,
-        -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1
-      );
-
-      if (result) {
-        this.histTestEvent.trigger(result);
+        if (handler.handleKeyUp(event, this)) break;
       }
     });
   }
@@ -428,7 +409,7 @@ export default class RenderingEngine implements IActionCallback {
     animate();
   }
 
-  public HitTest(xPos: number, yPos: number): IHistTestResult | null {
+  public testTriangle(xPos: number, yPos: number): IHitTestResult | null {
     if (!this.targetObject3D) {
       throw Error('invalid target object');
     }

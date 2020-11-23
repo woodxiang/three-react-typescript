@@ -34,7 +34,7 @@ export default class RotationHandler implements IActionHandler {
       const callbacker = callback;
       if (callbacker.state === STATE.NONE) {
         this.previousPosition = new Vector2(event.offsetX, event.offsetY);
-        return true;
+        return false;
       }
     }
     return false;

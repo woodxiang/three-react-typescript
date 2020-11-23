@@ -43,5 +43,19 @@ interface IActionHandler {
   ): boolean;
   handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
 }
+interface IHitTestResult {
+  name: string;
+  index: number;
+}
+interface IHitTest {
+  testTriangle(xPos: number, yPos: number): IHitTestResult | null;
+}
 
-export { STATE, CURSORTYPE, IActionCallback, IActionHandler };
+export {
+  STATE,
+  CURSORTYPE,
+  IActionCallback,
+  IActionHandler,
+  IHitTest,
+  IHitTestResult,
+};
