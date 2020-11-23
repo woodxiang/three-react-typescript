@@ -1,3 +1,5 @@
+import { Vector2 } from 'three/src/math/Vector2';
+
 enum STATE {
   NONE = 0,
   ROTATE,
@@ -16,7 +18,8 @@ interface IActionCallback {
   state: STATE;
   cursorType: CURSORTYPE;
   capturePointer(pointerId: number): void;
-  ReleasePointer(): void;
+  releasePointer(): void;
+  viewPortSize: Vector2;
 }
 
 interface IActionHandler {
@@ -28,6 +31,7 @@ interface IActionHandler {
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean;
   handleMouseWheel(event: PointerEvent, callback: IActionCallback): boolean;
   handleKeyDown(event: KeyboardEvent, callback: IActionCallback): boolean;
+  handleKeyUp(event: KeyboardEvent, callback: IActionCallback): boolean;
   handleMiddleButtonDown(
     event: PointerEvent,
     callback: IActionCallback

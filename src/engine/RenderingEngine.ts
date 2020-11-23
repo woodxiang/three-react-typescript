@@ -15,6 +15,7 @@ import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { FrontSide } from 'three/src/constants';
 import { Raycaster } from 'three/src/core/Raycaster';
 import * as dat from 'dat.gui';
+import { Vector2 } from 'three/src/math/Vector2';
 import UrlRefObjectFactory, { DataRefUrl } from './UrlRefObjectFactory';
 import LiteEvent from './event';
 import {
@@ -22,7 +23,7 @@ import {
   STATE,
   CURSORTYPE,
   IActionHandler,
-} from './controls/interfaces';
+} from './interfaces';
 import RotationHandler from './RotationHandler';
 
 interface IInternalControlObject {
@@ -39,6 +40,8 @@ interface IHistTestResult {
  * Rendering Engine
  */
 export default class RenderingEngine implements IActionCallback {
+  public viewPortSize: Vector2 = new Vector2();
+
   /**
    * Current State: moving or rotation or picking.
    */
@@ -81,7 +84,7 @@ export default class RenderingEngine implements IActionCallback {
     this.capturedPointerId = pointerId;
   }
 
-  public ReleasePointer(): void {
+  public releasePointer(): void {
     if (!this.renderer) {
       throw Error('not initilaized.');
     }
@@ -114,7 +117,7 @@ export default class RenderingEngine implements IActionCallback {
     showAxesHelper: true,
   };
 
-  private actionHandlers: IActionHandler[] = [new RotationHandler()];
+  private actionHandlers: IActionHandler[] = [];
 
   public readonly histTestEvent = new LiteEvent<IHistTestResult>();
 
@@ -149,6 +152,8 @@ export default class RenderingEngine implements IActionCallback {
       1000
     );
 
+    this.viewPortSize = new Vector2(width, height);
+
     // Create Render
     this.renderer = new WebGLRenderer();
     this.renderer.setSize(width, height);
@@ -163,6 +168,9 @@ export default class RenderingEngine implements IActionCallback {
     this.targetObject3D.matrixAutoUpdate = false;
     this.scene.add(this.targetObject3D);
 
+    this.actionHandlers.push(
+      new RotationHandler(this.camera, this.targetObject3D)
+    );
     // create hit test
     this.initHistTest(div);
 
@@ -206,45 +214,70 @@ export default class RenderingEngine implements IActionCallback {
     }
 
     this.renderer.domElement.addEventListener('pointerdown', (event) => {
-      this.actionHandlers.forEach((handler) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        let isTerminated = false;
         switch (event.button) {
           case 0:
-            handler.handleLeftButtonDown(event, this);
+            isTerminated = handler.handleLeftButtonDown(event, this);
             break;
           case 1:
-            handler.handleMiddleButtonDown(event, this);
+            isTerminated = handler.handleMiddleButtonDown(event, this);
             break;
           case 2:
-            handler.handleRightButtonDown(event, this);
+            isTerminated = handler.handleRightButtonDown(event, this);
             break;
           default:
             throw Error('invalid button.');
         }
-      });
+        if (isTerminated) {
+          break;
+        }
+      }
     });
 
     this.renderer.domElement.addEventListener('pointerup', (event) => {
-      this.actionHandlers.forEach((handler) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        let isTerminated = false;
         switch (event.button) {
           case 0:
-            handler.handleLeftButtonUp(event, this);
+            isTerminated = handler.handleLeftButtonUp(event, this);
             break;
           case 1:
-            handler.handleMiddleButtonUp(event, this);
+            isTerminated = handler.handleMiddleButtonUp(event, this);
             break;
           case 2:
-            handler.handleRightButtonUp(event, this);
+            isTerminated = handler.handleRightButtonUp(event, this);
             break;
           default:
             throw Error('invalid button.');
         }
-      });
+        if (isTerminated) {
+          break;
+        }
+      }
     });
 
     this.renderer.domElement.addEventListener('pointermove', (event) => {
-      this.actionHandlers.forEach((handler) => {
-        handler.handleMouseMove(event, this);
-      });
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (!handler.handleMouseMove(event, this)) break;
+      }
+    });
+
+    this.renderer.domElement.addEventListener('keydown', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (!handler.handleKeyDown(event, this)) break;
+      }
+    });
+
+    this.renderer.domElement.addEventListener('keyup', (event) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (!handler.handleKeyUp(event, this)) break;
+      }
     });
   }
 
