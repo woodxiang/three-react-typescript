@@ -1,5 +1,5 @@
-import { Matrix4, Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
-import { CURSORTYPE, IActionCallback, IActionHandler, STATE } from './interfaces';
+import { Matrix4, PerspectiveCamera, Vector2, Vector3 } from 'three';
+import { CURSORTYPE, IActionCallback, IActionHandler, IObjectRotation, STATE } from './interfaces';
 
 export default class RotationHandler implements IActionHandler {
   public isEnabled = true;
@@ -10,9 +10,9 @@ export default class RotationHandler implements IActionHandler {
 
   private camera: PerspectiveCamera;
 
-  private targetObject: Object3D;
+  private targetObject: IObjectRotation;
 
-  constructor(camera: PerspectiveCamera, targetObject: Object3D) {
+  constructor(camera: PerspectiveCamera, targetObject: IObjectRotation) {
     if (!camera || !targetObject) {
       throw Error('Invalid camera or target object.');
     }
@@ -140,7 +140,6 @@ export default class RotationHandler implements IActionHandler {
       }
     }
 
-    this.targetObject.matrix = matrix.multiply(this.targetObject.matrix);
-    this.targetObject.matrixWorldNeedsUpdate = true;
+    this.targetObject.setRotationMatrix(matrix.multiply(this.targetObject.getRotationMatrix()));
   }
 }

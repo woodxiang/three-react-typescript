@@ -19,7 +19,17 @@ import { Vector2 } from 'three/src/math/Vector2';
 import { BufferGeometry } from 'three';
 import UrlRefObjectFactory, { DataRefUrl } from './UrlRefObjectFactory';
 import LiteEvent from './event';
-import { IActionCallback, STATE, CURSORTYPE, IActionHandler, IHitTest, IHitTestResult } from './interfaces';
+import {
+  IActionCallback,
+  STATE,
+  CURSORTYPE,
+  IActionHandler,
+  IHitTest,
+  IHitTestResult,
+  IFaceSelection,
+  IObjectRotation,
+  IFaceSelectionResult,
+} from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import GeoHelper from './geohelper';
@@ -32,7 +42,7 @@ interface IInternalControlObject {
 /**
  * Rendering Engine
  */
-export default class RenderingEngine implements IActionCallback, IHitTest {
+export default class RenderingEngine implements IActionCallback, IFaceSelection, IObjectRotation, IHitTest {
   public viewPortSize: Vector2 = new Vector2();
 
   /**
@@ -49,6 +59,10 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
   private renderer: WebGLRenderer | undefined;
 
   private targetObject3D: Object3D | undefined;
+
+  private adapteMatrix: Matrix4 = new Matrix4();
+
+  private rotateMatrix: Matrix4 = new Matrix4();
 
   private axesHelper: AxesHelper | undefined;
 
@@ -69,7 +83,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
 
   private capturedPointerId = -1;
 
-  public readonly hitTestEvent = new LiteEvent<IHitTestResult>();
+  public readonly faceSelectedEvent = new LiteEvent<IFaceSelectionResult>();
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -113,7 +127,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     this.targetObject3D.matrixAutoUpdate = false;
     this.scene.add(this.targetObject3D);
 
-    this.actionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this.targetObject3D));
+    this.actionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -298,6 +312,22 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
   }
 
   /**
+   * Get the matrix of rotation.
+   */
+  public getRotationMatrix(): Matrix4 {
+    return this.rotateMatrix;
+  }
+
+  /**
+   * update rotation matrix and apply it.
+   * @param mat new matrix for rotaion.
+   */
+  public setRotationMatrix(mat: Matrix4): void {
+    this.rotateMatrix = mat;
+    this.updateTargetObject3dMatrix();
+  }
+
+  /**
    * handle window size changed.
    * @param width new width
    * @param height new height
@@ -309,6 +339,16 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     }
 
     if (this.renderer) this.renderer.setSize(width, height);
+  }
+
+  // update the selected faces.
+  //
+  public UpdateSelectedFaces(selectedFaces: IFaceSelectionResult[]): void {
+    return;
+  }
+
+  public ToggleSelectedFace(faceSelectionResult: IFaceSelectionResult | undefined): void {
+    return;
   }
 
   private initEvents() {
@@ -395,7 +435,8 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
 
   public selectFace(name: string, index: number): void {
     const geometry = this.findGeometry(name);
-    GeoHelper.selectFace(geometry, index);
+    const selectedFaces = GeoHelper.selectFace(geometry, index);
+    this.faceSelectedEvent?.trigger({ name, faceIndexes: selectedFaces });
   }
 
   private findGeometry(name: string): BufferGeometry {
@@ -443,6 +484,8 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     }
 
     if (boundingBox) {
+      // calculate the matrix to adapte object position and scale to the
+      // center of the clip space.
       const center = new Vector3();
       boundingBox.getCenter(center);
       const size = new Vector3();
@@ -454,7 +497,19 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
       matScale.makeScale(1.0 / maxDim, 1.0 / maxDim, 1.0 / maxDim);
 
       matScale.multiply(matTranslate);
-      this.targetObject3D.matrix = matScale;
+      this.adapteMatrix = matScale;
+
+      // apply the adapte scale.
+      this.updateTargetObject3dMatrix();
+    }
+  }
+
+  private updateTargetObject3dMatrix() {
+    if (this.targetObject3D) {
+      const matrix = this.adapteMatrix.clone();
+      matrix.multiply(this.rotateMatrix);
+
+      this.targetObject3D.matrix = matrix;
       this.targetObject3D.matrixWorldNeedsUpdate = true;
     }
   }

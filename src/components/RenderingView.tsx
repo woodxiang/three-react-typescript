@@ -1,4 +1,5 @@
 import { createStyles, makeStyles } from '@material-ui/core';
+import { IFaceSelectionResult } from 'engine/interfaces';
 import React, { useEffect, useRef } from 'react';
 import { WEBGL } from 'three/examples/jsm/WebGL';
 import RenderingEngine from '../engine/RenderingEngine';
@@ -32,6 +33,8 @@ function onResize(renderDiv: HTMLDivElement | null, renderEnv: RenderingEngine) 
 
 interface IRenderingViewProps {
   dataRefUrls: DataRefUrl[];
+  selectedFaces: IFaceSelectionResult[];
+  faceSelectedCallback: (v: IFaceSelectionResult) => void;
 }
 
 export default function RenderingView(props: IRenderingViewProps): JSX.Element {
@@ -39,7 +42,7 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   const renderEnv = useRef<RenderingEngine>(new RenderingEngine());
   const classes = useStyles();
 
-  const { dataRefUrls } = props;
+  const { dataRefUrls, selectedFaces, faceSelectedCallback } = props;
 
   useEffect(() => {
     if (renderDiv.current != null) {
@@ -49,6 +52,10 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
       });
       window.addEventListener('resize', () => {
         onResize(renderDiv.current, renderEnv.current);
+      });
+
+      renderEnv.current.faceSelectedEvent.add((faceSelectionResult: IFaceSelectionResult | undefined) => {
+        renderEnv.current.ToggleSelectedFace(faceSelectionResult);
       });
     }
   }, []);
@@ -83,6 +90,10 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
     };
     update();
   }, [dataRefUrls]);
+
+  useEffect(() => {
+    renderEnv.current.UpdateSelectedFaces(selectedFaces);
+  }, [selectedFaces]);
 
   if (!WEBGL.isWebGL2Available()) {
     return <div>WebGL Reauired.</div>;

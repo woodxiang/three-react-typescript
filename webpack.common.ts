@@ -28,10 +28,7 @@ const serverConfig: webpack.Configuration = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: [
-              ['@babel/preset-env', { targets: { node: 'current' } }],
-              '@babel/preset-typescript',
-            ],
+            presets: [['@babel/preset-env', { targets: { node: 'current' } }], '@babel/preset-typescript'],
             plugins: [
               '@babel/proposal-class-properties',
               '@babel/proposal-object-rest-spread',

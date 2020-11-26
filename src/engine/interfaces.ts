@@ -1,3 +1,4 @@
+import { Matrix4 } from 'three';
 import { Vector2 } from 'three/src/math/Vector2';
 
 enum STATE {
@@ -15,7 +16,6 @@ enum CURSORTYPE {
 }
 
 interface IActionCallback {
-  selectFace(name: string, index: number): void;
   state: STATE;
   cursorType: CURSORTYPE;
   capturePointer(pointerId: number): void;
@@ -46,4 +46,28 @@ interface IHitTest {
   testTriangle(xPos: number, yPos: number): IHitTestResult | null;
 }
 
-export { STATE, CURSORTYPE, IActionCallback, IActionHandler, IHitTest, IHitTestResult };
+interface IFaceSelection {
+  selectFace(name: string, index: number): void;
+}
+
+interface IFaceSelectionResult {
+  name: string;
+  faceIndexes: number[];
+}
+
+interface IObjectRotation {
+  getRotationMatrix(): Matrix4;
+  setRotationMatrix(mat: Matrix4): void;
+}
+
+export {
+  STATE,
+  CURSORTYPE,
+  IActionCallback,
+  IActionHandler,
+  IObjectRotation,
+  IFaceSelection,
+  IFaceSelectionResult,
+  IHitTest,
+  IHitTestResult,
+};

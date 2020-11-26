@@ -1,4 +1,4 @@
-import { IActionCallback, IActionHandler, IHitTest, STATE } from './interfaces';
+import { IActionCallback, IActionHandler, IFaceSelection, IHitTest, STATE } from './interfaces';
 
 export default class ClickHandler implements IActionHandler {
   public isEnabled = true;
@@ -13,7 +13,8 @@ export default class ClickHandler implements IActionHandler {
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
       const callbacker = callback;
-      if (callbacker.state === STATE.NONE) {
+      const faceSelection = <IFaceSelection>(<unknown>callbacker);
+      if (faceSelection && callbacker.state === STATE.NONE) {
         const hitTester = (callbacker as unknown) as IHitTest;
         if (hitTester) {
           const testResult = hitTester.testTriangle(
@@ -21,7 +22,7 @@ export default class ClickHandler implements IActionHandler {
             -(event.offsetY / callbacker.viewPortSize.y) * 2 + 1
           );
           if (testResult) {
-            callbacker.selectFace(testResult.name, testResult.index);
+            faceSelection.selectFace(testResult.name, testResult.index);
             return true;
           }
         }
