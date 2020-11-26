@@ -1,10 +1,5 @@
 import { Matrix4, Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
-import {
-  CURSORTYPE,
-  IActionCallback,
-  IActionHandler,
-  STATE,
-} from './interfaces';
+import { CURSORTYPE, IActionCallback, IActionHandler, STATE } from './interfaces';
 
 export default class RotationHandler implements IActionHandler {
   public isEnabled = true;
@@ -26,10 +21,7 @@ export default class RotationHandler implements IActionHandler {
     this.targetObject = targetObject;
   }
 
-  handleLeftButtonDown(
-    event: PointerEvent,
-    callback: IActionCallback
-  ): boolean {
+  handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
       const callbacker = callback;
       if (callbacker.state === STATE.NONE) {
@@ -65,11 +57,7 @@ export default class RotationHandler implements IActionHandler {
       }
       if (callbacker.state === STATE.ROTATE) {
         const newPosition = new Vector2(event.offsetX, event.offsetY);
-        this.rotate(
-          newPosition.x - this.previousPosition.x,
-          newPosition.y - this.previousPosition.y,
-          callbacker
-        );
+        this.rotate(newPosition.x - this.previousPosition.x, newPosition.y - this.previousPosition.y, callbacker);
         this.previousPosition = newPosition;
         return true;
       }

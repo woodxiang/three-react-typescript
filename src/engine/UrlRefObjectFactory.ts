@@ -24,9 +24,7 @@ export default class UrlRefObjectFactory {
     return geo as BufferGeometry;
   }
 
-  public static async loadAsync(
-    dataRefUrl: DataRefUrl
-  ): Promise<BufferGeometry> {
+  public static async loadAsync(dataRefUrl: DataRefUrl): Promise<BufferGeometry> {
     switch (dataRefUrl.dataType) {
       case GeometryDataType.STLMesh:
         return UrlRefObjectFactory.loadStlAsync(dataRefUrl.url);

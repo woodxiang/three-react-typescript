@@ -23,10 +23,7 @@ function init(newDiv: HTMLDivElement, renderEnv: RenderingEngine): void {
   renderEnv.startAnimate();
 }
 
-function onResize(
-  renderDiv: HTMLDivElement | null,
-  renderEnv: RenderingEngine
-) {
+function onResize(renderDiv: HTMLDivElement | null, renderEnv: RenderingEngine) {
   if (!renderDiv) return;
   const width = renderDiv.clientWidth;
   const height = renderDiv.clientHeight;

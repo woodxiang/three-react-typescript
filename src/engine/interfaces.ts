@@ -33,15 +33,9 @@ interface IActionHandler {
   handleMouseWheel(event: PointerEvent, callback: IActionCallback): boolean;
   handleKeyDown(event: KeyboardEvent, callback: IActionCallback): boolean;
   handleKeyUp(event: KeyboardEvent, callback: IActionCallback): boolean;
-  handleMiddleButtonDown(
-    event: PointerEvent,
-    callback: IActionCallback
-  ): boolean;
+  handleMiddleButtonDown(event: PointerEvent, callback: IActionCallback): boolean;
   handleMiddleButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
-  handleRightButtonDown(
-    event: PointerEvent,
-    callback: IActionCallback
-  ): boolean;
+  handleRightButtonDown(event: PointerEvent, callback: IActionCallback): boolean;
   handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
 }
 interface IHitTestResult {
@@ -52,11 +46,4 @@ interface IHitTest {
   testTriangle(xPos: number, yPos: number): IHitTestResult | null;
 }
 
-export {
-  STATE,
-  CURSORTYPE,
-  IActionCallback,
-  IActionHandler,
-  IHitTest,
-  IHitTestResult,
-};
+export { STATE, CURSORTYPE, IActionCallback, IActionHandler, IHitTest, IHitTestResult };

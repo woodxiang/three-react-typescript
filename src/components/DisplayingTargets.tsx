@@ -27,9 +27,7 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 );
 
-export default function DisplayingTargets(
-  props: IDisplayingTargetsProps
-): JSX.Element {
+export default function DisplayingTargets(props: IDisplayingTargetsProps): JSX.Element {
   const { stlLoaded, stlFiles, selectedStls, onSelctedStlChanged } = props;
   const classes = useStyles();
   if (!stlLoaded) {
@@ -44,13 +42,7 @@ export default function DisplayingTargets(
     <List className={classes.root}>
       {stlFiles.map((item) => {
         return (
-          <ListItem
-            key={item}
-            role={undefined}
-            button
-            dense
-            onClick={() => handleListItemClick(item)}
-          >
+          <ListItem key={item} role={undefined} button dense onClick={() => handleListItemClick(item)}>
             <ListItemIcon>
               <Checkbox
                 edge="start"
