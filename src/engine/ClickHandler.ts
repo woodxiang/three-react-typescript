@@ -21,6 +21,7 @@ export default class ClickHandler implements IActionHandler {
             -(event.offsetY / callbacker.viewPortSize.y) * 2 + 1
           );
           if (testResult) {
+            callbacker.selectFace(testResult.name, testResult.index);
             return true;
           }
         }

@@ -88,6 +88,16 @@ const clientConfig: webpack.Configuration = {
         test: /\.html$/,
         use: [{ loader: 'html-loader' }],
       },
+      {
+        test: /\.glsl$/,
+        exclude: /node_modules/,
+        use: [
+          'raw-loader',
+          {
+            loader: 'glslify-loader',
+          },
+        ],
+      },
     ],
   },
   plugins: [

@@ -15,6 +15,7 @@ enum CURSORTYPE {
 }
 
 interface IActionCallback {
+  selectFace(name: string, index: number): void;
   state: STATE;
   cursorType: CURSORTYPE;
   capturePointer(pointerId: number): void;

@@ -16,18 +16,13 @@ import { FrontSide } from 'three/src/constants';
 import { Raycaster } from 'three/src/core/Raycaster';
 import * as dat from 'dat.gui';
 import { Vector2 } from 'three/src/math/Vector2';
+import { BufferGeometry } from 'three';
 import UrlRefObjectFactory, { DataRefUrl } from './UrlRefObjectFactory';
 import LiteEvent from './event';
-import {
-  IActionCallback,
-  STATE,
-  CURSORTYPE,
-  IActionHandler,
-  IHitTest,
-  IHitTestResult,
-} from './interfaces';
+import { IActionCallback, STATE, CURSORTYPE, IActionHandler, IHitTest, IHitTestResult } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
+import GeoHelper from './geohelper';
 
 interface IInternalControlObject {
   fov: number;
@@ -100,12 +95,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
   public init(div: HTMLDivElement, width: number, height: number): void {
     this.parentDiv = div;
     this.scene = new Scene();
-    this.camera = new PerspectiveCamera(
-      this.internalControl.fov,
-      width / height,
-      0.1,
-      1000
-    );
+    this.camera = new PerspectiveCamera(this.internalControl.fov, width / height, 0.1, 1000);
 
     this.viewPortSize = new Vector2(width, height);
 
@@ -123,10 +113,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     this.targetObject3D.matrixAutoUpdate = false;
     this.scene.add(this.targetObject3D);
 
-    this.actionHandlers.push(
-      new ClickHandler(),
-      new RotationHandler(this.camera, this.targetObject3D)
-    );
+    this.actionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this.targetObject3D));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -134,29 +121,25 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
       div.appendChild(this.stats.dom);
 
       this.gui = new dat.GUI();
-      this.gui
-        .add(this.internalControl, 'fov', 0.1, 180)
-        .onChange((newFov: number) => {
-          if (this.camera) {
-            this.camera.fov = newFov;
-            this.camera.updateProjectionMatrix();
+      this.gui.add(this.internalControl, 'fov', 0.1, 180).onChange((newFov: number) => {
+        if (this.camera) {
+          this.camera.fov = newFov;
+          this.camera.updateProjectionMatrix();
+        }
+      });
+      this.gui.add(this.internalControl, 'showAxesHelper').onChange((value: boolean) => {
+        if (!this.scene) return;
+        if (value) {
+          if (!this.axesHelper) {
+            const axesHelper = new AxesHelper(1);
+            this.scene.add(axesHelper);
+            this.axesHelper = axesHelper;
           }
-        });
-      this.gui
-        .add(this.internalControl, 'showAxesHelper')
-        .onChange((value: boolean) => {
-          if (!this.scene) return;
-          if (value) {
-            if (!this.axesHelper) {
-              const axesHelper = new AxesHelper(1);
-              this.scene.add(axesHelper);
-              this.axesHelper = axesHelper;
-            }
-          } else if (this.axesHelper) {
-            this.scene.remove(this.axesHelper);
-            this.axesHelper = undefined;
-          }
-        });
+        } else if (this.axesHelper) {
+          this.scene.remove(this.axesHelper);
+          this.axesHelper = undefined;
+        }
+      });
     }
 
     this.initEvents();
@@ -220,7 +203,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
       throw Error('object not ready.');
     }
 
-    return this.targetObject3D.children.map((v) => v.name);
+    return this.targetObject3D.children.map((v: { name: string }) => v.name);
   }
 
   /**
@@ -232,7 +215,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
       throw Error('object not ready');
     }
 
-    const toRemove = this.targetObject3D.children.find((v) => v.name === url);
+    const toRemove = this.targetObject3D.children.find((v: { name: string }) => v.name === url);
     if (toRemove) {
       this.targetObject3D.remove(toRemove);
     }
@@ -302,9 +285,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
     }
     const rayCaster = new Raycaster();
     rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);
-    const intersection = rayCaster.intersectObjects(
-      this.targetObject3D.children
-    );
+    const intersection = rayCaster.intersectObjects(this.targetObject3D.children);
 
     if (intersection.length > 0) {
       const ret = intersection[0];
@@ -335,7 +316,7 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
       throw Error('Not initliazed.');
     }
 
-    this.renderer.domElement.addEventListener('pointerdown', (event) => {
+    this.renderer.domElement.addEventListener('pointerdown', (event: PointerEvent) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
         if (handler.isEnabled) {
@@ -358,9 +339,10 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
           }
         }
       }
+      event?.preventDefault();
     });
 
-    this.renderer.domElement.addEventListener('pointerup', (event) => {
+    this.renderer.domElement.addEventListener('pointerup', (event: PointerEvent) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
         if (handler.isEnabled) {
@@ -383,28 +365,43 @@ export default class RenderingEngine implements IActionCallback, IHitTest {
           }
         }
       }
+      event?.preventDefault();
     });
 
-    this.renderer.domElement.addEventListener('pointermove', (event) => {
+    this.renderer.domElement.addEventListener('pointermove', (event: PointerEvent) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
         if (handler.isEnabled && handler.handleMouseMove(event, this)) break;
       }
+      event?.preventDefault();
     });
 
-    this.renderer.domElement.addEventListener('keydown', (event) => {
+    this.renderer.domElement.addEventListener('keydown', (event: KeyboardEvent) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
         if (handler.isEnabled && handler.handleKeyDown(event, this)) break;
       }
+      event?.preventDefault();
     });
 
-    this.renderer.domElement.addEventListener('keyup', (event) => {
+    this.renderer.domElement.addEventListener('keyup', (event: KeyboardEvent) => {
       for (let i = 0; i < this.actionHandlers.length; i += 1) {
         const handler = this.actionHandlers[i];
         if (handler.isEnabled && handler.handleKeyUp(event, this)) break;
       }
+      event?.preventDefault();
     });
+  }
+
+  public selectFace(name: string, index: number): void {
+    const geometry = this.findGeometry(name);
+    GeoHelper.selectFace(geometry, index);
+  }
+
+  private findGeometry(name: string): BufferGeometry {
+    const mesh = this.targetObject3D?.children.find((item: { name: string }) => item.name === name);
+
+    return (<Mesh>mesh).geometry as BufferGeometry;
   }
 
   private prepareEnvironment(): void {
