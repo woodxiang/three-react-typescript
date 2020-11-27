@@ -1,4 +1,7 @@
-import { Matrix4, PerspectiveCamera, Vector2, Vector3 } from 'three';
+import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
+import { Matrix4 } from 'three/src/math/Matrix4';
+import { Vector2 } from 'three/src/math/Vector2';
+import { Vector3 } from 'three/src/math/Vector3';
 import { CURSORTYPE, IActionCallback, IActionHandler, IObjectRotation, STATE } from './interfaces';
 
 export default class RotationHandler implements IActionHandler {

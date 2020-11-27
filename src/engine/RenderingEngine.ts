@@ -16,7 +16,6 @@ import { FrontSide } from 'three/src/constants';
 import { Raycaster } from 'three/src/core/Raycaster';
 import * as dat from 'dat.gui';
 import { Vector2 } from 'three/src/math/Vector2';
-import { BufferGeometry } from 'three';
 import UrlRefObjectFactory, { DataRefUrl } from './UrlRefObjectFactory';
 import LiteEvent from './event';
 import {
@@ -33,6 +32,7 @@ import {
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import GeoHelper from './geohelper';
+import { BufferGeometry } from 'three/src/core/BufferGeometry';
 
 interface IInternalControlObject {
   fov: number;

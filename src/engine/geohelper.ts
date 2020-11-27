@@ -1,5 +1,8 @@
-import { BufferAttribute, Matrix4, Triangle, Vector3 } from 'three';
+import { BufferAttribute } from 'three/src/core/BufferAttribute';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { Matrix4 } from 'three/src/math/Matrix4';
+import { Triangle } from 'three/src/math/Triangle';
+import { Vector3 } from 'three/src/math/Vector3';
 
 export default class GeoHelper {
   static error = 0.0001;

@@ -1,4 +1,4 @@
-import { Matrix4 } from 'three';
+import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 
 enum STATE {
@@ -60,9 +60,8 @@ interface IObjectRotation {
   setRotationMatrix(mat: Matrix4): void;
 }
 
-export {
-  STATE,
-  CURSORTYPE,
+export { STATE, CURSORTYPE };
+export type {
   IActionCallback,
   IActionHandler,
   IObjectRotation,
