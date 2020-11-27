@@ -506,8 +506,8 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private updateTargetObject3dMatrix() {
     if (this.targetObject3D) {
-      const matrix = this.adapteMatrix.clone();
-      matrix.multiply(this.rotateMatrix);
+      const matrix = this.rotateMatrix.clone();
+      matrix.multiply(this.adapteMatrix);
 
       this.targetObject3D.matrix = matrix;
       this.targetObject3D.matrixWorldNeedsUpdate = true;
