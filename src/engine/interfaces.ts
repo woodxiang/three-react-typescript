@@ -10,6 +10,7 @@ enum STATE {
 }
 
 enum CURSORTYPE {
+  NONE,
   HAND,
   ARRAW,
   CROSS,

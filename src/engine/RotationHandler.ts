@@ -39,7 +39,7 @@ export default class RotationHandler implements IActionHandler {
     if (this.isEnabled) {
       const callbacker = callback;
       if (callbacker.state === STATE.ROTATE) {
-        callbacker.cursorType = CURSORTYPE.ARRAW;
+        callbacker.cursorType = CURSORTYPE.NONE;
         callbacker.releasePointer();
         callbacker.state = STATE.NONE;
         return true;

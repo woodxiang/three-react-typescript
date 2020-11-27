@@ -175,8 +175,11 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
       case CURSORTYPE.HAND:
         this.renderer.domElement.style.cursor = 'move';
         break;
-      default:
+      case CURSORTYPE.ARRAW:
         this.renderer.domElement.style.cursor = 'pointer';
+        break;
+      default:
+        this.renderer.domElement.style.cursor = 'default';
         break;
     }
   }
