@@ -2,7 +2,6 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { Scene } from 'three/src/scenes/Scene';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
-import { Object3D } from 'three/src/core/Object3D';
 import { AxesHelper } from 'three/src/helpers/AxesHelper';
 import { Color } from 'three/src/math/Color';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
@@ -11,12 +10,13 @@ import { Box3 } from 'three/src/math/Box3';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Vector3 } from 'three/src/math/Vector3';
 import { Matrix4 } from 'three/src/math/Matrix4';
-import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
-import { FrontSide } from 'three/src/constants';
 import { Raycaster } from 'three/src/core/Raycaster';
 import * as dat from 'dat.gui';
 import { Vector2 } from 'three/src/math/Vector2';
-import UrlRefObjectFactory, { DataRefUrl } from './UrlRefObjectFactory';
+import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { Group } from 'three/src/objects/Group';
+import { Object3D } from 'three/src/core/Object3D';
+
 import LiteEvent from './event';
 import {
   IActionCallback,
@@ -31,8 +31,7 @@ import {
 } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
-import GeoHelper from './geohelper';
-import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import SelectionHelper from './SelectionHelper';
 
 interface IInternalControlObject {
   fov: number;
@@ -58,7 +57,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private renderer: WebGLRenderer | undefined;
 
-  private targetObject3D: Object3D | undefined;
+  private targetObject3D: Group | undefined;
 
   private adapteMatrix: Matrix4 = new Matrix4();
 
@@ -123,7 +122,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
     this.prepareEnvironment();
 
-    this.targetObject3D = new Object3D();
+    this.targetObject3D = new Group();
     this.targetObject3D.matrixAutoUpdate = false;
     this.scene.add(this.targetObject3D);
 
@@ -239,33 +238,53 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
   }
 
   /**
-   * specified the object information.
-   * @param src the data to load
+   * add mesh
+   * @param newMesh new mesh to add
+   * @param groupName the group if it is in a group.
    */
-  public async addUrlRefObject(src: DataRefUrl): Promise<void> {
+  public AddMesh(newMesh: Mesh, groupName: string | undefined = undefined): void {
     if (!this.targetObject3D) {
-      throw Error('object not ready.');
+      throw Error('invalid target object group');
+    }
+    if (!groupName) {
+      this.targetObject3D.add(newMesh);
+    } else {
+      let targetGroup = RenderingEngine.findGroup(this.targetObject3D, groupName);
+      if (!targetGroup) {
+        targetGroup = new Group();
+        targetGroup.name = groupName;
+        this.targetObject3D.add(targetGroup);
+      }
+
+      targetGroup.add(newMesh);
     }
 
-    if (!src) {
-      return;
+    this.updateScales();
+  }
+
+  /**
+   * remove specified mesh.
+   * @param name the mesh name to remove.
+   * @param groupName the group name if it included.
+   */
+  public RemoveMesh(name: string, groupName: string | undefined = undefined): boolean {
+    if (!this.targetObject3D) {
+      throw Error('no root.');
+    }
+    if (groupName) {
+      const group = RenderingEngine.findGroup(this.targetObject3D, groupName);
+      if (group) {
+        const index = group.children.findIndex((mesh: Object3D) => mesh.name === name);
+        group.children.splice(index, 1);
+        return true;
+      }
+    } else {
+      const index = this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === name);
+      this.targetObject3D.children.splice(index, 1);
+      return true;
     }
 
-    const geometry = await UrlRefObjectFactory.loadAsync(src);
-    if (this.scene && geometry) {
-      const materialColor = new Color();
-      materialColor.set(src.color);
-
-      const material = new MeshPhongMaterial({
-        color: materialColor,
-        side: FrontSide,
-      });
-      const mesh = new Mesh(geometry, material);
-      mesh.name = src.url;
-      this.targetObject3D.add(mesh);
-
-      this.updateScales();
-    }
+    return false;
   }
 
   /**
@@ -346,13 +365,9 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   // update the selected faces.
   //
-  public UpdateSelectedFaces(selectedFaces: IFaceSelectionResult[]): void {
-    return;
-  }
+  public UpdateSelectedFaces(selectedFaces: IFaceSelectionResult[]): void {}
 
-  public ToggleSelectedFace(faceSelectionResult: IFaceSelectionResult | undefined): void {
-    return;
-  }
+  public ToggleSelectedFace(faceSelectionResult: IFaceSelectionResult | undefined): void {}
 
   private initEvents() {
     if (!this.renderer) {
@@ -438,7 +453,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   public selectFace(name: string, index: number): void {
     const geometry = this.findGeometry(name);
-    const selectedFaces = GeoHelper.selectFace(geometry, index);
+    const selectedFaces = SelectionHelper.selectFace(geometry, index);
     this.faceSelectedEvent?.trigger({ name, faceIndexes: selectedFaces });
   }
 
@@ -515,5 +530,19 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
       this.targetObject3D.matrix = matrix;
       this.targetObject3D.matrixWorldNeedsUpdate = true;
     }
+  }
+
+  private static findGroup(parent: Group, groupName: string): Group | undefined {
+    for (let i = 0; i < parent.children.length; i += 1) {
+      const group = <Group>parent.children[i];
+      if (group) {
+        if (group.name === groupName) return <Group>group;
+        const ret = RenderingEngine.findGroup(<Group>group, groupName);
+        if (ret) {
+          return ret;
+        }
+      }
+    }
+    return undefined;
   }
 }

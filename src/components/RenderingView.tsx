@@ -1,9 +1,7 @@
 import { createStyles, makeStyles } from '@material-ui/core';
-import { IFaceSelectionResult } from 'engine/interfaces';
 import React, { useEffect, useRef } from 'react';
 import { WEBGL } from 'three/examples/jsm/WebGL';
 import RenderingEngine from '../engine/RenderingEngine';
-import { DataRefUrl } from '../engine/UrlRefObjectFactory';
 
 const useStyles = makeStyles(() =>
   createStyles({
@@ -32,9 +30,7 @@ function onResize(renderDiv: HTMLDivElement | null, renderEnv: RenderingEngine) 
 }
 
 interface IRenderingViewProps {
-  dataRefUrls: DataRefUrl[];
-  selectedFaces: IFaceSelectionResult[];
-  faceSelectedCallback: (v: IFaceSelectionResult) => void;
+  engineCallback: (engine: RenderingEngine) => void;
 }
 
 export default function RenderingView(props: IRenderingViewProps): JSX.Element {
@@ -42,7 +38,7 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   const renderEnv = useRef<RenderingEngine>(new RenderingEngine());
   const classes = useStyles();
 
-  const { dataRefUrls, selectedFaces, faceSelectedCallback } = props;
+  const { engineCallback } = props;
 
   useEffect(() => {
     if (renderDiv.current != null) {
@@ -53,47 +49,12 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
       window.addEventListener('resize', () => {
         onResize(renderDiv.current, renderEnv.current);
       });
-
-      renderEnv.current.faceSelectedEvent.add((faceSelectionResult: IFaceSelectionResult | undefined) => {
-        renderEnv.current.ToggleSelectedFace(faceSelectionResult);
-      });
     }
   }, []);
 
   useEffect(() => {
-    const renderingObjects = renderEnv.current.getObjects();
-    const update = async () => {
-      const toAdd = dataRefUrls.filter((v) => {
-        return renderingObjects.indexOf(v.url) === -1;
-      });
-
-      const toRemove = renderingObjects.filter((v) => {
-        return (
-          dataRefUrls.find((refUrl) => {
-            return refUrl.url === v;
-          }) === undefined
-        );
-      });
-
-      const promises: Promise<unknown>[] = [];
-      toAdd.forEach(async (item) => {
-        promises.push(renderEnv.current.addUrlRefObject(item));
-      });
-
-      toRemove.forEach((item) => {
-        renderEnv.current.removeObject(item);
-      });
-
-      if (promises) {
-        await Promise.all(promises);
-      }
-    };
-    update();
-  }, [dataRefUrls]);
-
-  useEffect(() => {
-    renderEnv.current.UpdateSelectedFaces(selectedFaces);
-  }, [selectedFaces]);
+    if (engineCallback) engineCallback(renderEnv.current);
+  }, [engineCallback]);
 
   if (!WEBGL.isWebGL2Available()) {
     return <div>WebGL Reauired.</div>;

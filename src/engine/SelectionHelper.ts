@@ -4,7 +4,7 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import { Triangle } from 'three/src/math/Triangle';
 import { Vector3 } from 'three/src/math/Vector3';
 
-export default class GeoHelper {
+export default class SelectionHelper {
   static error = 0.0001;
 
   /**
@@ -45,7 +45,7 @@ export default class GeoHelper {
         currentTriangleNormal.fromBufferAttribute(normals, currentFaceVertexIndexes.x);
 
         const d = currentTriangleNormal.dot(selectedTriangleNormal);
-        if (d < 1 + GeoHelper.error && d > 1 - GeoHelper.error) {
+        if (d < 1 + SelectionHelper.error && d > 1 - SelectionHelper.error) {
           normalFilteredTrianglesIndex.push(i);
         }
       }
@@ -62,10 +62,10 @@ export default class GeoHelper {
 
     const cosAngle = selectedTriangleNormal.dot(new Vector3(0, 0, 1));
     const mat = new Matrix4();
-    if (cosAngle < 1 - GeoHelper.error) {
+    if (cosAngle < 1 - SelectionHelper.error) {
       let axis = new Vector3(0, 1, 0);
       let angle = Math.PI;
-      if (cosAngle > -1 + GeoHelper.error) {
+      if (cosAngle > -1 + SelectionHelper.error) {
         axis = selectedTriangleNormal.cross(new Vector3(0, 0, 1));
         angle = Math.sin(axis.length());
       }
@@ -81,7 +81,7 @@ export default class GeoHelper {
       const currentTrianglePosition = new Vector3();
       currentTrianglePosition.fromBufferAttribute(positions, indexes ? indexes.getX(index) : index * 3);
       const currentZ = currentTrianglePosition.applyMatrix4(mat).z;
-      if (Math.abs(currentZ - z) < GeoHelper.error) {
+      if (Math.abs(currentZ - z) < SelectionHelper.error) {
         zFilteredTrianglesIndex.push(index);
       }
     });
@@ -94,12 +94,12 @@ export default class GeoHelper {
     while (tmpList.length > 0) {
       const current = tmpList.pop();
       if (current) {
-        const currentFace = GeoHelper.getFace(positions, indexes, current);
+        const currentFace = SelectionHelper.getFace(positions, indexes, current);
 
         const toRemove: number[] = [];
         zFilteredTrianglesIndex.forEach((index) => {
-          const itFace = GeoHelper.getFace(positions, indexes, index);
-          if (GeoHelper.areTrianglesAdjencent(currentFace, itFace)) {
+          const itFace = SelectionHelper.getFace(positions, indexes, index);
+          if (SelectionHelper.areTrianglesAdjencent(currentFace, itFace)) {
             toRemove.push(index);
             tmpList.push(index);
           }
@@ -154,7 +154,7 @@ export default class GeoHelper {
       for (let j = 0; j < 3; j += 1) {
         if (
           1 - Math.abs(this.getTriangleVert(dirsInTriangle1, i).dot(this.getTriangleVert(dirsInTriangle2, j))) <
-          GeoHelper.error
+          SelectionHelper.error
         ) {
           const l2p1 = this.getTriangleVert(face2, j);
           const l2p2 = this.getTriangleVert(face2, (j + 1) % 3);
@@ -175,9 +175,9 @@ export default class GeoHelper {
             return true;
           }
           if (
-            1 - Math.abs(f1) < GeoHelper.error &&
-            1 - Math.abs(f2) < GeoHelper.error &&
-            Math.abs(f1 + f2) < GeoHelper.error
+            1 - Math.abs(f1) < SelectionHelper.error &&
+            1 - Math.abs(f2) < SelectionHelper.error &&
+            Math.abs(f1 + f2) < SelectionHelper.error
           )
             return true;
         }

@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createStyles, Grid, makeStyles, Theme } from '@material-ui/core';
 import axios from 'axios';
 import BlobCache from 'blobcache';
+import RenderingEngine from '../engine/RenderingEngine';
 import DisplayingTargets from './DisplayingTargets';
 import RenderingView from './RenderingView';
-import { DataRefUrl, GeometryDataType } from '../engine/UrlRefObjectFactory';
+import UrlRefObjectFactory, { GeometryDataType } from '../engine/UrlRefObjectFactory';
 import preDefinedColors from './preDefinedColors';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -30,9 +31,10 @@ export default function MainLayout(): JSX.Element {
   const [stlLoaded, setStlLoaded] = useState(false); // state to indicate all stl loaded.
   const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
-  const [dataRefUrls, setDataRefUrls] = useState<DataRefUrl[]>([]);
 
   const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
+
+  let engine: RenderingEngine | undefined;
 
   const stlPrefix = '/api/stls/';
 
@@ -40,21 +42,26 @@ export default function MainLayout(): JSX.Element {
   const handleSelectedStlChanged = async (item: string) => {
     const index = selectedStls.indexOf(item);
     const newSelectedStls = [...selectedStls];
-    const newDataRefUrls = [...dataRefUrls];
     if (index !== -1) {
+      // remove mesh
       newSelectedStls.splice(index, 1);
-      newDataRefUrls.splice(index, 1);
+      if (engine) {
+        engine.RemoveMesh(stlPrefix + item);
+      }
     } else {
+      // add mesh
       newSelectedStls.push(item);
-      newDataRefUrls.push({
-        url: stlPrefix + item,
-        color: preDefinedColors[stlFiles.indexOf(item)],
-        dataType: GeometryDataType.STLMesh,
-      });
+      if (engine) {
+        const newMesh = await UrlRefObjectFactory.createSolidMesh(
+          stlPrefix + item,
+          GeometryDataType.STLMesh,
+          preDefinedColors[stlFiles.indexOf(item)]
+        );
+        if (newMesh) engine.AddMesh(newMesh);
+      }
     }
 
     setSelectedStls(newSelectedStls);
-    setDataRefUrls(newDataRefUrls);
   };
 
   // init effect when mount.
@@ -89,7 +96,11 @@ export default function MainLayout(): JSX.Element {
           />
         </Grid>
         <Grid item md={10} className={classes.full}>
-          <RenderingView dataRefUrls={dataRefUrls} />
+          <RenderingView
+            engineCallback={(eg) => {
+              engine = eg;
+            }}
+          />
         </Grid>
       </Grid>
     </div>
