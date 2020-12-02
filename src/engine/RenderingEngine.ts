@@ -363,12 +363,6 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     if (this.renderer) this.renderer.setSize(width, height);
   }
 
-  // update the selected faces.
-  //
-  public UpdateSelectedFaces(selectedFaces: IFaceSelectionResult[]): void {}
-
-  public ToggleSelectedFace(faceSelectionResult: IFaceSelectionResult | undefined): void {}
-
   private initEvents() {
     if (!this.renderer) {
       throw Error('Not initliazed.');
