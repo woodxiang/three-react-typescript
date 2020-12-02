@@ -36,6 +36,7 @@ export default class SelectionHelper {
     const normalFilteredTrianglesIndex: number[] = [];
     const selectedTriangleNormal = new Vector3();
     selectedTriangleNormal.fromBufferAttribute(normals, selectedFaceVertexIndexes.x);
+    selectedTriangleNormal.normalize();
 
     const currentTriangleNormal = new Vector3();
     for (let i = 0; i < triangleCount; i += 1) {
@@ -43,7 +44,7 @@ export default class SelectionHelper {
         const currentFaceVertexIndexes = new Vector3(i * 3, i * 3 + 1, i * 3 + 2);
 
         currentTriangleNormal.fromBufferAttribute(normals, currentFaceVertexIndexes.x);
-
+        currentTriangleNormal.normalize();
         const d = currentTriangleNormal.dot(selectedTriangleNormal);
         if (d < 1 + SelectionHelper.error && d > 1 - SelectionHelper.error) {
           normalFilteredTrianglesIndex.push(i);
@@ -67,10 +68,10 @@ export default class SelectionHelper {
       let angle = Math.PI;
       if (cosAngle > -1 + SelectionHelper.error) {
         axis = selectedTriangleNormal.cross(new Vector3(0, 0, 1));
-        angle = Math.sin(axis.length());
+        angle = Math.asin(axis.length());
       }
 
-      mat.makeRotationAxis(axis, angle);
+      mat.makeRotationAxis(axis.normalize(), angle);
 
       z = selectedTrianglePosition.clone().applyMatrix4(mat).z;
     }

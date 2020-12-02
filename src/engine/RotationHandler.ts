@@ -51,15 +51,16 @@ export default class RotationHandler implements IActionHandler {
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
       const callbacker = callback;
+      const newPosition = new Vector2(event.offsetX, event.offsetY);
       if (callbacker.state === STATE.NONE) {
         if (event.buttons === 1) {
-          callbacker.capturePointer(event.pointerId);
+          if (newPosition.x === this.previousPosition.x && newPosition.y === this.previousPosition.y)
+            callbacker.capturePointer(event.pointerId);
           callbacker.state = STATE.ROTATE;
           callbacker.cursorType = CURSORTYPE.HAND;
         }
       }
       if (callbacker.state === STATE.ROTATE) {
-        const newPosition = new Vector2(event.offsetX, event.offsetY);
         this.rotate(newPosition.x - this.previousPosition.x, newPosition.y - this.previousPosition.y, callbacker);
         this.previousPosition = newPosition;
         return true;
