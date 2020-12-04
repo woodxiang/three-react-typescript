@@ -1,7 +1,7 @@
 import { createStyles, makeStyles } from '@material-ui/core';
 import React, { useEffect, useRef } from 'react';
 import { WEBGL } from 'three/examples/jsm/WebGL';
-import RenderingEngine from '../engine/RenderingEngine';
+import RenderingEngine from './RenderingEngine';
 
 const useStyles = makeStyles(() =>
   createStyles({

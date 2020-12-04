@@ -4,8 +4,8 @@ import axios from 'axios';
 import BlobCache from 'blobcache';
 import RenderingEngine from '../engine/RenderingEngine';
 import DisplayingTargets from './DisplayingTargets';
-import RenderingView from './RenderingView';
-import UrlRefObjectFactory, { GeometryDataType } from '../engine/UrlRefObjectFactory';
+import RenderingView from '../engine/RenderingView';
+import UrlRefObjectFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
 
 const useStyles = makeStyles((theme: Theme) =>

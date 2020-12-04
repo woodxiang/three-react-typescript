@@ -11,11 +11,11 @@ export enum GeometryDataType {
   DracoCloud,
 }
 
-export default class UrlRefObjectFactory {
+export default class MeshFactory {
   public static async loadAsync(url: string, dataType: GeometryDataType): Promise<BufferGeometry> {
     switch (dataType) {
       case GeometryDataType.STLMesh:
-        return UrlRefObjectFactory.loadStlAsync(url);
+        return MeshFactory.loadStlAsync(url);
       default:
         throw Error('unexpected type.');
     }
@@ -26,7 +26,7 @@ export default class UrlRefObjectFactory {
     dataType: GeometryDataType,
     color: string
   ): Promise<Mesh | undefined> {
-    const geometry = await UrlRefObjectFactory.loadAsync(url, dataType);
+    const geometry = await MeshFactory.loadAsync(url, dataType);
 
     const materialColor = new Color();
     materialColor.set(color);
