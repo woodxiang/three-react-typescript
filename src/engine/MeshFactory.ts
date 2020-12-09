@@ -1,5 +1,6 @@
 import { FrontSide } from 'three/src/constants';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { Material } from 'three/src/materials/Material';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
@@ -36,6 +37,29 @@ export default class MeshFactory {
       side: FrontSide,
     });
     const mesh = new Mesh(geometry, material);
+    mesh.name = url;
+
+    return mesh;
+  }
+
+  public static createSolidMaterial(color: string): MeshPhongMaterial {
+    const materialColor = new Color();
+    materialColor.set(color);
+
+    return new MeshPhongMaterial({
+      color: materialColor,
+      side: FrontSide,
+    });
+  }
+
+  public static async createMeshWithMultiMaterial(
+    url: string,
+    dataType: GeometryDataType,
+    materials: Material[]
+  ): Promise<Mesh | undefined> {
+    const geometry = await MeshFactory.loadAsync(url, dataType);
+
+    const mesh = new Mesh(geometry, materials);
     mesh.name = url;
 
     return mesh;

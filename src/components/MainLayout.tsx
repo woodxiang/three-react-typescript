@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createStyles, Grid, makeStyles, Theme } from '@material-ui/core';
+import { createStyles, FormControlLabel, Grid, makeStyles, Switch, Theme } from '@material-ui/core';
 import axios from 'axios';
 import BlobCache from 'blobcache';
+import { IFaceSelectionResult, SELECTIONMODE } from 'engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import DisplayingTargets from './DisplayingTargets';
 import RenderingView from '../engine/RenderingView';
@@ -31,6 +32,10 @@ export default function MainLayout(): JSX.Element {
   const [stlLoaded, setStlLoaded] = useState(false); // state to indicate all stl loaded.
   const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
+  const [enablePlaneSelection, setEnablePlaneSelection] = useState<boolean>(false);
+  const [enableMultiSelectioin, setEnableMultiSelection] = useState<boolean>(false);
+
+  const [selectedPlanes, setSelectedPlanes] = useState<{ name: string; indexes: number[] }[]>([]);
 
   const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
 
@@ -64,6 +69,40 @@ export default function MainLayout(): JSX.Element {
     setSelectedStls(newSelectedStls);
   };
 
+  const onPlaneClicked = (res: IFaceSelectionResult | undefined) => {
+    if (!res) {
+      throw Error('no face selected.');
+    }
+    const index = selectedPlanes.findIndex((v) => v.name === res.name && v.indexes[0] === res.faceIndexes[0]);
+    if (enableMultiSelectioin) {
+      if (index > 0) {
+        const newSelectedPlanes = selectedPlanes.filter((v, vindex) => vindex !== index);
+        setSelectedPlanes(newSelectedPlanes);
+      } else {
+        const newSelectedPlanes = selectedPlanes.concat([{ name: res.name, indexes: res.faceIndexes }]);
+        setSelectedPlanes(newSelectedPlanes);
+      }
+    } else if (index < 0) {
+      setSelectedPlanes([{ name: res.name, indexes: res.faceIndexes }]);
+      if (engine) {
+        engine.ClearAllPlanes();
+        engine.AddPlanes(res.name, res.faceIndexes);
+      }
+    }
+  };
+
+  const onToggleEnableSelection = () => {
+    setEnablePlaneSelection(!enablePlaneSelection);
+    if (engine) {
+      engine.selectionMode = !enablePlaneSelection ? SELECTIONMODE.Plane : SELECTIONMODE.Disabled;
+      engine.faceClickedEvent.add(onPlaneClicked);
+    }
+  };
+
+  const onToggleMultiSelection = () => {
+    setEnableMultiSelection((prev) => !prev);
+  };
+
   // init effect when mount.
   useEffect(() => {
     // load all stl files if file is not in cache.
@@ -87,6 +126,16 @@ export default function MainLayout(): JSX.Element {
   return (
     <div className={classes.root}>
       <Grid container spacing={4} className={classes.full}>
+        <Grid item md={12}>
+          <FormControlLabel
+            control={<Switch checked={enablePlaneSelection} onChange={onToggleEnableSelection} />}
+            label="Enable Plane Selection"
+          />
+          <FormControlLabel
+            control={<Switch checked={enableMultiSelectioin} onChange={onToggleMultiSelection} />}
+            label="Enable Multiple Selection"
+          />
+        </Grid>
         <Grid item md={2} className={classes.full}>
           <DisplayingTargets
             stlLoaded={stlLoaded}

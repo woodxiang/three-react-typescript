@@ -9,6 +9,12 @@ enum STATE {
   HITTEST,
 }
 
+enum SELECTIONMODE {
+  Disabled,
+  Plane,
+  Point,
+}
+
 enum CURSORTYPE {
   NONE,
   HAND,
@@ -48,7 +54,7 @@ interface IHitTest {
 }
 
 interface IFaceSelection {
-  selectFace(name: string, index: number): void;
+  clickOnFace(name: string, index: number): void;
 }
 
 interface IFaceSelectionResult {
@@ -61,7 +67,7 @@ interface IObjectRotation {
   setRotationMatrix(mat: Matrix4): void;
 }
 
-export { STATE, CURSORTYPE };
+export { STATE, CURSORTYPE, SELECTIONMODE };
 export type {
   IActionCallback,
   IActionHandler,

@@ -16,12 +16,14 @@ import { Vector2 } from 'three/src/math/Vector2';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
-
+import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
+import { FrontSide } from 'three/src/constants';
 import LiteEvent from './event';
 import {
   IActionCallback,
   STATE,
   CURSORTYPE,
+  SELECTIONMODE,
   IActionHandler,
   IHitTest,
   IHitTestResult,
@@ -65,6 +67,14 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private axesHelper: AxesHelper | undefined;
 
+  private clickHandler: ClickHandler | undefined;
+
+  private inactivePlaneMaterial = new MeshPhongMaterial({ color: '#ff0000', side: FrontSide });
+
+  private activedPlaneMaterial = new MeshPhongMaterial({ color: '#7f0000', side: FrontSide });
+
+  private selectionModeInternal: SELECTIONMODE = SELECTIONMODE.Disabled;
+
   private debugMode = true;
 
   private stats: Stats | undefined;
@@ -82,7 +92,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private capturedPointerId = -1;
 
-  public readonly faceSelectedEvent = new LiteEvent<IFaceSelectionResult>();
+  public readonly faceClickedEvent = new LiteEvent<IFaceSelectionResult>();
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -126,7 +136,8 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     this.targetObject3D.matrixAutoUpdate = false;
     this.scene.add(this.targetObject3D);
 
-    this.actionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
+    this.clickHandler = new ClickHandler();
+    this.actionHandlers.push(this.clickHandler, new RotationHandler(this.camera, this));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -156,6 +167,17 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     }
 
     this.initEvents();
+  }
+
+  get selectionMode(): SELECTIONMODE {
+    return this.selectionModeInternal;
+  }
+
+  set selectionMode(newMode: SELECTIONMODE) {
+    this.selectionModeInternal = newMode;
+    if (this.clickHandler) {
+      this.clickHandler.selectionMode = newMode;
+    }
   }
 
   get cursorType(): CURSORTYPE {
@@ -246,6 +268,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     if (!this.targetObject3D) {
       throw Error('invalid target object group');
     }
+
     if (!groupName) {
       this.targetObject3D.add(newMesh);
     } else {
@@ -363,6 +386,30 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     if (this.renderer) this.renderer.setSize(width, height);
   }
 
+  public AddPlanes(name: string, faceIndexes: number[]): void {
+    const mesh = this.findMesh(name);
+    if (!Array.isArray(mesh.material)) {
+      mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
+    }
+    const geo = mesh.geometry as BufferGeometry;
+    if (!geo) {
+      throw Error('invalid geometry.');
+    }
+    SelectionHelper.AddGroup(geo, faceIndexes, 2);
+  }
+
+  public ClearAllPlanes(): void {
+    if (this.targetObject3D) {
+      SelectionHelper.clearIndexes(this.targetObject3D);
+    }
+  }
+
+  public clickOnFace(name: string, index: number): void {
+    const geometry = this.findGeometry(name);
+    const selectedFaces = SelectionHelper.findConnectedFacesInPlane(geometry, index);
+    this.faceClickedEvent?.trigger({ name, faceIndexes: selectedFaces });
+  }
+
   private initEvents() {
     if (!this.renderer) {
       throw Error('Not initliazed.');
@@ -445,15 +492,12 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     });
   }
 
-  public selectFace(name: string, index: number): void {
-    const geometry = this.findGeometry(name);
-    const selectedFaces = SelectionHelper.selectFace(geometry, index);
-    this.faceSelectedEvent?.trigger({ name, faceIndexes: selectedFaces });
+  private findMesh(name: string): Mesh {
+    return this.targetObject3D?.children.find((item: { name: string }) => item.name === name) as Mesh;
   }
 
   private findGeometry(name: string): BufferGeometry {
-    const mesh = this.targetObject3D?.children.find((item: { name: string }) => item.name === name);
-
+    const mesh = this.findMesh(name);
     return (<Mesh>mesh).geometry as BufferGeometry;
   }
 

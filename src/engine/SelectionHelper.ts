@@ -1,8 +1,11 @@
-import { BufferAttribute } from 'three/src/core/BufferAttribute';
+import { BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute } from 'three/src/core/BufferAttribute';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { Object3D } from 'three/src/core/Object3D';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Triangle } from 'three/src/math/Triangle';
 import { Vector3 } from 'three/src/math/Vector3';
+import { Group } from 'three/src/objects/Group';
+import { Mesh } from 'three/src/objects/Mesh';
 
 export default class SelectionHelper {
   static error = 0.0001;
@@ -12,7 +15,7 @@ export default class SelectionHelper {
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
    */
-  public static selectFace(geo: BufferGeometry, selectedTriangleIndex: number): number[] {
+  public static findConnectedFacesInPlane(geo: BufferGeometry, selectedTriangleIndex: number): number[] {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
       throw Error('no postion.');
@@ -113,7 +116,100 @@ export default class SelectionHelper {
       }
     }
 
+    adjencedTriangles.sort((v1, v2) => v1 - v2);
+
     return adjencedTriangles;
+  }
+
+  /**
+   * make specified triangles display in other materials.
+   * @param geo geo to update
+   * @param indexes triangle indexes to display in specified material index
+   * @param materialIndex specified material index.
+   */
+  public static AddGroup(geo: BufferGeometry, indexes: number[], materialIndex: number): void {
+    if (!geo.index) {
+      SelectionHelper.initIndexFromPositionAttribute(geo);
+
+      const oldIndex32 = <BufferAttribute>(<unknown>geo.index);
+      if (!oldIndex32) {
+        throw Error('unexpected null index.');
+      }
+
+      // move the specified indexes to the end.
+      let srcIndex = 0;
+      let destIndex = 0;
+      let compIndex = 0;
+      while (srcIndex < oldIndex32.count) {
+        if (oldIndex32.array[srcIndex] === indexes[compIndex] * 3) {
+          compIndex += 1;
+        } else {
+          if (destIndex !== srcIndex) {
+            oldIndex32.setXYZ(
+              destIndex,
+              oldIndex32.array[srcIndex],
+              oldIndex32.array[srcIndex + 1],
+              oldIndex32.array[srcIndex + 2]
+            );
+          }
+          destIndex += 3;
+        }
+
+        srcIndex += 3;
+      }
+
+      compIndex = 0;
+      while (destIndex < oldIndex32.count) {
+        oldIndex32.setXYZ(destIndex, indexes[compIndex] * 3, indexes[compIndex] * 3 + 1, indexes[compIndex] * 3 + 2);
+        destIndex += 3;
+        compIndex += 1;
+      }
+
+      // also move the group indexes.
+      if (geo.groups.length === 0) {
+        // if no groups yet.
+        geo.addGroup(0, oldIndex32.count - indexes.length * 3);
+      } else {
+        const headGroup = geo.groups[0];
+        headGroup.count -= indexes.length * 3;
+
+        for (let i = 1; i < geo.groups.length; i += 1) {
+          const currentGroup = geo.groups[i];
+          currentGroup.start -= indexes.length * 3;
+        }
+      }
+      geo.addGroup(oldIndex32.count - indexes.length * 3, indexes.length * 3, materialIndex);
+    }
+  }
+
+  /**
+   * initialize a index array from position.
+   * @param geo geo to init a index.
+   */
+  public static initIndexFromPositionAttribute(geo: BufferGeometry): void {
+    const positions = geo.getAttribute('position');
+
+    if (!positions) {
+      throw Error('no position attribute.');
+    }
+    const pointCount = positions.count;
+    const tmp = new Array(pointCount);
+    for (let i = 0; i < pointCount; i += 1) {
+      tmp[i] = i;
+    }
+    geo.setIndex(tmp);
+  }
+
+  public static clearIndexes(parent: Object3D): void {
+    parent.children.forEach((child) => {
+      if (child instanceof Group) {
+        this.clearIndexes(<Group>child);
+      } else {
+        const mesh = <Mesh>child;
+        const geo = <BufferGeometry>mesh.geometry;
+        geo.setIndex(null);
+      }
+    });
   }
 
   private static getFace(positions: BufferAttribute, indexes: BufferAttribute | null, current: number): Triangle {
@@ -124,7 +220,7 @@ export default class SelectionHelper {
     return currentFace;
   }
 
-  static getTriangleEdgeDirs(face: Triangle): Triangle {
+  private static getTriangleEdgeDirs(face: Triangle): Triangle {
     const ret = new Triangle();
     ret.a.subVectors(face.b, face.a).normalize();
     ret.b.subVectors(face.c, face.b).normalize();
@@ -132,7 +228,7 @@ export default class SelectionHelper {
     return ret;
   }
 
-  static getTriangleVert(face: Triangle, index: number): Vector3 {
+  private static getTriangleVert(face: Triangle, index: number): Vector3 {
     switch (index) {
       case 0:
         return face.a;
@@ -145,7 +241,7 @@ export default class SelectionHelper {
     }
   }
 
-  static areTrianglesAdjencent(face1: Triangle, face2: Triangle): boolean {
+  private static areTrianglesAdjencent(face1: Triangle, face2: Triangle): boolean {
     const dirsInTriangle1 = this.getTriangleEdgeDirs(face1);
     const dirsInTriangle2 = this.getTriangleEdgeDirs(face2);
     for (let i = 0; i < 3; i += 1) {
