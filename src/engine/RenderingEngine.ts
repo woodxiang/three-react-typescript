@@ -169,6 +169,16 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     this.initEvents();
   }
 
+  public Dispose(): void {
+    if (this.debugMode) {
+      this.gui?.destroy();
+    }
+
+    this.targetObject3D?.clear();
+    this.scene?.clear();
+    this.camera?.clear();
+  }
+
   get selectionMode(): SELECTIONMODE {
     return this.selectionModeInternal;
   }
@@ -348,10 +358,10 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
     if (intersection.length > 0) {
       const ret = intersection[0];
-      if (!ret.faceIndex) {
+      if (!ret.face) {
         throw Error('invalid face index.');
       }
-      return { name: ret.object.name, index: ret.faceIndex };
+      return { name: ret.object.name, index: ret.face.a / 3 };
     }
     return null;
   }

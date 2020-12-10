@@ -41,15 +41,21 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   const { engineCallback } = props;
 
   useEffect(() => {
+    const engine = renderEnv.current;
     if (renderDiv.current != null) {
-      init(renderDiv.current, renderEnv.current);
+      init(renderDiv.current, engine);
       renderDiv.current?.addEventListener('resize', () => {
-        onResize(renderDiv.current, renderEnv.current);
+        onResize(renderDiv.current, engine);
       });
       window.addEventListener('resize', () => {
-        onResize(renderDiv.current, renderEnv.current);
+        onResize(renderDiv.current, engine);
       });
     }
+
+    return () => {
+      // dispose engine when unmount.
+      engine.Dispose();
+    };
   }, []);
 
   useEffect(() => {
