@@ -1,4 +1,4 @@
-import { BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute } from 'three/src/core/BufferAttribute';
+import { BufferAttribute } from 'three/src/core/BufferAttribute';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Object3D } from 'three/src/core/Object3D';
 import { Matrix4 } from 'three/src/math/Matrix4';
@@ -7,6 +7,9 @@ import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 
+/**
+ * This helper class is use to help calculate connected flats
+ */
 export default class SelectionHelper {
   static error = 0.0001;
 
@@ -24,15 +27,10 @@ export default class SelectionHelper {
     if (!normals) {
       throw Error('no normals');
     }
-    const indexes = geo.getIndex();
     const selectedFaceVertexIndexes = new Vector3();
-    if (!indexes) {
-      selectedFaceVertexIndexes.x = selectedTriangleIndex * 3;
-      selectedFaceVertexIndexes.y = selectedTriangleIndex * 3 + 1;
-      selectedFaceVertexIndexes.z = selectedTriangleIndex * 3 + 2;
-    } else {
-      selectedFaceVertexIndexes.fromBufferAttribute(indexes, selectedTriangleIndex);
-    }
+    selectedFaceVertexIndexes.x = selectedTriangleIndex * 3;
+    selectedFaceVertexIndexes.y = selectedTriangleIndex * 3 + 1;
+    selectedFaceVertexIndexes.z = selectedTriangleIndex * 3 + 2;
 
     // filter all the triangles with same normal exclude current selected one
     const triangleCount = positions.count / 3;
@@ -83,7 +81,7 @@ export default class SelectionHelper {
 
     normalFilteredTrianglesIndex.forEach((index) => {
       const currentTrianglePosition = new Vector3();
-      currentTrianglePosition.fromBufferAttribute(positions, indexes ? indexes.getX(index) : index * 3);
+      currentTrianglePosition.fromBufferAttribute(positions, index * 3);
       const currentZ = currentTrianglePosition.applyMatrix4(mat).z;
       if (Math.abs(currentZ - z) < SelectionHelper.error) {
         zFilteredTrianglesIndex.push(index);
@@ -98,11 +96,11 @@ export default class SelectionHelper {
     while (tmpList.length > 0) {
       const current = tmpList.pop();
       if (current) {
-        const currentFace = SelectionHelper.getFace(positions, indexes, current);
+        const currentFace = SelectionHelper.getFace(positions, current);
 
         const toRemove: number[] = [];
         zFilteredTrianglesIndex.forEach((index) => {
-          const itFace = SelectionHelper.getFace(positions, indexes, index);
+          const itFace = SelectionHelper.getFace(positions, index);
           if (SelectionHelper.areTrianglesAdjencent(currentFace, itFace)) {
             toRemove.push(index);
             tmpList.push(index);
@@ -130,55 +128,206 @@ export default class SelectionHelper {
   public static AddGroup(geo: BufferGeometry, indexes: number[], materialIndex: number): void {
     if (!geo.index) {
       SelectionHelper.initIndexFromPositionAttribute(geo);
+    }
+    SelectionHelper.groupIndexes(geo, indexes, materialIndex);
+  }
 
-      const oldIndex32 = <BufferAttribute>(<unknown>geo.index);
-      if (!oldIndex32) {
-        throw Error('unexpected null index.');
-      }
+  /**
+   * Remove group include specified triangle.
+   * @param geo geometry to update
+   * @param index the first triangle index.
+   */
+  public static RemoveGroup(geo: BufferGeometry, index: number): void {
+    if (!geo.index) {
+      throw Error('no indexes');
+    }
 
-      // move the specified indexes to the end.
-      let srcIndex = 0;
-      let destIndex = 0;
-      let compIndex = 0;
-      while (srcIndex < oldIndex32.count) {
-        if (oldIndex32.array[srcIndex] === indexes[compIndex] * 3) {
-          compIndex += 1;
+    if (geo.groups.length < 2) {
+      throw Error('no extra group to remove');
+    }
+
+    // find the group index.
+    const currentIndex = <BufferAttribute>geo.index;
+
+    let idxGroup = 0;
+    for (; idxGroup < geo.groups.length; idxGroup += 1) {
+      if (currentIndex.array[geo.groups[idxGroup].start] === index * 3) break;
+    }
+
+    if (idxGroup === 0) {
+      throw Error('not in another group.');
+    }
+    if (idxGroup === geo.groups.length) {
+      throw Error('invalid index');
+    }
+
+    SelectionHelper.mergeGroup(geo, 0, idxGroup);
+  }
+
+  /**
+   * merge triangles in source group to target group.
+   * @param geo geometry to operate.
+   * @param targetGroupIndex target group to merge.
+   * @param sourceGroupIndex source group to merge
+   */
+  private static mergeGroup(geo: BufferGeometry, targetGroupIndex: number, sourceGroupIndex: number): void {
+    if (!geo.index) {
+      throw Error('no index channel.');
+    }
+    if (geo.groups.length <= targetGroupIndex || geo.groups.length <= sourceGroupIndex) {
+      throw Error('invalid group index.');
+    }
+
+    const indexBufferAttribute = <BufferAttribute>geo.index;
+
+    const srcGroup = geo.groups[sourceGroupIndex];
+
+    // save the source group in temp array.
+    const tmpArray = new Array<number>(srcGroup.count);
+    SelectionHelper.copyArray(indexBufferAttribute.array, srcGroup.start, tmpArray, 0, srcGroup.count);
+
+    const targetGroup = geo.groups[targetGroupIndex];
+    if (targetGroup.start < srcGroup.start) {
+      // target group is ahead source group. move
+      SelectionHelper.moveInBufferAttribute(
+        indexBufferAttribute,
+        targetGroup.start + targetGroup.count,
+        targetGroup.start + targetGroup.count + srcGroup.count,
+        srcGroup.start - targetGroup.start - targetGroup.count
+      );
+      SelectionHelper.mergeIntoBufferAttribute(
+        indexBufferAttribute,
+        targetGroup.start,
+        targetGroup.count,
+        targetGroup.start,
+        tmpArray,
+        0,
+        srcGroup.count
+      );
+    } else {
+      SelectionHelper.moveInBufferAttribute(
+        indexBufferAttribute,
+        srcGroup.start + srcGroup.count,
+        srcGroup.start,
+        srcGroup.start + srcGroup.count - targetGroup.start
+      );
+      SelectionHelper.mergeIntoBufferAttribute(
+        indexBufferAttribute,
+        targetGroup.start,
+        targetGroup.count,
+        targetGroup.start - srcGroup.count,
+        tmpArray,
+        0,
+        srcGroup.count
+      );
+    }
+  }
+
+  /**
+   *
+   * @param targetBuf target bufferAttribute to operate on.
+   * @param originStart postion of source1(on target buffer) to merge.
+   * @param originLength length of source1
+   * @param targetStart postion of target (on target buffer)
+   * @param srcArray source 2 array
+   * @param srcStart position on source 2
+   * @param count count of source 2.
+   */
+  private static mergeIntoBufferAttribute(
+    targetBuf: BufferAttribute,
+    originStart: number,
+    originLength: number,
+    targetStart: number,
+    srcArray: Array<number>,
+    srcStart: number,
+    count: number
+  ) {
+    if (originStart > targetStart) {
+      // merge from begin to end
+      let targetCursor = targetStart;
+      let originCursor = originStart;
+      let srcCursor = srcStart;
+      while (targetCursor < targetStart + originLength + count) {
+        if (srcArray[srcCursor] < targetBuf.array[originCursor]) {
+          targetBuf.setX(targetCursor, srcArray[srcCursor]);
+          srcCursor += 1;
         } else {
-          if (destIndex !== srcIndex) {
-            oldIndex32.setXYZ(
-              destIndex,
-              oldIndex32.array[srcIndex],
-              oldIndex32.array[srcIndex + 1],
-              oldIndex32.array[srcIndex + 2]
-            );
-          }
-          destIndex += 3;
+          targetBuf.setX(targetCursor, targetBuf.array[originCursor]);
+          originCursor += 1;
         }
 
-        srcIndex += 3;
+        targetCursor += 1;
       }
-
-      compIndex = 0;
-      while (destIndex < oldIndex32.count) {
-        oldIndex32.setXYZ(destIndex, indexes[compIndex] * 3, indexes[compIndex] * 3 + 1, indexes[compIndex] * 3 + 2);
-        destIndex += 3;
-        compIndex += 1;
-      }
-
-      // also move the group indexes.
-      if (geo.groups.length === 0) {
-        // if no groups yet.
-        geo.addGroup(0, oldIndex32.count - indexes.length * 3);
-      } else {
-        const headGroup = geo.groups[0];
-        headGroup.count -= indexes.length * 3;
-
-        for (let i = 1; i < geo.groups.length; i += 1) {
-          const currentGroup = geo.groups[i];
-          currentGroup.start -= indexes.length * 3;
+    } else {
+      // merge from end to begin
+      let targetCursor = targetStart + originLength + count - 1;
+      let originCursor = originStart + originLength - 1;
+      let srcCursor = srcStart + count - 1;
+      while (targetCursor >= targetStart) {
+        if (srcArray[srcCursor] > targetBuf.array[originCursor]) {
+          targetBuf.setX(targetCursor, srcArray[srcCursor]);
+          srcCursor -= 1;
+        } else {
+          targetBuf.setX(targetCursor, targetBuf.array[originCursor]);
+          originCursor -= 1;
         }
+
+        targetCursor -= 1;
       }
-      geo.addGroup(oldIndex32.count - indexes.length * 3, indexes.length * 3, materialIndex);
+    }
+  }
+
+  /**
+   * move items in bufferAttribute.
+   * @param buf buf to move
+   * @param srcStart position on source to move.
+   * @param targetStart target postion to move
+   * @param count number of item to move.
+   */
+  private static moveInBufferAttribute(
+    buf: BufferAttribute,
+    srcStart: number,
+    targetStart: number,
+    count: number
+  ): void {
+    const t = buf;
+    if (srcStart > targetStart && srcStart <= targetStart + count) {
+      // reverse copy to avoid overlap.
+      for (let i = count - 1; i >= 0; i -= 1) {
+        t.setX(targetStart + i, t.array[srcStart + i]);
+      }
+    } else {
+      for (let i = 0; i < count; i += 1) {
+        t.setX(targetStart + i, t.array[srcStart + i]);
+      }
+    }
+  }
+
+  /**
+   * copy from ArrayLike to Array.
+   * @param src source array
+   * @param srcStart source start
+   * @param target target array
+   * @param targetStart target start
+   * @param count count to copy
+   */
+  private static copyArray(
+    src: ArrayLike<number>,
+    srcStart: number,
+    target: Array<number>,
+    targetStart: number,
+    count: number
+  ): void {
+    const t = target;
+    if (src === target && srcStart > targetStart && srcStart <= targetStart + count) {
+      // reverse copy to avoid overlap.
+      for (let i = count - 1; i >= 0; i -= 1) {
+        t[targetStart + i] = src[srcStart + i];
+      }
+    } else {
+      for (let i = 0; i < count; i += 1) {
+        t[targetStart + i] = src[srcStart + i];
+      }
     }
   }
 
@@ -212,11 +361,11 @@ export default class SelectionHelper {
     });
   }
 
-  private static getFace(positions: BufferAttribute, indexes: BufferAttribute | null, current: number): Triangle {
+  private static getFace(positions: BufferAttribute, current: number): Triangle {
     const currentFace = new Triangle();
-    currentFace.a.fromBufferAttribute(positions, indexes ? indexes.getX(current) : current * 3);
-    currentFace.b.fromBufferAttribute(positions, indexes ? indexes.getY(current) : current * 3 + 1);
-    currentFace.c.fromBufferAttribute(positions, indexes ? indexes.getZ(current) : current * 3 + 2);
+    currentFace.a.fromBufferAttribute(positions, current * 3);
+    currentFace.b.fromBufferAttribute(positions, current * 3 + 1);
+    currentFace.c.fromBufferAttribute(positions, current * 3 + 2);
     return currentFace;
   }
 
@@ -226,6 +375,61 @@ export default class SelectionHelper {
     ret.b.subVectors(face.c, face.b).normalize();
     ret.c.subVectors(face.a, face.c).normalize();
     return ret;
+  }
+
+  /**
+   * group specified triangles and display in different material.
+   * @param geo the buffer geometry to update
+   * @param indexes specify the indexes of the triangles to group
+   * @param materialIndex specify the material index to display the triangles.
+   */
+  private static groupIndexes(geo: BufferGeometry, indexes: number[], materialIndex: number) {
+    const oldIndex32 = <BufferAttribute>(<unknown>geo.index);
+    if (!oldIndex32) {
+      throw Error('unexpected null index.');
+    }
+    let srcIndex = 0;
+    let destIndex = 0;
+    let compIndex = 0;
+    while (srcIndex < oldIndex32.count) {
+      if (oldIndex32.array[srcIndex] === indexes[compIndex] * 3) {
+        compIndex += 1;
+      } else {
+        if (destIndex !== srcIndex) {
+          oldIndex32.setXYZ(
+            destIndex,
+            oldIndex32.array[srcIndex],
+            oldIndex32.array[srcIndex + 1],
+            oldIndex32.array[srcIndex + 2]
+          );
+        }
+        destIndex += 3;
+      }
+
+      srcIndex += 3;
+    }
+
+    compIndex = 0;
+    while (destIndex < oldIndex32.count) {
+      oldIndex32.setXYZ(destIndex, indexes[compIndex] * 3, indexes[compIndex] * 3 + 1, indexes[compIndex] * 3 + 2);
+      destIndex += 3;
+      compIndex += 1;
+    }
+
+    // also move the group indexes.
+    if (geo.groups.length === 0) {
+      // if no groups yet.
+      geo.addGroup(0, oldIndex32.count - indexes.length * 3);
+    } else {
+      const headGroup = geo.groups[0];
+      headGroup.count -= indexes.length * 3;
+
+      for (let i = 1; i < geo.groups.length; i += 1) {
+        const currentGroup = geo.groups[i];
+        currentGroup.start -= indexes.length * 3;
+      }
+    }
+    geo.addGroup(oldIndex32.count - indexes.length * 3, indexes.length * 3, materialIndex);
   }
 
   private static getTriangleVert(face: Triangle, index: number): Vector3 {
