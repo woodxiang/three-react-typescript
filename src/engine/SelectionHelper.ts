@@ -357,6 +357,7 @@ export default class SelectionHelper {
         const mesh = <Mesh>child;
         const geo = <BufferGeometry>mesh.geometry;
         geo.setIndex(null);
+        geo.clearGroups();
       }
     });
   }

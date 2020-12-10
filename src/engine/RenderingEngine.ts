@@ -116,6 +116,9 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
    * @param height height of the rendering window
    */
   public init(div: HTMLDivElement, width: number, height: number): void {
+    if (this.parentDiv) {
+      throw Error('already initialzied.');
+    }
     this.parentDiv = div;
     this.scene = new Scene();
     this.camera = new PerspectiveCamera(this.internalControl.fov, width / height, 0.1, 1000);

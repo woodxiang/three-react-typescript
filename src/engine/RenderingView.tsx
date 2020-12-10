@@ -30,7 +30,10 @@ function onResize(renderDiv: HTMLDivElement | null, renderEnv: RenderingEngine) 
 }
 
 interface IRenderingViewProps {
-  engineCallback: (engine: RenderingEngine) => void;
+  /**
+   * each time the callback function need to compare with previous value.
+   */
+  engineCallback: (engine: RenderingEngine | undefined) => void;
 }
 
 export default function RenderingView(props: IRenderingViewProps): JSX.Element {
@@ -51,11 +54,13 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
         onResize(renderDiv.current, engine);
       });
     }
-
     return () => {
       // dispose engine when unmount.
       engine.Dispose();
+      if (engineCallback) engineCallback(undefined);
     };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
