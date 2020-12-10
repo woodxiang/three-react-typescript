@@ -95,7 +95,7 @@ export default class SelectionHelper {
 
     while (tmpList.length > 0) {
       const current = tmpList.pop();
-      if (current) {
+      if (current !== undefined) {
         const currentFace = SelectionHelper.getFace(positions, current);
 
         const toRemove: number[] = [];
