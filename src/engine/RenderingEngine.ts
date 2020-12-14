@@ -429,8 +429,8 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   public clickOnFace(name: string, index: number): void {
     const geometry = this.findGeometry(name);
-    const selectedFaces = SelectionHelper.findConnectedFacesInPlane(geometry, index);
-    this.faceClickedEvent?.trigger({ name, faceIndexes: selectedFaces });
+    const { flats, normal } = SelectionHelper.findConnectedFacesInPlane(geometry, index);
+    this.faceClickedEvent?.trigger({ name, faceIndexes: flats, normal: [normal.x, normal.y, normal.z] });
   }
 
   private initEvents() {

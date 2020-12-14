@@ -18,7 +18,10 @@ export default class SelectionHelper {
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
    */
-  public static findConnectedFacesInPlane(geo: BufferGeometry, selectedTriangleIndex: number): number[] {
+  public static findConnectedFacesInPlane(
+    geo: BufferGeometry,
+    selectedTriangleIndex: number
+  ): { flats: number[]; normal: Vector3 } {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
       throw Error('no postion.');
@@ -116,7 +119,7 @@ export default class SelectionHelper {
 
     adjencedTriangles.sort((v1, v2) => v1 - v2);
 
-    return adjencedTriangles;
+    return { flats: adjencedTriangles, normal: selectedTriangleNormal };
   }
 
   /**

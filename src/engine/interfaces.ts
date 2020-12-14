@@ -60,6 +60,7 @@ interface IFaceSelection {
 interface IFaceSelectionResult {
   name: string;
   faceIndexes: number[];
+  normal: number[];
 }
 
 interface IObjectRotation {

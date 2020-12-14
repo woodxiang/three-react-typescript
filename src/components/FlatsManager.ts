@@ -4,7 +4,7 @@ import RenderingEngine from '../engine/RenderingEngine';
 export default class FlatManager {
   private isMultipleSelectionInternal = false;
 
-  private selectedPlanes: { name: string; indexes: number[] }[] = [];
+  private selectedPlanes: { name: string; indexes: number[]; normal: number[] }[] = [];
 
   private engine: RenderingEngine | undefined;
 
@@ -20,11 +20,13 @@ export default class FlatManager {
         this.selectedPlanes = newSelectedPlanes;
         this.engine?.RemoveFlats(res.name, res.faceIndexes[0]);
       } else {
-        this.selectedPlanes = this.selectedPlanes.concat([{ name: res.name, indexes: res.faceIndexes }]);
+        this.selectedPlanes = this.selectedPlanes.concat([
+          { name: res.name, indexes: res.faceIndexes, normal: res.normal },
+        ]);
         this.engine?.AddFlats(res.name, res.faceIndexes);
       }
     } else if (index < 0) {
-      this.selectedPlanes = [{ name: res.name, indexes: res.faceIndexes }];
+      this.selectedPlanes = [{ name: res.name, indexes: res.faceIndexes, normal: res.normal }];
       if (this.engine) {
         this.engine.ClearAllPlanes();
         this.engine.AddFlats(res.name, res.faceIndexes);
