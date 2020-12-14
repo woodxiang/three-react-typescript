@@ -534,10 +534,6 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
     this.scene.add(ambientLight);
     this.scene.add(light);
-
-    const axesHelper = new AxesHelper(1);
-    this.scene.add(axesHelper);
-    this.axesHelper = axesHelper;
   }
 
   private updateScales(): void {
