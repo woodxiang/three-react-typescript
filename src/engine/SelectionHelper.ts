@@ -389,11 +389,12 @@ export default class SelectionHelper {
     if (!oldIndex32) {
       throw Error('unexpected null index.');
     }
+
     let srcIndex = 0;
     let destIndex = 0;
     let compIndex = 0;
     while (srcIndex < oldIndex32.count) {
-      if (oldIndex32.array[srcIndex] === indexes[compIndex] * 3) {
+      if (Math.floor(oldIndex32.array[srcIndex] / 3) === indexes[compIndex]) {
         compIndex += 1;
       } else {
         if (destIndex !== srcIndex) {
@@ -428,6 +429,7 @@ export default class SelectionHelper {
       for (let i = 1; i < geo.groups.length; i += 1) {
         const currentGroup = geo.groups[i];
         currentGroup.start -= indexes.length * 3;
+        currentGroup.materialIndex = 1;
       }
     }
     geo.addGroup(oldIndex32.count - indexes.length * 3, indexes.length * 3, materialIndex);

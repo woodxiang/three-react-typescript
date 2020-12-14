@@ -69,9 +69,9 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private clickHandler: ClickHandler | undefined;
 
-  private inactivePlaneMaterial = new MeshPhongMaterial({ color: '#ff0000', side: FrontSide });
+  private inactivePlaneMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
-  private activedPlaneMaterial = new MeshPhongMaterial({ color: '#7f0000', side: FrontSide });
+  private activedPlaneMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
 
   private selectionModeInternal: SELECTIONMODE = SELECTIONMODE.Disabled;
 
@@ -399,7 +399,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     if (this.renderer) this.renderer.setSize(width, height);
   }
 
-  public AddPlanes(name: string, faceIndexes: number[]): void {
+  public AddFlats(name: string, faceIndexes: number[]): void {
     const mesh = this.findMesh(name);
     if (!Array.isArray(mesh.material)) {
       mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
@@ -409,6 +409,16 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
       throw Error('invalid geometry.');
     }
     SelectionHelper.AddGroup(geo, faceIndexes, 2);
+  }
+
+  public RemoveFlats(name: string, faceIndex: number): void {
+    const mesh = this.findMesh(name);
+    const geo = mesh.geometry as BufferGeometry;
+    if (!geo) {
+      throw Error('invalid geometry.');
+    }
+
+    SelectionHelper.RemoveGroup(geo, faceIndex);
   }
 
   public ClearAllPlanes(): void {

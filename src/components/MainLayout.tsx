@@ -8,6 +8,7 @@ import DisplayingTargets from './DisplayingTargets';
 import RenderingView from '../engine/RenderingView';
 import UrlRefObjectFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
+import FlatManager from './FlatsManager';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -33,13 +34,13 @@ export default function MainLayout(): JSX.Element {
   const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
-  const [enablePlaneSelection, setEnablePlaneSelection] = useState<boolean>(false);
-  const [enableMultiSelectioin, setEnableMultiSelection] = useState<boolean>(false);
+  const [enablePlaneSelection, setEnablePlaneSelection] = useState<boolean>(true);
+  const [enableMultiSelection, setEnableMultiSelection] = useState<boolean>(true);
 
   const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
-  const selectedPlanes = useRef<{ name: string; indexes: number[] }[]>([]);
+  const flatsManagerRef = useRef<FlatManager>(new FlatManager());
 
   const stlPrefix = '/api/stls/';
 
@@ -82,34 +83,19 @@ export default function MainLayout(): JSX.Element {
     if (!res) {
       throw Error('no face selected.');
     }
-    const engine = engineRef.current;
-    const index = selectedPlanes.current.findIndex((v) => v.name === res.name && v.indexes[0] === res.faceIndexes[0]);
-    if (enableMultiSelectioin) {
-      if (index >= 0) {
-        const newSelectedPlanes = selectedPlanes.current.filter((v, vindex) => vindex !== index);
-        selectedPlanes.current = newSelectedPlanes;
-      } else {
-        selectedPlanes.current.concat([{ name: res.name, indexes: res.faceIndexes }]);
-      }
-    } else if (index < 0) {
-      selectedPlanes.current = [{ name: res.name, indexes: res.faceIndexes }];
-      if (engine) {
-        engine.ClearAllPlanes();
-        engine.AddPlanes(res.name, res.faceIndexes);
-      }
-    }
+
+    flatsManagerRef.current.ClickOnFlat(res);
   };
 
   const onToggleDisplay3dView = () => {
     setDisplay3dView(!display3dView);
   };
 
-  const onToggleEnableSelection = () => {
+  const applyEnableSelection = (newValue: boolean) => {
     const engine = engineRef.current;
-    setEnablePlaneSelection(!enablePlaneSelection);
     if (engine) {
-      engine.selectionMode = !enablePlaneSelection ? SELECTIONMODE.Plane : SELECTIONMODE.Disabled;
-      if (!enablePlaneSelection) {
+      engine.selectionMode = newValue ? SELECTIONMODE.Plane : SELECTIONMODE.Disabled;
+      if (newValue) {
         engine.faceClickedEvent.add(onPlaneClicked);
       } else {
         engine.faceClickedEvent.remove(onPlaneClicked);
@@ -117,8 +103,16 @@ export default function MainLayout(): JSX.Element {
     }
   };
 
+  const onToggleEnableSelection = () => {
+    const newValue = !enablePlaneSelection;
+    setEnablePlaneSelection(newValue);
+    applyEnableSelection(newValue);
+  };
+
   const onToggleMultiSelection = () => {
-    setEnableMultiSelection(!enableMultiSelectioin);
+    const newValue = !enableMultiSelection;
+    setEnableMultiSelection(newValue);
+    flatsManagerRef.current.isMultipleSelection = newValue;
   };
 
   // init effect when mount.
@@ -149,6 +143,9 @@ export default function MainLayout(): JSX.Element {
       }
 
       engineRef.current = eg;
+
+      flatsManagerRef.current.Bind(eg);
+
       if (engineRef.current) {
         engineRef.current = eg;
         // initialize after set engine.
@@ -156,6 +153,9 @@ export default function MainLayout(): JSX.Element {
           loadStl(stl);
         });
 
+        // update selection setting
+        applyEnableSelection(enablePlaneSelection);
+        flatsManagerRef.current.isMultipleSelection = enableMultiSelection;
         // TODO: update the selected planes.
       }
     }
@@ -174,7 +174,7 @@ export default function MainLayout(): JSX.Element {
             label="Enable Plane Selection"
           />
           <FormControlLabel
-            control={<Switch checked={enableMultiSelectioin} onChange={onToggleMultiSelection} />}
+            control={<Switch checked={enableMultiSelection} onChange={onToggleMultiSelection} />}
             label="Enable Multiple Selection"
           />
         </Grid>
