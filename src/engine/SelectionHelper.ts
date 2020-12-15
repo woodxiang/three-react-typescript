@@ -13,14 +13,32 @@ import { Mesh } from 'three/src/objects/Mesh';
  * with cache it only compare the object reference.
  */
 export default class SelectionHelper {
-  static error = 0.0001;
+  private errorRateInternal = 0.001;
+
+  private error = 0.001;
+
+  private maxSize = 1;
+
+  public get errorRate(): number {
+    return this.errorRateInternal;
+  }
+
+  public set errorRate(newRate: number) {
+    this.errorRateInternal = newRate;
+    this.error = this.errorRateInternal * this.maxSize;
+  }
+
+  public setMaxSize(newMaxSize: number): void {
+    this.maxSize = newMaxSize;
+    this.error = this.errorRateInternal * this.maxSize;
+  }
 
   /**
    * Select a connected plane from a geometry.
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
    */
-  public static findConnectedFacesInPlane(
+  public findConnectedFacesInPlane(
     geo: BufferGeometry,
     selectedTriangleIndex: number
   ): { flats: number[]; normal: Vector3 } {
@@ -52,7 +70,7 @@ export default class SelectionHelper {
         currentTriangleNormal.fromBufferAttribute(normals, currentFaceVertexIndexes.x);
         currentTriangleNormal.normalize();
         const d = currentTriangleNormal.dot(selectedTriangleNormal);
-        if (d < 1 + SelectionHelper.error && d > 1 - SelectionHelper.error) {
+        if (d < 1 + this.errorRateInternal && d > 1 - this.errorRateInternal) {
           normalFilteredTrianglesIndex.push(i);
         }
       }
@@ -69,10 +87,10 @@ export default class SelectionHelper {
 
     const cosAngle = selectedTriangleNormal.dot(new Vector3(0, 0, 1));
     const mat = new Matrix4();
-    if (cosAngle < 1 - SelectionHelper.error) {
+    if (cosAngle < 1 - this.errorRateInternal) {
       let axis = new Vector3(0, 1, 0);
       let angle = Math.PI;
-      if (cosAngle > -1 + SelectionHelper.error) {
+      if (cosAngle > -1 + this.errorRateInternal) {
         axis = selectedTriangleNormal.cross(new Vector3(0, 0, 1));
         angle = Math.asin(axis.length());
       }
@@ -88,7 +106,7 @@ export default class SelectionHelper {
       const currentTrianglePosition = new Vector3();
       currentTrianglePosition.fromBufferAttribute(positions, index * 3);
       const currentZ = currentTrianglePosition.applyMatrix4(mat).z;
-      if (Math.abs(currentZ - z) < SelectionHelper.error) {
+      if (Math.abs(currentZ - z) < this.error) {
         zFilteredTrianglesIndex.push(index);
       }
     });
@@ -106,7 +124,7 @@ export default class SelectionHelper {
         const toRemove: number[] = [];
         zFilteredTrianglesIndex.forEach((index) => {
           const itFace = SelectionHelper.getFace(positions, index);
-          if (SelectionHelper.areTrianglesAdjencent(currentFace, itFace)) {
+          if (this.areTrianglesAdjencent(currentFace, itFace)) {
             toRemove.push(index);
             tmpList.push(index);
           }
@@ -455,20 +473,25 @@ export default class SelectionHelper {
     }
   }
 
-  private static areTrianglesAdjencent(face1: Triangle, face2: Triangle): boolean {
-    const dirsInTriangle1 = this.getTriangleEdgeDirs(face1);
-    const dirsInTriangle2 = this.getTriangleEdgeDirs(face2);
+  private areTrianglesAdjencent(face1: Triangle, face2: Triangle): boolean {
+    const dirsInTriangle1 = SelectionHelper.getTriangleEdgeDirs(face1);
+    const dirsInTriangle2 = SelectionHelper.getTriangleEdgeDirs(face2);
     for (let i = 0; i < 3; i += 1) {
-      const l1p1 = this.getTriangleVert(face1, i);
-      const l1p2 = this.getTriangleVert(face1, (i + 1) % 3);
+      const l1p1 = SelectionHelper.getTriangleVert(face1, i);
+      const l1p2 = SelectionHelper.getTriangleVert(face1, (i + 1) % 3);
 
       for (let j = 0; j < 3; j += 1) {
         if (
-          1 - Math.abs(this.getTriangleVert(dirsInTriangle1, i).dot(this.getTriangleVert(dirsInTriangle2, j))) <
-          SelectionHelper.error
+          1 -
+            Math.abs(
+              SelectionHelper.getTriangleVert(dirsInTriangle1, i).dot(
+                SelectionHelper.getTriangleVert(dirsInTriangle2, j)
+              )
+            ) <
+          this.errorRateInternal
         ) {
-          const l2p1 = this.getTriangleVert(face2, j);
-          const l2p2 = this.getTriangleVert(face2, (j + 1) % 3);
+          const l2p1 = SelectionHelper.getTriangleVert(face2, j);
+          const l2p2 = SelectionHelper.getTriangleVert(face2, (j + 1) % 3);
           const crosses: Vector3[] = [new Vector3(), new Vector3(), new Vector3(), new Vector3()];
           crosses[0].subVectors(l2p1, l1p1).normalize();
           crosses[1].subVectors(l2p2, l1p1).normalize();
@@ -486,9 +509,9 @@ export default class SelectionHelper {
             return true;
           }
           if (
-            1 - Math.abs(f1) < SelectionHelper.error &&
-            1 - Math.abs(f2) < SelectionHelper.error &&
-            Math.abs(f1 + f2) < SelectionHelper.error
+            1 - Math.abs(f1) < this.errorRateInternal &&
+            1 - Math.abs(f2) < this.errorRateInternal &&
+            Math.abs(f1 + f2) < this.errorRateInternal
           )
             return true;
         }

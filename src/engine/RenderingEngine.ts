@@ -69,6 +69,8 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private clickHandler: ClickHandler | undefined;
 
+  private selectionHelper = new SelectionHelper();
+
   private inactivePlaneMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
   private activedPlaneMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
@@ -429,7 +431,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   public clickOnFace(name: string, index: number): void {
     const geometry = this.findGeometry(name);
-    const { flats, normal } = SelectionHelper.findConnectedFacesInPlane(geometry, index);
+    const { flats, normal } = this.selectionHelper.findConnectedFacesInPlane(geometry, index);
     this.faceClickedEvent?.trigger({ name, faceIndexes: flats, normal: [normal.x, normal.y, normal.z] });
   }
 
@@ -576,6 +578,7 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
       // apply the adapte scale.
       this.updateTargetObject3dMatrix();
+      this.selectionHelper.setMaxSize(maxDim);
     }
   }
 
