@@ -9,6 +9,8 @@ import { Mesh } from 'three/src/objects/Mesh';
 
 /**
  * This helper class is use to help calculate connected flats
+ * Tips the attributes can not update inplace because when it compare
+ * with cache it only compare the object reference.
  */
 export default class SelectionHelper {
   static error = 0.0001;
@@ -387,7 +389,8 @@ export default class SelectionHelper {
    * @param indexes specify the indexes of the triangles to group
    * @param materialIndex specify the material index to display the triangles.
    */
-  private static groupIndexes(geo: BufferGeometry, indexes: number[], materialIndex: number) {
+  private static groupIndexes(geometry: BufferGeometry, indexes: number[], materialIndex: number) {
+    const geo = geometry;
     const oldIndex32 = <BufferAttribute>(<unknown>geo.index);
     if (!oldIndex32) {
       throw Error('unexpected null index.');
@@ -435,6 +438,7 @@ export default class SelectionHelper {
         currentGroup.materialIndex = 1;
       }
     }
+    geo.index = oldIndex32.clone();
     geo.addGroup(oldIndex32.count - indexes.length * 3, indexes.length * 3, materialIndex);
   }
 
