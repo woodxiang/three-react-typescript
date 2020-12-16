@@ -375,18 +375,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (this.renderer) this.renderer.setSize(width, height);
   }
 
-  public AddFlats(name: string, faceIndexes: number[]): void {
-    const mesh = this.findMesh(name);
-    if (!Array.isArray(mesh.material)) {
-      mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
-    }
-    const geo = mesh.geometry as BufferGeometry;
-    if (!geo) {
-      throw Error('invalid geometry.');
-    }
-    SelectionHelper.AddGroup(geo, faceIndexes, 2);
-  }
-
   public UpdateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
     const mesh = this.findMesh(name);
     if (!Array.isArray(mesh.material)) {
@@ -403,16 +391,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       { faces: inactiveFaces, materialIndex: 1 },
       { faces: activeFaces, materialIndex: 2 }
     );
-  }
-
-  public RemoveFlats(name: string, faceIndex: number): void {
-    const mesh = this.findMesh(name);
-    const geo = mesh.geometry as BufferGeometry;
-    if (!geo) {
-      throw Error('invalid geometry.');
-    }
-
-    SelectionHelper.RemoveGroup(geo, faceIndex);
   }
 
   public ClearAllPlanes(): void {

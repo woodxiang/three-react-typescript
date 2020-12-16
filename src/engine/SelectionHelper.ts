@@ -153,9 +153,13 @@ export default class SelectionHelper {
       throw Error('no postion.');
     }
 
+    if (positions.count < (inactiveFaces.faces.length + activeFaces.faces.length) * 3) {
+      throw Error('invalid argument');
+    }
+
     if (inactiveFaces.faces.length + activeFaces.faces.length === 0) {
-      geo.setIndex(null);
-      geo.clearGroups();
+      // if no inactive and active faces, clear the index and group.
+      SelectionHelper.resetGroups(geo);
       return;
     }
 
@@ -206,234 +210,14 @@ export default class SelectionHelper {
     }
   }
 
-  /**
-   * make specified triangles display in other materials.
-   * @param geo geo to update
-   * @param indexes triangle indexes to display in specified material index
-   * @param materialIndex specified material index.
-   */
-  public static AddGroup(geo: BufferGeometry, indexes: number[], materialIndex: number): void {
-    if (!geo.index) {
-      SelectionHelper.initIndexFromPositionAttribute(geo);
-    }
-    SelectionHelper.groupIndexes(geo, indexes, materialIndex);
-  }
-
-  /**
-   * Remove group include specified triangle.
-   * @param geo geometry to update
-   * @param index the first triangle index.
-   */
-  public static RemoveGroup(geo: BufferGeometry, index: number): void {
-    if (!geo.index) {
-      throw Error('no indexes');
-    }
-
-    if (geo.groups.length < 2) {
-      throw Error('no extra group to remove');
-    }
-
-    // find the group index.
-    const currentIndex = <BufferAttribute>geo.index;
-
-    let idxGroup = 0;
-    for (; idxGroup < geo.groups.length; idxGroup += 1) {
-      if (currentIndex.array[geo.groups[idxGroup].start] === index * 3) break;
-    }
-
-    if (idxGroup === 0) {
-      throw Error('not in another group.');
-    }
-    if (idxGroup === geo.groups.length) {
-      throw Error('invalid index');
-    }
-
-    SelectionHelper.mergeGroup(geo, 0, idxGroup);
-  }
-
-  /**
-   * merge triangles in source group to target group.
-   * @param geo geometry to operate.
-   * @param targetGroupIndex target group to merge.
-   * @param sourceGroupIndex source group to merge
-   */
-  private static mergeGroup(geo: BufferGeometry, targetGroupIndex: number, sourceGroupIndex: number): void {
-    if (!geo.index) {
-      throw Error('no index channel.');
-    }
-    if (geo.groups.length <= targetGroupIndex || geo.groups.length <= sourceGroupIndex) {
-      throw Error('invalid group index.');
-    }
-
-    const indexBufferAttribute = <BufferAttribute>geo.index;
-
-    const srcGroup = geo.groups[sourceGroupIndex];
-
-    // save the source group in temp array.
-    const tmpArray = new Array<number>(srcGroup.count);
-    SelectionHelper.copyArray(indexBufferAttribute.array, srcGroup.start, tmpArray, 0, srcGroup.count);
-
-    const targetGroup = geo.groups[targetGroupIndex];
-    if (targetGroup.start < srcGroup.start) {
-      // target group is ahead source group. move
-      SelectionHelper.moveInBufferAttribute(
-        indexBufferAttribute,
-        targetGroup.start + targetGroup.count,
-        targetGroup.start + targetGroup.count + srcGroup.count,
-        srcGroup.start - targetGroup.start - targetGroup.count
-      );
-      SelectionHelper.mergeIntoBufferAttribute(
-        indexBufferAttribute,
-        targetGroup.start,
-        targetGroup.count,
-        targetGroup.start,
-        tmpArray,
-        0,
-        srcGroup.count
-      );
-    } else {
-      SelectionHelper.moveInBufferAttribute(
-        indexBufferAttribute,
-        srcGroup.start + srcGroup.count,
-        srcGroup.start,
-        srcGroup.start + srcGroup.count - targetGroup.start
-      );
-      SelectionHelper.mergeIntoBufferAttribute(
-        indexBufferAttribute,
-        targetGroup.start,
-        targetGroup.count,
-        targetGroup.start - srcGroup.count,
-        tmpArray,
-        0,
-        srcGroup.count
-      );
-    }
-  }
-
-  /**
-   *
-   * @param targetBuf target bufferAttribute to operate on.
-   * @param originStart postion of source1(on target buffer) to merge.
-   * @param originLength length of source1
-   * @param targetStart postion of target (on target buffer)
-   * @param srcArray source 2 array
-   * @param srcStart position on source 2
-   * @param count count of source 2.
-   */
-  private static mergeIntoBufferAttribute(
-    targetBuf: BufferAttribute,
-    originStart: number,
-    originLength: number,
-    targetStart: number,
-    srcArray: Array<number>,
-    srcStart: number,
-    count: number
-  ) {
-    if (originStart > targetStart) {
-      // merge from begin to end
-      let targetCursor = targetStart;
-      let originCursor = originStart;
-      let srcCursor = srcStart;
-      while (targetCursor < targetStart + originLength + count) {
-        if (srcArray[srcCursor] < targetBuf.array[originCursor]) {
-          targetBuf.setX(targetCursor, srcArray[srcCursor]);
-          srcCursor += 1;
-        } else {
-          targetBuf.setX(targetCursor, targetBuf.array[originCursor]);
-          originCursor += 1;
-        }
-
-        targetCursor += 1;
-      }
-    } else {
-      // merge from end to begin
-      let targetCursor = targetStart + originLength + count - 1;
-      let originCursor = originStart + originLength - 1;
-      let srcCursor = srcStart + count - 1;
-      while (targetCursor >= targetStart) {
-        if (srcArray[srcCursor] > targetBuf.array[originCursor]) {
-          targetBuf.setX(targetCursor, srcArray[srcCursor]);
-          srcCursor -= 1;
-        } else {
-          targetBuf.setX(targetCursor, targetBuf.array[originCursor]);
-          originCursor -= 1;
-        }
-
-        targetCursor -= 1;
-      }
-    }
-  }
-
-  /**
-   * move items in bufferAttribute.
-   * @param buf buf to move
-   * @param srcStart position on source to move.
-   * @param targetStart target postion to move
-   * @param count number of item to move.
-   */
-  private static moveInBufferAttribute(
-    buf: BufferAttribute,
-    srcStart: number,
-    targetStart: number,
-    count: number
-  ): void {
-    const t = buf;
-    if (srcStart > targetStart && srcStart <= targetStart + count) {
-      // reverse copy to avoid overlap.
-      for (let i = count - 1; i >= 0; i -= 1) {
-        t.setX(targetStart + i, t.array[srcStart + i]);
-      }
-    } else {
-      for (let i = 0; i < count; i += 1) {
-        t.setX(targetStart + i, t.array[srcStart + i]);
-      }
-    }
-  }
-
-  /**
-   * copy from ArrayLike to Array.
-   * @param src source array
-   * @param srcStart source start
-   * @param target target array
-   * @param targetStart target start
-   * @param count count to copy
-   */
-  private static copyArray(
-    src: ArrayLike<number>,
-    srcStart: number,
-    target: Array<number>,
-    targetStart: number,
-    count: number
-  ): void {
-    const t = target;
-    if (src === target && srcStart > targetStart && srcStart <= targetStart + count) {
-      // reverse copy to avoid overlap.
-      for (let i = count - 1; i >= 0; i -= 1) {
-        t[targetStart + i] = src[srcStart + i];
-      }
-    } else {
-      for (let i = 0; i < count; i += 1) {
-        t[targetStart + i] = src[srcStart + i];
-      }
-    }
-  }
-
-  /**
-   * initialize a index array from position.
-   * @param geo geo to init a index.
-   */
-  public static initIndexFromPositionAttribute(geo: BufferGeometry): void {
-    const positions = geo.getAttribute('position');
-
+  private static resetGroups(geo: BufferGeometry) {
+    geo.setIndex(null);
+    geo.clearGroups();
+    const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
-      throw Error('no position attribute.');
+      throw Error('no postion.');
     }
-    const pointCount = positions.count;
-    const tmp = new Array(pointCount);
-    for (let i = 0; i < pointCount; i += 1) {
-      tmp[i] = i;
-    }
-    geo.setIndex(tmp);
+    geo.addGroup(0, positions.count, 0);
   }
 
   public static clearIndexes(parent: Object3D): void {
@@ -443,8 +227,7 @@ export default class SelectionHelper {
       } else {
         const mesh = <Mesh>child;
         const geo = <BufferGeometry>mesh.geometry;
-        geo.setIndex(null);
-        geo.clearGroups();
+        this.resetGroups(geo);
       }
     });
   }
@@ -463,65 +246,6 @@ export default class SelectionHelper {
     ret.b.subVectors(face.c, face.b).normalize();
     ret.c.subVectors(face.a, face.c).normalize();
     return ret;
-  }
-
-  /**
-   * group specified triangles and display in different material.
-   * @param geo the buffer geometry to update
-   * @param indexes specify the indexes of the triangles to group
-   * @param materialIndex specify the material index to display the triangles.
-   */
-  private static groupIndexes(geometry: BufferGeometry, indexes: number[], materialIndex: number) {
-    const geo = geometry;
-    const oldIndex32 = <BufferAttribute>(<unknown>geo.index);
-    if (!oldIndex32) {
-      throw Error('unexpected null index.');
-    }
-
-    let srcIndex = 0;
-    let destIndex = 0;
-    let compIndex = 0;
-    while (srcIndex < oldIndex32.count) {
-      if (Math.floor(oldIndex32.array[srcIndex] / 3) === indexes[compIndex]) {
-        compIndex += 1;
-      } else {
-        if (destIndex !== srcIndex) {
-          oldIndex32.setXYZ(
-            destIndex,
-            oldIndex32.array[srcIndex],
-            oldIndex32.array[srcIndex + 1],
-            oldIndex32.array[srcIndex + 2]
-          );
-        }
-        destIndex += 3;
-      }
-
-      srcIndex += 3;
-    }
-
-    compIndex = 0;
-    while (destIndex < oldIndex32.count) {
-      oldIndex32.setXYZ(destIndex, indexes[compIndex] * 3, indexes[compIndex] * 3 + 1, indexes[compIndex] * 3 + 2);
-      destIndex += 3;
-      compIndex += 1;
-    }
-
-    // also move the group indexes.
-    if (geo.groups.length === 0) {
-      // if no groups yet.
-      geo.addGroup(0, oldIndex32.count - indexes.length * 3);
-    } else {
-      const headGroup = geo.groups[0];
-      headGroup.count -= indexes.length * 3;
-
-      for (let i = 1; i < geo.groups.length; i += 1) {
-        const currentGroup = geo.groups[i];
-        currentGroup.start -= indexes.length * 3;
-        currentGroup.materialIndex = 1;
-      }
-    }
-    geo.index = oldIndex32.clone();
-    geo.addGroup(oldIndex32.count - indexes.length * 3, indexes.length * 3, materialIndex);
   }
 
   private static getTriangleVert(face: Triangle, index: number): Vector3 {
