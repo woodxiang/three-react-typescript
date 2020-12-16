@@ -41,7 +41,7 @@ export default class SelectionHelper {
   public findConnectedFacesInPlane(
     geo: BufferGeometry,
     selectedTriangleIndex: number
-  ): { flats: number[]; normal: Vector3 } {
+  ): { faceIndexes: number[]; normal: Vector3 } {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
       throw Error('no postion.');
@@ -139,7 +139,71 @@ export default class SelectionHelper {
 
     adjencedTriangles.sort((v1, v2) => v1 - v2);
 
-    return { flats: adjencedTriangles, normal: selectedTriangleNormal };
+    return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal };
+  }
+
+  public static UpdateGroups(
+    geo: BufferGeometry,
+    defaultMaterialIndex: number,
+    inactiveFaces: { faces: number[]; materialIndex: number },
+    activeFaces: { faces: number[]; materialIndex: number }
+  ): void {
+    const positions = <BufferAttribute>geo.getAttribute('position');
+    if (!positions) {
+      throw Error('no postion.');
+    }
+
+    if (inactiveFaces.faces.length + activeFaces.faces.length === 0) {
+      geo.setIndex(null);
+      geo.clearGroups();
+      return;
+    }
+
+    const indexes = new Array<number>(positions.count);
+
+    const selectedFaces = inactiveFaces.faces.concat(activeFaces.faces);
+    selectedFaces.sort((a, b) => a - b);
+
+    let targetCursor = 0;
+    let selectedFacesCursor = 0;
+    for (let i = 0; i < positions.count; i += 3) {
+      if (Math.floor(i / 3) === selectedFaces[selectedFacesCursor]) {
+        selectedFacesCursor += 1;
+      } else {
+        indexes[targetCursor] = i;
+        indexes[targetCursor + 1] = i + 1;
+        indexes[targetCursor + 2] = i + 2;
+
+        targetCursor += 3;
+      }
+    }
+
+    for (let i = 0; i < inactiveFaces.faces.length; i += 1) {
+      indexes[targetCursor] = inactiveFaces.faces[i] * 3;
+      indexes[targetCursor + 1] = inactiveFaces.faces[i] * 3 + 1;
+      indexes[targetCursor + 2] = inactiveFaces.faces[i] * 3 + 2;
+      targetCursor += 3;
+    }
+
+    for (let i = 0; i < activeFaces.faces.length; i += 1) {
+      indexes[targetCursor] = activeFaces.faces[i] * 3;
+      indexes[targetCursor + 1] = activeFaces.faces[i] * 3 + 1;
+      indexes[targetCursor + 2] = activeFaces.faces[i] * 3 + 2;
+      targetCursor += 3;
+    }
+
+    geo.clearGroups();
+    geo.setIndex(indexes);
+    const g1Count = positions.count - inactiveFaces.faces.length * 3 - activeFaces.faces.length * 3;
+    if (g1Count > 0) {
+      geo.addGroup(0, g1Count, defaultMaterialIndex);
+    }
+    if (inactiveFaces.faces.length > 0) {
+      geo.addGroup(g1Count, inactiveFaces.faces.length * 3, inactiveFaces.materialIndex);
+    }
+    if (activeFaces.faces.length > 0) {
+      geo.addGroup(g1Count + inactiveFaces.faces.length * 3, activeFaces.faces.length * 3, activeFaces.materialIndex);
+    }
   }
 
   /**

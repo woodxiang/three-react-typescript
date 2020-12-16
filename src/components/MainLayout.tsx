@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createStyles, FormControlLabel, Grid, makeStyles, Switch, Theme } from '@material-ui/core';
 import axios from 'axios';
 import BlobCache from 'blobcache';
-import { IFaceSelectionResult, SELECTIONMODE } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import DisplayingTargets from './DisplayingTargets';
 import RenderingView from '../engine/RenderingView';
@@ -79,14 +78,6 @@ export default function MainLayout(): JSX.Element {
     setSelectedStls(newSelectedStls);
   };
 
-  const onPlaneClicked = (res: IFaceSelectionResult | undefined) => {
-    if (!res) {
-      throw Error('no face selected.');
-    }
-
-    flatsManagerRef.current.ClickOnFlat(res);
-  };
-
   const onToggleDisplay3dView = () => {
     setDisplay3dView(!display3dView);
   };
@@ -94,11 +85,10 @@ export default function MainLayout(): JSX.Element {
   const applyEnableSelection = (newValue: boolean) => {
     const engine = engineRef.current;
     if (engine) {
-      engine.selectionMode = newValue ? SELECTIONMODE.Plane : SELECTIONMODE.Disabled;
       if (newValue) {
-        engine.faceClickedEvent.add(onPlaneClicked);
+        flatsManagerRef.current.Bind(engine);
       } else {
-        engine.faceClickedEvent.remove(onPlaneClicked);
+        flatsManagerRef.current.Bind(undefined);
       }
     }
   };
@@ -139,7 +129,7 @@ export default function MainLayout(): JSX.Element {
     if (engineRef.current !== eg) {
       if (engineRef.current) {
         // unintialize old engine.
-        engineRef.current.faceClickedEvent.remove(onPlaneClicked);
+        flatsManagerRef.current.Bind(undefined);
       }
 
       engineRef.current = eg;

@@ -6,13 +6,6 @@ enum STATE {
   ROTATE,
   DOLLY,
   PAN,
-  HITTEST,
-}
-
-enum SELECTIONMODE {
-  Disabled,
-  Plane,
-  Point,
 }
 
 enum CURSORTYPE {
@@ -50,17 +43,11 @@ interface IHitTestResult {
   index: number;
 }
 interface IHitTest {
-  testTriangle(xPos: number, yPos: number): IHitTestResult | null;
+  hit(xPos: number, yPos: number): boolean;
 }
 
-interface IFaceSelection {
-  clickOnFace(name: string, index: number): void;
-}
-
-interface IFaceSelectionResult {
-  name: string;
-  faceIndexes: number[];
-  normal: number[];
+interface IHitTestHandler {
+  onHit(res: IHitTestResult): boolean;
 }
 
 interface IObjectRotation {
@@ -68,13 +55,5 @@ interface IObjectRotation {
   setRotationMatrix(mat: Matrix4): void;
 }
 
-export { STATE, CURSORTYPE, SELECTIONMODE };
-export type {
-  IActionCallback,
-  IActionHandler,
-  IObjectRotation,
-  IFaceSelection,
-  IFaceSelectionResult,
-  IHitTest,
-  IHitTestResult,
-};
+export { STATE, CURSORTYPE };
+export type { IActionCallback, IActionHandler, IObjectRotation, IHitTest, IHitTestResult, IHitTestHandler };

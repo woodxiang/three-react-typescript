@@ -23,13 +23,11 @@ import {
   IActionCallback,
   STATE,
   CURSORTYPE,
-  SELECTIONMODE,
   IActionHandler,
   IHitTest,
   IHitTestResult,
-  IFaceSelection,
   IObjectRotation,
-  IFaceSelectionResult,
+  IHitTestHandler,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
@@ -43,7 +41,7 @@ interface IInternalControlObject {
 /**
  * Rendering Engine
  */
-export default class RenderingEngine implements IActionCallback, IFaceSelection, IObjectRotation, IHitTest {
+export default class RenderingEngine implements IActionCallback, IObjectRotation, IHitTest {
   public viewPortSize: Vector2 = new Vector2();
 
   /**
@@ -75,8 +73,6 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private activedPlaneMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
 
-  private selectionModeInternal: SELECTIONMODE = SELECTIONMODE.Disabled;
-
   private debugMode = true;
 
   private stats: Stats | undefined;
@@ -94,7 +90,9 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
 
   private capturedPointerId = -1;
 
-  public readonly faceClickedEvent = new LiteEvent<IFaceSelectionResult>();
+  public readonly faceClickedEvent = new LiteEvent<IHitTestResult>();
+
+  public hitTestHandler: IHitTestHandler | undefined = undefined;
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -182,17 +180,6 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     this.targetObject3D?.clear();
     this.scene?.clear();
     this.camera?.clear();
-  }
-
-  get selectionMode(): SELECTIONMODE {
-    return this.selectionModeInternal;
-  }
-
-  set selectionMode(newMode: SELECTIONMODE) {
-    this.selectionModeInternal = newMode;
-    if (this.clickHandler) {
-      this.clickHandler.selectionMode = newMode;
-    }
   }
 
   get cursorType(): CURSORTYPE {
@@ -346,29 +333,16 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
   }
 
   /**
-   * test the triangle on specified position.
-   * @param xPos hit position x
-   * @param yPos hit position y
+   * handle hit test
+   * @param xPos x hit position
+   * @param yPos y hit position
    */
-  public testTriangle(xPos: number, yPos: number): IHitTestResult | null {
-    if (!this.targetObject3D) {
-      throw Error('invalid target object');
+  public hit(xPos: number, yPos: number): boolean {
+    const hitTestReuslt = this.hitTest(xPos, yPos);
+    if (this.hitTestHandler && hitTestReuslt) {
+      return this.hitTestHandler.onHit(hitTestReuslt);
     }
-    if (!this.camera) {
-      throw Error('invalid camera');
-    }
-    const rayCaster = new Raycaster();
-    rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);
-    const intersection = rayCaster.intersectObjects(this.targetObject3D.children);
-
-    if (intersection.length > 0) {
-      const ret = intersection[0];
-      if (!ret.face) {
-        throw Error('invalid face index.');
-      }
-      return { name: ret.object.name, index: ret.face.a / 3 };
-    }
-    return null;
+    return false;
   }
 
   /**
@@ -413,6 +387,24 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     SelectionHelper.AddGroup(geo, faceIndexes, 2);
   }
 
+  public UpdateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
+    const mesh = this.findMesh(name);
+    if (!Array.isArray(mesh.material)) {
+      mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
+    }
+    const geo = mesh.geometry as BufferGeometry;
+    if (!geo) {
+      throw Error('invalid geometry.');
+    }
+
+    SelectionHelper.UpdateGroups(
+      geo,
+      0,
+      { faces: inactiveFaces, materialIndex: 1 },
+      { faces: activeFaces, materialIndex: 2 }
+    );
+  }
+
   public RemoveFlats(name: string, faceIndex: number): void {
     const mesh = this.findMesh(name);
     const geo = mesh.geometry as BufferGeometry;
@@ -429,10 +421,9 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
     }
   }
 
-  public clickOnFace(name: string, index: number): void {
+  public findFlat(name: string, index: number): { faceIndexes: number[]; normal: Vector3 } {
     const geometry = this.findGeometry(name);
-    const { flats, normal } = this.selectionHelper.findConnectedFacesInPlane(geometry, index);
-    this.faceClickedEvent?.trigger({ name, faceIndexes: flats, normal: [normal.x, normal.y, normal.z] });
+    return this.selectionHelper.findConnectedFacesInPlane(geometry, index);
   }
 
   private initEvents() {
@@ -515,6 +506,32 @@ export default class RenderingEngine implements IActionCallback, IFaceSelection,
       }
       event?.preventDefault();
     });
+  }
+
+  /**
+   * test the triangle on specified position.
+   * @param xPos hit position x
+   * @param yPos hit position y
+   */
+  private hitTest(xPos: number, yPos: number): IHitTestResult | null {
+    if (!this.targetObject3D) {
+      throw Error('invalid target object');
+    }
+    if (!this.camera) {
+      throw Error('invalid camera');
+    }
+    const rayCaster = new Raycaster();
+    rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);
+    const intersection = rayCaster.intersectObjects(this.targetObject3D.children);
+
+    if (intersection.length > 0) {
+      const ret = intersection[0];
+      if (!ret.face) {
+        throw Error('invalid face index.');
+      }
+      return { name: ret.object.name, index: ret.face.a / 3 };
+    }
+    return null;
   }
 
   private findMesh(name: string): Mesh {
