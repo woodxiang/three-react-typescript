@@ -125,7 +125,7 @@ export default function MainLayout(): JSX.Element {
 
   const classes = useStyles();
 
-  const setupEngine = (eg: RenderingEngine | undefined) => {
+  const setupEngine = async (eg: RenderingEngine | undefined) => {
     if (engineRef.current !== eg) {
       if (engineRef.current) {
         // unintialize old engine.
@@ -138,15 +138,21 @@ export default function MainLayout(): JSX.Element {
 
       if (engineRef.current) {
         engineRef.current = eg;
-        // initialize after set engine.
-        selectedStls.forEach((stl) => {
-          loadStl(stl);
-        });
 
         // update selection setting
         applyEnableSelection(enablePlaneSelection);
         flatsManagerRef.current.isMultipleSelection = enableMultiSelection;
+
+        // initialize after set engine.
+        const promises: Promise<void>[] = [];
+        selectedStls.forEach(async (stl) => {
+          promises.push(loadStl(stl));
+        });
+
+        await Promise.all(promises);
+
         // TODO: update the selected planes.
+        flatsManagerRef.current.restore();
       }
     }
   };

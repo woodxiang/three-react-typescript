@@ -69,6 +69,17 @@ export default class FlatManager implements IHitTestHandler {
     return true;
   }
 
+  public restore(): void {
+    const objectsWithSelectedFlat = new Set<string>();
+    this.selectedFlats.forEach((v) => {
+      objectsWithSelectedFlat.add(v.name);
+    });
+
+    objectsWithSelectedFlat.forEach((name) => {
+      this.updateFlats(name);
+    });
+  }
+
   public get isMultipleSelection(): boolean {
     return this.isMultipleSelectionInternal;
   }

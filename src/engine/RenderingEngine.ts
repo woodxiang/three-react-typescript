@@ -383,7 +383,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    */
   public updateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
     const mesh = this.findMesh(name);
-    if (!Array.isArray(mesh.material)) {
+    if (!mesh.material || !Array.isArray(mesh.material)) {
       mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
     }
     const geo = mesh.geometry as BufferGeometry;
