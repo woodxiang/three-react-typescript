@@ -31,9 +31,14 @@ export default class FlatManager implements IHitTestHandler {
         // remove the selected
         const previousActiveFlatName = this.selectedFlats[this.selectedFlats.length - 1].name;
         this.selectedFlats.splice(index, 1);
+        const newSelectedObjectName =
+          this.selectedFlats.length > 0 ? this.selectedFlats[this.selectedFlats.length - 1].name : undefined;
         this.updateFlats(name);
         if (previousActiveFlatName !== name) {
           this.updateFlats(previousActiveFlatName);
+        }
+        if (newSelectedObjectName !== undefined && name !== newSelectedObjectName) {
+          this.updateFlats(newSelectedObjectName);
         }
       }
       return true;
@@ -43,16 +48,21 @@ export default class FlatManager implements IHitTestHandler {
     if (!flat) return false;
 
     if (this.isMultipleSelectionInternal) {
+      const lastActiveObjectName =
+        this.selectedFlats.length > 0 ? this.selectedFlats[this.selectedFlats.length - 1].name : undefined;
       this.selectedFlats = this.selectedFlats.concat([
         { name: res.name, indexes: flat.faceIndexes, normal: [flat.normal.x, flat.normal.y, flat.normal.z] },
       ]);
+      if (lastActiveObjectName && lastActiveObjectName !== res.name) {
+        this.updateFlats(lastActiveObjectName);
+      }
       this.updateFlats(res.name);
     } else {
       this.selectedFlats = [
         { name: res.name, indexes: flat.faceIndexes, normal: [flat.normal.x, flat.normal.y, flat.normal.z] },
       ];
       if (this.engine) {
-        this.engine.ClearAllPlanes();
+        this.engine.clearAllFlats();
         this.updateFlats(res.name);
       }
     }
@@ -80,6 +90,6 @@ export default class FlatManager implements IHitTestHandler {
       }
     }
 
-    this.engine?.UpdateFlats(name, inactiveFaces, activeFaces);
+    this.engine?.updateFlats(name, inactiveFaces, activeFaces);
   }
 }

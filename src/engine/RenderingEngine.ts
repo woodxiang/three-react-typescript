@@ -375,7 +375,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (this.renderer) this.renderer.setSize(width, height);
   }
 
-  public UpdateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
+  /**
+   * update selected flats on specified object.
+   * @param name the name of the object.
+   * @param inactiveFaces inactiveFaces
+   * @param activeFaces active faces.(last selected)
+   */
+  public updateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
     const mesh = this.findMesh(name);
     if (!Array.isArray(mesh.material)) {
       mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
@@ -393,7 +399,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     );
   }
 
-  public ClearAllPlanes(): void {
+  /**
+   * Remove all flats.
+   */
+  public clearAllFlats(): void {
     if (this.targetObject3D) {
       SelectionHelper.clearIndexes(this.targetObject3D);
     }
