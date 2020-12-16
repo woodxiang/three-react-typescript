@@ -520,7 +520,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       if (!ret.face) {
         throw Error('invalid face index.');
       }
-      return { name: ret.object.name, index: ret.face.a / 3 };
+      return { name: ret.object.name, index: ret.face.a / 3, pos: ret.point };
     }
     return null;
   }

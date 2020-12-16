@@ -8,6 +8,7 @@ import RenderingView from '../engine/RenderingView';
 import UrlRefObjectFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
 import FlatManager from './FlatsManager';
+import SensorManager from './SensorManager';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -35,11 +36,13 @@ export default function MainLayout(): JSX.Element {
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
   const [enablePlaneSelection, setEnablePlaneSelection] = useState<boolean>(true);
   const [enableMultiSelection, setEnableMultiSelection] = useState<boolean>(true);
+  const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
 
   const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
   const flatsManagerRef = useRef<FlatManager>(new FlatManager());
+  const sensorsManagerRef = useRef<SensorManager>(new SensorManager());
 
   const stlPrefix = '/api/stls/';
 
@@ -93,8 +96,33 @@ export default function MainLayout(): JSX.Element {
     }
   };
 
+  const applyEnableSensorSelection = (newValue: boolean) => {
+    const engine = engineRef.current;
+    if (engine) {
+      if (newValue) {
+        sensorsManagerRef.current.Bind(engine);
+      } else {
+        sensorsManagerRef.current.Bind(undefined);
+      }
+    }
+  };
+
+  const onToggleEnableSensorSelection = () => {
+    const newValue = !enableSensorSelection;
+    if (newValue) {
+      setEnablePlaneSelection(false);
+      applyEnableSelection(false);
+    }
+    setEnableSensorSelection(newValue);
+    applyEnableSensorSelection(newValue);
+  };
+
   const onToggleEnableSelection = () => {
     const newValue = !enablePlaneSelection;
+    if (newValue) {
+      setEnableSensorSelection(false);
+      applyEnableSensorSelection(false);
+    }
     setEnablePlaneSelection(newValue);
     applyEnableSelection(newValue);
   };
@@ -166,12 +194,16 @@ export default function MainLayout(): JSX.Element {
             label="Display 3D View"
           />
           <FormControlLabel
+            control={<Switch checked={enableSensorSelection} onChange={onToggleEnableSensorSelection} />}
+            label="Enable Sensors Selection"
+          />
+          <FormControlLabel
             control={<Switch checked={enablePlaneSelection} onChange={onToggleEnableSelection} />}
-            label="Enable Plane Selection"
+            label="Enable Flat Selection"
           />
           <FormControlLabel
             control={<Switch checked={enableMultiSelection} onChange={onToggleMultiSelection} />}
-            label="Enable Multiple Selection"
+            label="Enable Multiple Flat Selection"
           />
         </Grid>
         <Grid item md={2} className={classes.full}>

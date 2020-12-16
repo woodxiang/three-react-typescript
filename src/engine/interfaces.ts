@@ -1,5 +1,6 @@
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
+import { Vector3 } from 'three/src/math/Vector3';
 
 enum STATE {
   NONE = 0,
@@ -41,6 +42,7 @@ interface IActionHandler {
 interface IHitTestResult {
   name: string;
   index: number;
+  pos: Vector3;
 }
 interface IHitTest {
   hit(xPos: number, yPos: number): boolean;

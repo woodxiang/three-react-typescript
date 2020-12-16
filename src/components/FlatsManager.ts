@@ -21,7 +21,7 @@ export default class FlatManager implements IHitTestHandler {
 
   public onHit(res: IHitTestResult): boolean {
     if (!this.engine) {
-      throw Error('not engine');
+      throw Error('bind engine before invoke.');
     }
 
     const index = this.selectedFlats.findIndex((v) => v.name === res.name && v.indexes.indexOf(res.index) >= 0);
