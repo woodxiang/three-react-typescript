@@ -312,6 +312,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return false;
   }
 
+  public ClearMeshes(): void {
+    if (!this.targetObject3D) {
+      throw Error('no root.');
+    }
+
+    this.targetObject3D.clear();
+  }
+
   /**
    * start animation.
    */
