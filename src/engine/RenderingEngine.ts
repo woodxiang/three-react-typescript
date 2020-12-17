@@ -455,6 +455,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.targetObject3D.add(mesh);
   }
 
+  /**
+   * set target sensor activity
+   * @param name the target sensor to active/inactive
+   * @param enable active/inactive
+   */
   public activePoint(name: string, enable: boolean): void {
     if (!this.targetObject3D) {
       throw Error('no container.');
