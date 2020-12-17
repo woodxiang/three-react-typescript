@@ -18,6 +18,7 @@ import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { FrontSide } from 'three/src/constants';
+import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import LiteEvent from './event';
 import {
   IActionCallback,
@@ -63,6 +64,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private rotateMatrix: Matrix4 = new Matrix4();
 
+  private maxDim = 1;
+
   private axesHelper: AxesHelper | undefined;
 
   private clickHandler: ClickHandler | undefined;
@@ -72,6 +75,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private inactivePlaneMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
   private activedPlaneMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+
+  private inactivePointMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
+
+  private activePointMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
 
   private debugMode = true;
 
@@ -423,9 +430,40 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
   }
 
+  /**
+   * find all connected faces with same normal with specified face.
+   * @param name the name of the target object.
+   * @param index the index of the source face.
+   */
   public findFlat(name: string, index: number): { faceIndexes: number[]; normal: Vector3 } {
     const geometry = this.findGeometry(name);
     return this.selectionHelper.findConnectedFacesInPlane(geometry, index);
+  }
+
+  public addPoint(name: string, pos: number[]): void {
+    if (!this.targetObject3D) {
+      throw Error('no container.');
+    }
+
+    const ball = new SphereGeometry(this.maxDim / 300, 4, 4);
+    const mesh = new Mesh(ball, this.activePointMaterial);
+    mesh.translateX(pos[0]);
+    mesh.translateY(pos[1]);
+    mesh.translateZ(pos[2]);
+    mesh.name = name;
+    ball.name = name;
+    this.targetObject3D.add(mesh);
+  }
+
+  public activePoint(name: string, enable: boolean): void {
+    if (!this.targetObject3D) {
+      throw Error('no container.');
+    }
+
+    const toUpdate = <Mesh>this.targetObject3D.children.find((v) => v.name === name);
+    if (toUpdate) {
+      toUpdate.material = enable ? this.activePointMaterial : this.inactivePointMaterial;
+    }
   }
 
   private initEvents() {
@@ -531,7 +569,12 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       if (!ret.face) {
         throw Error('invalid face index.');
       }
-      return { name: ret.object.name, index: ret.face.a / 3, pos: ret.point };
+
+      const matrix = this.rotateMatrix.clone();
+      matrix.multiply(this.adapteMatrix);
+
+      const m = matrix.invert();
+      return { name: ret.object.name, index: ret.face.a / 3, pos: ret.point.applyMatrix4(m) };
     }
     return null;
   }
@@ -586,18 +629,18 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       boundingBox.getCenter(center);
       const size = new Vector3();
       boundingBox.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
+      this.maxDim = Math.max(size.x, size.y, size.z);
       const matTranslate = new Matrix4();
       matTranslate.makeTranslation(-center.x, -center.y, -center.z);
       const matScale = new Matrix4();
-      matScale.makeScale(1.0 / maxDim, 1.0 / maxDim, 1.0 / maxDim);
+      matScale.makeScale(1.0 / this.maxDim, 1.0 / this.maxDim, 1.0 / this.maxDim);
 
       matScale.multiply(matTranslate);
       this.adapteMatrix = matScale;
 
       // apply the adapte scale.
       this.updateTargetObject3dMatrix();
-      this.selectionHelper.setMaxSize(maxDim);
+      this.selectionHelper.setMaxSize(this.maxDim);
     }
   }
 

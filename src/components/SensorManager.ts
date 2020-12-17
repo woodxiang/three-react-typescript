@@ -5,6 +5,8 @@ import { IHitTestHandler, IHitTestResult } from '../engine/interfaces';
 export default class SensorManager implements IHitTestHandler {
   private sensors: { targetName: string; id: string; position: number[] }[] = [];
 
+  private activeSensorName: string | undefined = undefined;
+
   private engine: RenderingEngine | undefined;
 
   public Bind(engine: RenderingEngine | undefined): void {
@@ -25,10 +27,21 @@ export default class SensorManager implements IHitTestHandler {
 
     const { name, pos } = res;
 
-    if (this.sensors.findIndex((v) => v.id === name) > 0) {
+    const pickedSensor = this.sensors.find((v) => v.id === name);
+    if (pickedSensor) {
       // select a sensor
+      if (this.activeSensorName) {
+        this.engine.activePoint(this.activeSensorName, false);
+      }
+      this.engine.activePoint(pickedSensor.id, true);
     } else {
-      this.sensors.push({ targetName: name, id: uuid().toString(), position: [pos.x, pos.y, pos.z] });
+      const newSensor = { targetName: name, id: uuid().toString(), position: [pos.x, pos.y, pos.z] };
+      this.sensors.push(newSensor);
+      this.engine.addPoint(newSensor.id, newSensor.position);
+      if (this.activeSensorName) {
+        this.engine.activePoint(this.activeSensorName, false);
+      }
+      this.activeSensorName = newSensor.id;
     }
 
     return true;
