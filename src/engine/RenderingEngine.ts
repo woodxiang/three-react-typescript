@@ -440,6 +440,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return this.selectionHelper.findConnectedFacesInPlane(geometry, index);
   }
 
+  /**
+   * add a new point and set it as active.
+   * @param name name of the point
+   * @param pos position of the point
+   */
   public addPoint(name: string, pos: number[]): void {
     if (!this.targetObject3D) {
       throw Error('no container.');
