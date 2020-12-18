@@ -66,4 +66,9 @@ export default class ClickHandler implements IActionHandler {
   handleRightButtonUp(): boolean {
     return false;
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  handleWhell(): boolean {
+    return false;
+  }
 }

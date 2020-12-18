@@ -99,6 +99,18 @@ export default class RotationHandler implements IActionHandler {
     return false;
   }
 
+  handleWhell(event: WheelEvent, callback: IActionCallback): boolean {
+    if (this.isEnabled) {
+      const callbacker = callback;
+      if (callbacker.state === STATE.NONE) {
+        this.zoom(event.deltaY);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // eslint-disable-next-line class-methods-use-this
   handleMiddleButtonDown(): boolean {
     return false;
@@ -117,6 +129,10 @@ export default class RotationHandler implements IActionHandler {
   // eslint-disable-next-line class-methods-use-this
   handleRightButtonUp(): boolean {
     return false;
+  }
+
+  private zoom(delta: number): void {
+    this.camera.position.z *= 1.0 - delta / 120 / 10;
   }
 
   private rotate(x: number, y: number, callback: IActionCallback): void {

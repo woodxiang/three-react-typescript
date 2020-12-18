@@ -38,7 +38,9 @@ interface IActionHandler {
   handleMiddleButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
   handleRightButtonDown(event: PointerEvent, callback: IActionCallback): boolean;
   handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
+  handleWhell(event: WheelEvent, callback: IActionCallback): boolean;
 }
+
 interface IHitTestResult {
   name: string;
   index: number;

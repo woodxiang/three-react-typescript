@@ -72,9 +72,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private selectionHelper = new SelectionHelper();
 
-  private inactivePlaneMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
+  private inactiveFlatMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
-  private activedPlaneMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+  private activedFlatMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
 
   private inactivePointMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
@@ -319,6 +319,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return false;
   }
 
+  public setVisible(visible: boolean, name: string, groupName: string | undefined = undefined): boolean {
+    const mesh = this.findMesh(name, groupName);
+    if (mesh) {
+      mesh.visible = visible;
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Remove all the meshes
    */
@@ -401,24 +410,25 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    */
   public updateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
     const mesh = this.findMesh(name);
+    if (mesh) {
+      if (!mesh.material) {
+        throw Error('no default material.');
+      }
+      if (!Array.isArray(mesh.material)) {
+        mesh.material = [mesh.material, this.inactiveFlatMaterial, this.activedFlatMaterial];
+      }
+      const geo = mesh.geometry as BufferGeometry;
+      if (!geo) {
+        throw Error('invalid geometry.');
+      }
 
-    if (!mesh.material) {
-      throw Error('no default material.');
+      SelectionHelper.UpdateGroups(
+        geo,
+        0,
+        { faces: inactiveFaces, materialIndex: 1 },
+        { faces: activeFaces, materialIndex: 2 }
+      );
     }
-    if (!Array.isArray(mesh.material)) {
-      mesh.material = [mesh.material, this.inactivePlaneMaterial, this.activedPlaneMaterial];
-    }
-    const geo = mesh.geometry as BufferGeometry;
-    if (!geo) {
-      throw Error('invalid geometry.');
-    }
-
-    SelectionHelper.UpdateGroups(
-      geo,
-      0,
-      { faces: inactiveFaces, materialIndex: 1 },
-      { faces: activeFaces, materialIndex: 2 }
-    );
   }
 
   /**
@@ -435,9 +445,12 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param name the name of the target object.
    * @param index the index of the source face.
    */
-  public findFlat(name: string, index: number): { faceIndexes: number[]; normal: Vector3 } {
+  public findFlat(name: string, index: number): { faceIndexes: number[]; normal: Vector3 } | undefined {
     const geometry = this.findGeometry(name);
-    return this.selectionHelper.findConnectedFacesInPlane(geometry, index);
+    if (geometry) {
+      return this.selectionHelper.findFlatByFace(geometry, index);
+    }
+    return undefined;
   }
 
   /**
@@ -556,6 +569,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       }
       event?.preventDefault();
     });
+
+    this.renderer.domElement.addEventListener('wheel', (event: WheelEvent) => {
+      for (let i = 0; i < this.actionHandlers.length; i += 1) {
+        const handler = this.actionHandlers[i];
+        if (handler.isEnabled && handler.handleWhell(event, this)) break;
+      }
+      event?.preventDefault();
+    });
   }
 
   /**
@@ -589,13 +610,25 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return null;
   }
 
-  private findMesh(name: string): Mesh {
-    return this.targetObject3D?.children.find((item: { name: string }) => item.name === name) as Mesh;
+  private findMesh(name: string, groupName: string | undefined = undefined): Mesh | undefined {
+    if (!this.targetObject3D) {
+      throw Error('no root');
+    }
+    const collection =
+      groupName === undefined
+        ? this.targetObject3D?.children
+        : RenderingEngine.findGroup(this.targetObject3D, groupName)?.children;
+
+    if (collection) {
+      return collection.find((mesh: Object3D) => mesh.name === name) as Mesh;
+    }
+    return undefined;
   }
 
-  private findGeometry(name: string): BufferGeometry {
+  private findGeometry(name: string): BufferGeometry | undefined {
     const mesh = this.findMesh(name);
-    return (<Mesh>mesh).geometry as BufferGeometry;
+    if (mesh) return mesh.geometry as BufferGeometry;
+    return undefined;
   }
 
   private prepareEnvironment(): void {

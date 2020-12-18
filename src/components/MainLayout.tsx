@@ -34,8 +34,8 @@ export default function MainLayout(): JSX.Element {
   const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
-  const [enablePlaneSelection, setEnablePlaneSelection] = useState<boolean>(true);
-  const [enableMultiSelection, setEnableMultiSelection] = useState<boolean>(true);
+  const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(true);
+  const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(true);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
 
   const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
@@ -110,7 +110,7 @@ export default function MainLayout(): JSX.Element {
   const onToggleEnableSensorSelection = () => {
     const newValue = !enableSensorSelection;
     if (newValue) {
-      setEnablePlaneSelection(false);
+      setEnableFlatSelection(false);
       applyEnableSelection(false);
     }
     setEnableSensorSelection(newValue);
@@ -118,18 +118,18 @@ export default function MainLayout(): JSX.Element {
   };
 
   const onToggleEnableSelection = () => {
-    const newValue = !enablePlaneSelection;
+    const newValue = !enableFlatSelection;
     if (newValue) {
       setEnableSensorSelection(false);
       applyEnableSensorSelection(false);
     }
-    setEnablePlaneSelection(newValue);
+    setEnableFlatSelection(newValue);
     applyEnableSelection(newValue);
   };
 
   const onToggleMultiSelection = () => {
-    const newValue = !enableMultiSelection;
-    setEnableMultiSelection(newValue);
+    const newValue = !enableMultiFlatsSelection;
+    setEnableMultiFlatsSelection(newValue);
     flatsManagerRef.current.isMultipleSelection = newValue;
   };
 
@@ -168,8 +168,8 @@ export default function MainLayout(): JSX.Element {
         engineRef.current = eg;
 
         // update selection setting
-        applyEnableSelection(enablePlaneSelection);
-        flatsManagerRef.current.isMultipleSelection = enableMultiSelection;
+        applyEnableSelection(enableFlatSelection);
+        flatsManagerRef.current.isMultipleSelection = enableMultiFlatsSelection;
 
         // initialize after set engine.
         const promises: Promise<void>[] = [];
@@ -179,7 +179,7 @@ export default function MainLayout(): JSX.Element {
 
         await Promise.all(promises);
 
-        // TODO: update the selected planes.
+        // TODO: update the selected flats.
         flatsManagerRef.current.restore();
       }
     }
@@ -198,11 +198,11 @@ export default function MainLayout(): JSX.Element {
             label="Enable Sensors Selection"
           />
           <FormControlLabel
-            control={<Switch checked={enablePlaneSelection} onChange={onToggleEnableSelection} />}
+            control={<Switch checked={enableFlatSelection} onChange={onToggleEnableSelection} />}
             label="Enable Flat Selection"
           />
           <FormControlLabel
-            control={<Switch checked={enableMultiSelection} onChange={onToggleMultiSelection} />}
+            control={<Switch checked={enableMultiFlatsSelection} onChange={onToggleMultiSelection} />}
             label="Enable Multiple Flat Selection"
           />
         </Grid>

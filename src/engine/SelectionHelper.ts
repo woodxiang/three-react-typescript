@@ -34,11 +34,11 @@ export default class SelectionHelper {
   }
 
   /**
-   * Select a connected plane from a geometry.
+   * Select a connected flat from a geometry.
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
    */
-  public findConnectedFacesInPlane(
+  public findFlatByFace(
     geo: BufferGeometry,
     selectedTriangleIndex: number
   ): { faceIndexes: number[]; normal: Vector3 } {
@@ -76,7 +76,7 @@ export default class SelectionHelper {
       }
     }
 
-    // filter the triangles in same plane,
+    // filter the triangles in same flat,
     // rotate the selected normal to (0, 0, 1)
     selectedTriangleNormal.normalize();
 
