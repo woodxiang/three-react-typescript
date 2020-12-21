@@ -34,6 +34,26 @@ export default class SelectionHelper {
   }
 
   /**
+   * calculate the volume of specified geometry
+   * @param geo the geometry to calculate
+   */
+  public static calculateGeometryVolume(geo: BufferGeometry): number {
+    const { position } = geo.attributes;
+    const faces = position.count / 3;
+    let sum = 0;
+    const p1 = new Vector3();
+    const p2 = new Vector3();
+    const p3 = new Vector3();
+    for (let i = 0; i < faces; i += 1) {
+      p1.fromBufferAttribute(position, i * 3 + 0);
+      p2.fromBufferAttribute(position, i * 3 + 1);
+      p3.fromBufferAttribute(position, i * 3 + 2);
+      sum += p1.dot(p2.cross(p3)) / 6.0;
+    }
+    return sum;
+  }
+
+  /**
    * Select a connected flat from a geometry.
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
@@ -152,7 +172,7 @@ export default class SelectionHelper {
     return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal, area };
   }
 
-  public static UpdateGroups(
+  public static updateGroups(
     geo: BufferGeometry,
     defaultMaterialIndex: number,
     inactiveFaces: { faces: number[]; materialIndex: number },

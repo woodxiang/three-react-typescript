@@ -56,7 +56,7 @@ export default function MainLayout(): JSX.Element {
       GeometryDataType.STLMesh,
       preDefinedColors[stlFiles.indexOf(item)]
     );
-    if (newMesh) engine.AddMesh(newMesh);
+    if (newMesh) engine.addMesh(newMesh);
   };
 
   // handle the event when selected stl changed.
@@ -68,7 +68,7 @@ export default function MainLayout(): JSX.Element {
       // remove mesh
       newSelectedStls.splice(index, 1);
       if (engine) {
-        engine.RemoveMesh(stlPrefix + item);
+        engine.removeMesh(stlPrefix + item);
       }
     } else {
       // add mesh
