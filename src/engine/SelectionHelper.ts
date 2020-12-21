@@ -6,6 +6,7 @@ import { Triangle } from 'three/src/math/Triangle';
 import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
+import { IFlat } from './interfaces';
 
 /**
  * This helper class is use to help calculate connected flats
@@ -38,10 +39,7 @@ export default class SelectionHelper {
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
    */
-  public findFlatByFace(
-    geo: BufferGeometry,
-    selectedTriangleIndex: number
-  ): { faceIndexes: number[]; normal: Vector3 } {
+  public findFlatByFace(geo: BufferGeometry, selectedTriangleIndex: number): IFlat {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
       throw Error('no postion.');
@@ -139,7 +137,13 @@ export default class SelectionHelper {
 
     adjencedTriangles.sort((v1, v2) => v1 - v2);
 
-    return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal };
+    let area = 0.0;
+    adjencedTriangles.forEach((index) => {
+      const itFace = SelectionHelper.getFace(positions, index);
+      area += itFace.getArea();
+    });
+
+    return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal, area };
   }
 
   public static UpdateGroups(
@@ -221,7 +225,7 @@ export default class SelectionHelper {
   }
 
   public static clearIndexes(parent: Object3D): void {
-    parent.children.forEach((child) => {
+    parent.children.forEach((child: Object3D) => {
       if (child instanceof Group) {
         this.clearIndexes(<Group>child);
       } else {

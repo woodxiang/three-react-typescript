@@ -29,6 +29,7 @@ import {
   IHitTestResult,
   IObjectRotation,
   IHitTestHandler,
+  IFlat,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
@@ -445,7 +446,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param name the name of the target object.
    * @param index the index of the source face.
    */
-  public findFlat(name: string, index: number): { faceIndexes: number[]; normal: Vector3 } | undefined {
+  public findFlat(name: string, index: number): IFlat | undefined {
     const geometry = this.findGeometry(name);
     if (geometry) {
       return this.selectionHelper.findFlatByFace(geometry, index);

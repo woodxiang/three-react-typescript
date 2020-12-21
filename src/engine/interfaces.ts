@@ -59,5 +59,11 @@ interface IObjectRotation {
   setRotationMatrix(mat: Matrix4): void;
 }
 
+interface IFlat {
+  faceIndexes: number[];
+  normal: Vector3;
+  area: number;
+}
+
 export { STATE, CURSORTYPE };
-export type { IActionCallback, IActionHandler, IObjectRotation, IHitTest, IHitTestResult, IHitTestHandler };
+export type { IActionCallback, IActionHandler, IObjectRotation, IHitTest, IHitTestResult, IHitTestHandler, IFlat };
