@@ -6,7 +6,6 @@ import { Triangle } from 'three/src/math/Triangle';
 import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
-import { IFlat } from './interfaces';
 
 /**
  * This helper class is use to help calculate connected flats
@@ -39,7 +38,14 @@ export default class SelectionHelper {
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
    */
-  public findFlatByFace(geo: BufferGeometry, selectedTriangleIndex: number): IFlat {
+  public findFlatByFace(
+    geo: BufferGeometry,
+    selectedTriangleIndex: number
+  ): {
+    faceIndexes: number[];
+    normal: Vector3;
+    area: number;
+  } {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
       throw Error('no postion.');
