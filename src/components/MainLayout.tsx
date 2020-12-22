@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { createStyles, FormControlLabel, Grid, makeStyles, Switch, Theme } from '@material-ui/core';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
-import BlobCache from 'blobcache';
 import RenderingEngine from '../engine/RenderingEngine';
-import DisplayingTargets from './DisplayingTargets';
+import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
-import UrlRefObjectFactory, { GeometryDataType } from '../engine/MeshFactory';
+import MeshFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
 import FlatManager from './FlatsManager';
 import SensorManager from './SensorManager';
+import DracoFilesView from './DracoFilesView';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -31,30 +31,50 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export default function MainLayout(): JSX.Element {
   const [stlLoaded, setStlLoaded] = useState(false); // state to indicate all stl loaded.
+  const [dracoLoaded, setDracoLoaded] = useState(false);
   const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
+  const [dracoFiles, setDracoFiles] = useState<string[]>([]);
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
+  const [selectedDracos, setSelectedDracos] = useState<string[]>([]);
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
   const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(true);
   const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(true);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
-
-  const blobCache = useRef(new BlobCache<ArrayBuffer>('demoApp', 1)); // cache of the stl files.
+  const [displayingTab, setDisplayingTab] = useState<number>(0);
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
   const flatsManagerRef = useRef<FlatManager>(new FlatManager());
   const sensorsManagerRef = useRef<SensorManager>(new SensorManager());
 
   const stlPrefix = '/api/stls/';
+  const dracoPrefix = 'api/dracos/';
+
+  const handleTabChange = (event: ChangeEvent<unknown>, newValue: number) => {
+    setDisplayingTab(newValue);
+  };
 
   const loadStl = async (item: string) => {
     const engine = engineRef.current;
     if (!engine) {
       throw Error('invalid engine.');
     }
-    const newMesh = await UrlRefObjectFactory.createSolidMesh(
+    const newMesh = await MeshFactory.createSolidMesh(
       stlPrefix + item,
       GeometryDataType.STLMesh,
       preDefinedColors[stlFiles.indexOf(item)]
+    );
+    if (newMesh) engine.AddMesh(newMesh);
+  };
+
+  const loadDraco = async (item: string) => {
+    const engine = engineRef.current;
+    if (!engine) {
+      throw Error('invalid engine');
+    }
+    const newMesh = await MeshFactory.createSolidMesh(
+      dracoPrefix + item,
+      GeometryDataType.DracoMesh,
+      preDefinedColors[dracoFiles.indexOf(item)]
     );
     if (newMesh) engine.AddMesh(newMesh);
   };
@@ -79,6 +99,25 @@ export default function MainLayout(): JSX.Element {
     }
 
     setSelectedStls(newSelectedStls);
+  };
+
+  const handleSelectedDracoChanged = async (item: string) => {
+    const engine = engineRef.current;
+    const index = selectedDracos.indexOf(item);
+    const newSelectedDracos = [...selectedDracos];
+    if (index !== -1) {
+      newSelectedDracos.splice(index, 1);
+      if (engine) {
+        engine.RemoveMesh(dracoPrefix + item);
+      }
+    } else {
+      newSelectedDracos.push(item);
+      if (engine) {
+        await loadDraco(item);
+      }
+    }
+
+    setSelectedDracos(newSelectedDracos);
   };
 
   const onToggleDisplay3dView = () => {
@@ -139,16 +178,22 @@ export default function MainLayout(): JSX.Element {
     async function loadStlFiles() {
       const result = await axios(stlPrefix);
 
-      await blobCache.current.openAsync();
-      console.log('BlobCache opened.');
-
       const newFiles = result.data as string[];
 
       setStlFiles(newFiles);
+
       setStlLoaded(true);
     }
 
+    async function loadDracoFiles() {
+      const result = await axios(dracoPrefix);
+      const newFiles = result.data as string[];
+      setDracoFiles(newFiles);
+      setDracoLoaded(true);
+    }
+
     loadStlFiles();
+    loadDracoFiles();
   }, []);
 
   const classes = useStyles();
@@ -185,6 +230,23 @@ export default function MainLayout(): JSX.Element {
     }
   };
 
+  const list =
+    displayingTab === 0 ? (
+      <StlFilesView
+        stlLoaded={stlLoaded}
+        stlFiles={stlFiles}
+        selectedStls={selectedStls}
+        onSelctedStlChanged={handleSelectedStlChanged}
+      />
+    ) : (
+      <DracoFilesView
+        dracoLoaded={dracoLoaded}
+        dracoFiles={dracoFiles}
+        selectedDracos={selectedDracos}
+        onSelctedDracoChanged={handleSelectedDracoChanged}
+      />
+    );
+
   return (
     <div className={classes.root}>
       <Grid container spacing={4} className={classes.full}>
@@ -207,12 +269,11 @@ export default function MainLayout(): JSX.Element {
           />
         </Grid>
         <Grid item md={2} className={classes.full}>
-          <DisplayingTargets
-            stlLoaded={stlLoaded}
-            stlFiles={stlFiles}
-            selectedStls={selectedStls}
-            onSelctedStlChanged={handleSelectedStlChanged}
-          />
+          <Tabs value={displayingTab} onChange={handleTabChange} aria-label="models">
+            <Tab label="STL" id="simple-tab-0" aria-controls="simple-tabpanel-0" />
+            <Tab label="Draco" id="simple-tab-1" aria-controls="simple-tabpanel-1" />
+          </Tabs>
+          {list}
         </Grid>{' '}
         <Grid item md={10} className={classes.full}>
           {display3dView && <RenderingView engineCallback={setupEngine} />}6

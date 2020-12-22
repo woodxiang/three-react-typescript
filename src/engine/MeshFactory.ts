@@ -4,6 +4,7 @@ import { Material } from 'three/src/materials/Material';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import STLCachedLoader from './STLCachedLoader';
 
 export enum GeometryDataType {
@@ -17,6 +18,8 @@ export default class MeshFactory {
     switch (dataType) {
       case GeometryDataType.STLMesh:
         return MeshFactory.loadStlAsync(url);
+      case GeometryDataType.DracoMesh:
+        return MeshFactory.loadDracoAsync(url);
       default:
         throw Error('unexpected type.');
     }
@@ -70,7 +73,19 @@ export default class MeshFactory {
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
     const loader = new STLCachedLoader();
+    const geo = (await loader.loadAsync(url, onProgress)) as BufferGeometry;
+    return geo as BufferGeometry;
+  }
+
+  private static async loadDracoAsync(
+    url: string,
+    onProgress?: (event: ProgressEvent<EventTarget>) => void
+  ): Promise<BufferGeometry> {
+    const loader = new DRACOLoader();
+    loader.setDecoderPath('./wasm/');
     const geo = await loader.loadAsync(url, onProgress);
+
+    geo.computeVertexNormals();
 
     return geo as BufferGeometry;
   }
