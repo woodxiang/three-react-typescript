@@ -116,7 +116,7 @@ export default class SelectionHelper {
       let axis = new Vector3(0, 1, 0);
       let angle = Math.PI;
       if (cosAngle > -1 + this.errorRateInternal) {
-        axis = selectedTriangleNormal.cross(new Vector3(0, 0, 1));
+        axis = selectedTriangleNormal.clone().cross(new Vector3(0, 0, 1));
         angle = Math.asin(axis.length());
       }
 
