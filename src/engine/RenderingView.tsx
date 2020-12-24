@@ -56,7 +56,7 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
     }
     return () => {
       // dispose engine when unmount.
-      engine.Dispose();
+      engine.dispose();
       if (engineCallback) engineCallback(undefined);
     };
 

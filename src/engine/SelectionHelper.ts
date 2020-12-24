@@ -35,6 +35,26 @@ export default class SelectionHelper {
   }
 
   /**
+   * calculate the volume of specified geometry
+   * @param geo the geometry to calculate
+   */
+  public static calculateGeometryVolume(geo: BufferGeometry): number {
+    const { position } = geo.attributes;
+    const faces = position.count / 3;
+    let sum = 0;
+    const p1 = new Vector3();
+    const p2 = new Vector3();
+    const p3 = new Vector3();
+    for (let i = 0; i < faces; i += 1) {
+      p1.fromBufferAttribute(position, i * 3 + 0);
+      p2.fromBufferAttribute(position, i * 3 + 1);
+      p3.fromBufferAttribute(position, i * 3 + 2);
+      sum += p1.dot(p2.cross(p3)) / 6.0;
+    }
+    return sum;
+  }
+
+  /**
    * Select a connected flat from a geometry.
    * @param geo input BufferGeomety
    * @param selectedTriangleIndex index of the selected triangle
@@ -42,7 +62,11 @@ export default class SelectionHelper {
   public findFlatByFace(
     geo: BufferGeometry,
     selectedTriangleIndex: number
-  ): { faceIndexes: number[]; normal: Vector3 } {
+  ): {
+    faceIndexes: number[];
+    normal: Vector3;
+    area: number;
+  } {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
       throw Error('no postion.');
@@ -140,10 +164,16 @@ export default class SelectionHelper {
 
     adjencedTriangles.sort((v1, v2) => v1 - v2);
 
-    return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal };
+    let area = 0.0;
+    adjencedTriangles.forEach((index) => {
+      const itFace = SelectionHelper.getFace(positions, index);
+      area += itFace.getArea();
+    });
+
+    return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal, area };
   }
 
-  public static UpdateGroups(
+  public static updateGroups(
     geo: BufferGeometry,
     defaultMaterialIndex: number,
     inactiveFaces: { faces: number[]; materialIndex: number },
@@ -222,7 +252,7 @@ export default class SelectionHelper {
   }
 
   public static clearIndexes(parent: Object3D): void {
-    parent.children.forEach((child) => {
+    parent.children.forEach((child: Object3D) => {
       if (child instanceof Group) {
         this.clearIndexes(<Group>child);
       } else {

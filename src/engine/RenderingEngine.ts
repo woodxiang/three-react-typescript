@@ -29,6 +29,7 @@ import {
   IHitTestResult,
   IObjectRotation,
   IHitTestHandler,
+  IFlat,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
@@ -179,7 +180,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.initEvents();
   }
 
-  public Dispose(): void {
+  public dispose(): void {
     if (this.debugMode) {
       this.gui?.destroy();
     }
@@ -273,7 +274,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param newMesh new mesh to add
    * @param groupName the group if it is in a group.
    */
-  public AddMesh(newMesh: Mesh, groupName: string | undefined = undefined): void {
+  public addMesh(newMesh: Mesh, groupName: string | undefined = undefined): void {
     if (!this.targetObject3D) {
       throw Error('invalid target object group');
     }
@@ -299,20 +300,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param name the mesh name to remove.
    * @param groupName the group name if it included.
    */
-  public RemoveMesh(name: string, groupName: string | undefined = undefined): boolean {
+  public removeMesh(name: string, groupName: string | undefined = undefined): boolean {
     if (!this.targetObject3D) {
       throw Error('no root.');
     }
-    if (groupName) {
-      const group = RenderingEngine.findGroup(this.targetObject3D, groupName);
-      if (group) {
-        const index = group.children.findIndex((mesh: Object3D) => mesh.name === name);
-        group.children.splice(index, 1);
-        return true;
-      }
-    } else {
-      const index = this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === name);
-      this.targetObject3D.children.splice(index, 1);
+
+    const parent = groupName ? RenderingEngine.findGroup(this.targetObject3D, groupName) : this.targetObject3D;
+
+    if (parent) {
+      const index = parent.children.findIndex((mesh: Object3D) => mesh.name === name);
+      parent.children.splice(index, 1);
       return true;
     }
 
@@ -331,12 +328,29 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   /**
    * Remove all the meshes
    */
-  public ClearMeshes(): void {
+  public clearMeshes(): void {
     if (!this.targetObject3D) {
       throw Error('no root.');
     }
 
     this.targetObject3D.clear();
+  }
+
+  public calculateMeshVolume(name: string, groupName: string | undefined = undefined): number {
+    if (!this.targetObject3D) {
+      throw Error('no root.');
+    }
+
+    const parent = groupName ? RenderingEngine.findGroup(this.targetObject3D, groupName) : this.targetObject3D;
+
+    if (parent) {
+      const obj = <BufferGeometry>(<unknown>parent.children.find((mesh: Object3D) => mesh.name === name));
+      if (obj) {
+        return SelectionHelper.calculateGeometryVolume(obj);
+      }
+    }
+
+    throw Error('no specified geometry.');
   }
 
   /**
@@ -422,7 +436,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         throw Error('invalid geometry.');
       }
 
-      SelectionHelper.UpdateGroups(
+      SelectionHelper.updateGroups(
         geo,
         0,
         { faces: inactiveFaces, materialIndex: 1 },
@@ -445,7 +459,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param name the name of the target object.
    * @param index the index of the source face.
    */
-  public findFlat(name: string, index: number): { faceIndexes: number[]; normal: Vector3 } | undefined {
+  public findFlat(name: string, index: number): IFlat | undefined {
     const geometry = this.findGeometry(name);
     if (geometry) {
       return this.selectionHelper.findFlatByFace(geometry, index);
