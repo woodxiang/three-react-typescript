@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
+import { Mesh } from 'three/src/objects/Mesh';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
@@ -71,11 +72,24 @@ export default function MainLayout(): JSX.Element {
     if (!engine) {
       throw Error('invalid engine');
     }
-    const newMesh = await MeshFactory.createSolidMesh(
-      dracoPrefix + item,
-      GeometryDataType.DracoMesh,
-      preDefinedColors[dracoFiles.indexOf(item)]
-    );
+
+    const dracoType = item.endsWith('.drc') ? GeometryDataType.DracoMesh : GeometryDataType.DracoMeshEx;
+
+    let newMesh: Mesh | undefined;
+    switch (dracoType) {
+      case GeometryDataType.DracoMesh:
+        newMesh = await MeshFactory.createSolidMesh(
+          dracoPrefix + item,
+          GeometryDataType.DracoMesh,
+          preDefinedColors[dracoFiles.indexOf(item)]
+        );
+        break;
+      case GeometryDataType.DracoMeshEx:
+        newMesh = await MeshFactory.createColorMapMesh(dracoPrefix + item, dracoType);
+        break;
+      default:
+        throw Error('Invalid Geometry type.');
+    }
     if (newMesh) engine.AddMesh(newMesh);
   };
 

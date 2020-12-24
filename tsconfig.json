@@ -68,5 +68,8 @@
   "include": [
     "./**/*.ts",
     "./src/**/*.tsx"
+  ],
+  "exclude": [
+    "./src/wasm/*.*"
   ]
 }

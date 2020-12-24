@@ -99,7 +99,10 @@ const clientConfig: webpack.Configuration = {
   },
   plugins: [
     new CopyWebpackPlugin({
-      patterns: [{ from: 'node_modules/three/examples/js/libs/draco', to: 'wasm' }],
+      patterns: [{ from: 'node_modules/three/examples/js/libs/draco', to: 'wasm/draco' }],
+    }),
+    new CopyWebpackPlugin({
+      patterns: [{ from: 'src/wasm/dracoEx', to: 'wasm/dracoEx' }],
     }),
     new HtmlWebPackPlugin({
       template: './src/index.html',

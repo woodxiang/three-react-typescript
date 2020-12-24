@@ -11,6 +11,7 @@ import { Mesh } from 'three/src/objects/Mesh';
  * This helper class is use to help calculate connected flats
  * Tips the attributes can not update inplace because when it compare
  * with cache it only compare the object reference.
+ * REMARK: all this functions assume the geometry is not indexed.
  */
 export default class SelectionHelper {
   private errorRateInternal = 0.001;
