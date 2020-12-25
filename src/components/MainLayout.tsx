@@ -90,7 +90,7 @@ export default function MainLayout(): JSX.Element {
       default:
         throw Error('Invalid Geometry type.');
     }
-    if (newMesh) engine.AddMesh(newMesh);
+    if (newMesh) engine.addMesh(newMesh);
   };
 
   // handle the event when selected stl changed.
@@ -122,7 +122,7 @@ export default function MainLayout(): JSX.Element {
     if (index !== -1) {
       newSelectedDracos.splice(index, 1);
       if (engine) {
-        engine.RemoveMesh(dracoPrefix + item);
+        engine.removeMesh(dracoPrefix + item);
       }
     } else {
       newSelectedDracos.push(item);
