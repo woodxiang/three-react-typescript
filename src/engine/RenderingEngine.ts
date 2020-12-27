@@ -19,6 +19,8 @@ import { Object3D } from 'three/src/core/Object3D';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { FrontSide } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
+import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
+import { encode } from './utils/encoder';
 import LiteEvent from './event';
 import {
   IActionCallback,
@@ -371,6 +373,29 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.stats?.update();
     };
     animate();
+  }
+
+  public exportImage(width: number, height: number): Uint8Array {
+    if (!this.renderer || !this.scene || !this.camera) {
+      throw Error('invalid render');
+    }
+    const target = new WebGLRenderTarget(width, height);
+
+    this.renderer.setRenderTarget(target);
+
+    this.renderer.render(this.scene, this.camera);
+
+    const data = new Uint8Array(width * height * 4);
+
+    this.renderer.readRenderTargetPixels(target, 0, 0, width, height, data);
+
+    this.renderer.setRenderTarget(null);
+
+    const jpgdata = encode({ data, width, height }, 100);
+
+    target.dispose();
+
+    return jpgdata.data;
   }
 
   /**

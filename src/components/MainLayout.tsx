@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
+import { Button, createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import RenderingEngine from '../engine/RenderingEngine';
@@ -186,6 +186,14 @@ export default function MainLayout(): JSX.Element {
     flatsManagerRef.current.isMultipleSelection = newValue;
   };
 
+  const onExportImage = () => {
+    if (!engineRef.current) {
+      throw Error('invalid engine.');
+    }
+
+    engineRef.current.exportImage(1920, 1080);
+  };
+
   // init effect when mount.
   useEffect(() => {
     // load all stl files if file is not in cache.
@@ -281,6 +289,7 @@ export default function MainLayout(): JSX.Element {
             control={<Switch checked={enableMultiFlatsSelection} onChange={onToggleMultiSelection} />}
             label="Enable Multiple Flat Selection"
           />
+          <Button onClick={onExportImage}>Export Image</Button>
         </Grid>
         <Grid item md={2} className={classes.full}>
           <Tabs value={displayingTab} onChange={handleTabChange} aria-label="models">
