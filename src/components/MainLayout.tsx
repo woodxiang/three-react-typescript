@@ -2,6 +2,7 @@ import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Button, createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
+import { saveAs } from 'file-saver';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
@@ -191,7 +192,9 @@ export default function MainLayout(): JSX.Element {
       throw Error('invalid engine.');
     }
 
-    engineRef.current.exportImage(1920, 1080);
+    const jpegdata = engineRef.current.exportImage(3840, 2160);
+
+    saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
   };
 
   // init effect when mount.
