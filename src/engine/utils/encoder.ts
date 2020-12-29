@@ -914,29 +914,6 @@ class JPEGEncoder {
     this.writeByte(0); // thumbnheight
   }
 
-  private writeAPP1(exifBuffer: string | any[]) {
-    if (!exifBuffer) return;
-
-    this.writeWord(0xffe1); // APP1 marker
-
-    if (exifBuffer[0] === 0x45 && exifBuffer[1] === 0x78 && exifBuffer[2] === 0x69 && exifBuffer[3] === 0x66) {
-      // Buffer already starts with EXIF, just use it directly
-      this.writeWord(exifBuffer.length + 2); // length is buffer + length itself!
-    } else {
-      // Buffer doesn't start with EXIF, write it for them
-      this.writeWord(exifBuffer.length + 5 + 2); // length is buffer + EXIF\0 + length itself!
-      this.writeByte(0x45); // E
-      this.writeByte(0x78); // X
-      this.writeByte(0x69); // I
-      this.writeByte(0x66); // F
-      this.writeByte(0); // = "EXIF",'\0'
-    }
-
-    for (let i = 0; i < exifBuffer.length; i += 1) {
-      this.writeByte(exifBuffer[i]);
-    }
-  }
-
   private writeSOF0(width: number, height: number) {
     this.writeWord(0xffc0); // marker
     this.writeWord(17); // length, truecolor YUV JPG

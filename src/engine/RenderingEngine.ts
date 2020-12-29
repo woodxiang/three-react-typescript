@@ -36,6 +36,7 @@ import {
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
+import { HeapInfo } from 'v8';
 
 interface IInternalControlObject {
   fov: number;
@@ -346,7 +347,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const parent = groupName ? RenderingEngine.findGroup(this.targetObject3D, groupName) : this.targetObject3D;
 
     if (parent) {
-      const obj = <BufferGeometry>(<unknown>parent.children.find((mesh: Object3D) => mesh.name === name));
+      const obj = <BufferGeometry>(
+        (<Mesh>(<unknown>parent.children.find((mesh: Object3D) => mesh.name === name)))?.geometry
+      );
       if (obj) {
         return SelectionHelper.calculateGeometryVolume(obj);
       }
@@ -389,6 +392,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.renderer.readRenderTargetPixels(target, 0, 0, width, height, data);
 
+    RenderingEngine.flipImageData(data, width, height);
+
     this.renderer.setRenderTarget(null);
 
     const jpgdata = encode({ data, width, height }, 100);
@@ -396,6 +401,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     target.dispose();
 
     return jpgdata.data;
+  }
+
+  private static flipImageData(img: Uint8Array, width: number, height: number) {
+    const nFlip = Math.floor(height / 2);
+    let buf: Uint8Array;
+    for (let i = 0; i < nFlip; i += 1) {
+      buf = img.slice(i * width * 4, (i + 1) * width * 4);
+      img.copyWithin(i * width * 4, (height - i - 1) * width * 4, (height - i) * width * 4);
+      img.set(buf, (height - i - 1) * width * 4);
+    }
   }
 
   /**
