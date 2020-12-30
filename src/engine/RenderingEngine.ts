@@ -36,7 +36,6 @@ import {
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
-import { HeapInfo } from 'v8';
 
 interface IInternalControlObject {
   fov: number;
@@ -137,7 +136,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.viewPortSize = new Vector2(width, height);
 
     // Create Render
-    this.renderer = new WebGLRenderer();
+    this.renderer = new WebGLRenderer({ antialias: true });
     this.renderer.setSize(width, height);
 
     div.appendChild(this.renderer.domElement);
