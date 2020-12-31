@@ -5,7 +5,6 @@ import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { AxesHelper } from 'three/src/helpers/AxesHelper';
 import { Color } from 'three/src/math/Color';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
-import { DirectionalLight } from 'three/src/lights/DirectionalLight';
 import { Box3 } from 'three/src/math/Box3';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Vector3 } from 'three/src/math/Vector3';
@@ -20,6 +19,7 @@ import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { FrontSide } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
+import { PointLight } from 'three/src/lights/PointLight';
 import { encode } from './utils/encoder';
 import LiteEvent from './event';
 import {
@@ -131,7 +131,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
     this.parentDiv = div;
     this.scene = new Scene();
-    this.camera = new PerspectiveCamera(this.internalControl.fov, width / height, 0.1, 1000);
+    this.camera = new PerspectiveCamera(this.internalControl.fov, width / height, 0.01, 100);
+    this.camera.position.set(0, 0, 10);
 
     this.viewPortSize = new Vector2(width, height);
 
@@ -140,8 +141,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.renderer.setSize(width, height);
 
     div.appendChild(this.renderer.domElement);
-
-    this.camera.position.z = 5;
 
     this.prepareEnvironment();
 
@@ -689,11 +688,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw new Error('scene not intialized.');
     }
     this.scene.background = new Color(0xaaaaaa);
-    const ambientLight = new AmbientLight(0x333333);
-    const light = new DirectionalLight(0xffffff, 1.0);
-
+    const ambientLight = new AmbientLight(0x4d4d4d);
+    const light1 = new PointLight(0xffffff, 0.7);
+    light1.position.set(3.0, 3.0, 3.0);
+    const light2 = new PointLight(0xffffff, 0.7);
+    light2.position.set(-3.0, -3.0, 3.0);
     this.scene.add(ambientLight);
-    this.scene.add(light);
+    this.scene.add(light1);
+    this.scene.add(light2);
   }
 
   private updateScales(): void {
@@ -729,7 +731,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       const matTranslate = new Matrix4();
       matTranslate.makeTranslation(-center.x, -center.y, -center.z);
       const matScale = new Matrix4();
-      matScale.makeScale(1.0 / this.maxDim, 1.0 / this.maxDim, 1.0 / this.maxDim);
+      matScale.makeScale(2.0 / this.maxDim, 2.0 / this.maxDim, 2.0 / this.maxDim);
 
       matScale.multiply(matTranslate);
       this.adapteMatrix = matScale;

@@ -44,6 +44,7 @@ export default class MeshFactory {
       color: materialColor,
       side: FrontSide,
     });
+    material.specular.set(0.9);
     const mesh = new Mesh(geometry, material);
     mesh.name = url;
 
@@ -80,6 +81,7 @@ export default class MeshFactory {
     lutInternal.setMin(range.min);
     lutInternal.setMax(range.max);
     const material = new ColorMapPhoneMaterial(lutInternal);
+    material.specular.set(0.9);
     return material;
   }
 
