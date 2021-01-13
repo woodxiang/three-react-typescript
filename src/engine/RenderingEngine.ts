@@ -20,6 +20,7 @@ import { FrontSide } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
+import { Points } from 'three/src/objects/Points';
 import { encode } from './utils/encoder';
 import LiteEvent from './event';
 import {
@@ -275,7 +276,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param newMesh new mesh to add
    * @param groupName the group if it is in a group.
    */
-  public addMesh(newMesh: Mesh, groupName: string | undefined = undefined): void {
+  public addMesh(newMesh: Mesh | Points, groupName: string | undefined = undefined): void {
     if (!this.targetObject3D) {
       throw Error('invalid target object group');
     }

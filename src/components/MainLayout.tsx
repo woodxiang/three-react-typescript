@@ -3,6 +3,7 @@ import { Button, createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, 
 import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
+import { Points } from 'three/src/objects/Points';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
@@ -76,7 +77,7 @@ export default function MainLayout(): JSX.Element {
 
     const dracoType = item.endsWith('.drc') ? GeometryDataType.DracoMesh : GeometryDataType.DracoMeshEx;
 
-    let newMesh: Mesh | undefined;
+    let newMesh: Mesh | Points | undefined;
     switch (dracoType) {
       case GeometryDataType.DracoMesh:
         newMesh = await MeshFactory.createSolidMesh(

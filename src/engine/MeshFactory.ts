@@ -7,6 +7,8 @@ import { Mesh } from 'three/src/objects/Mesh';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
+import { PointsMaterial } from 'three/src/materials/PointsMaterial';
+import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './DracoExLoader';
 import ColorMapPhoneMaterial from './Materials/ColorMapPhongMaterial';
 
@@ -51,13 +53,17 @@ export default class MeshFactory {
     return mesh;
   }
 
-  public static async createColorMapMesh(url: string, dataType: GeometryDataType): Promise<Mesh | undefined> {
+  public static async createColorMapMesh(url: string, dataType: GeometryDataType): Promise<Mesh | Points | undefined> {
     const geometry = await MeshFactory.loadAsync(url, dataType);
     const range = MeshFactory.calculateValueRange(geometry, 'generic');
+    let material: Material;
     if (!range) {
-      throw Error('no values');
+      material = new PointsMaterial({ color: new Color('cyan'), size: 0.05 });
+      const points = new Points(geometry, material);
+      points.name = url;
+      return points;
     }
-    const material = this.createColorMapMaterial(range, 'rainbow');
+    material = this.createColorMapMaterial(range, 'rainbow');
     const mesh = new Mesh(geometry, material);
     mesh.name = url;
 
@@ -148,17 +154,18 @@ export default class MeshFactory {
     attributeName: string
   ): { min: number; max: number } | undefined {
     const attribute = geo.getAttribute(attributeName);
-    const values = <Array<number>>attribute.array;
-    if (values) {
-      let min = Number.MAX_VALUE;
-      let max = Number.MIN_VALUE;
-      values.forEach((v) => {
-        if (v < min) min = v;
-        if (v > max) max = v;
-      });
-      return { min, max };
+    if (attribute) {
+      const values = <Array<number>>attribute.array;
+      if (values) {
+        let min = Number.MAX_VALUE;
+        let max = Number.MIN_VALUE;
+        values.forEach((v) => {
+          if (v < min) min = v;
+          if (v > max) max = v;
+        });
+        return { min, max };
+      }
     }
-
     return undefined;
   }
 }
