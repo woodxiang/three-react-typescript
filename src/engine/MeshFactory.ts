@@ -5,8 +5,8 @@ import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
-import STLCachedLoader from './STLCachedLoader';
 import DracoExLoader from './DracoExLoader';
 import ColorMapPhoneMaterial from './Materials/ColorMapPhongMaterial';
 
@@ -112,7 +112,7 @@ export default class MeshFactory {
     url: string,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
-    const loader = new STLCachedLoader();
+    const loader = new STLLoader();
     const geo = (await loader.loadAsync(url, onProgress)) as BufferGeometry;
     return geo as BufferGeometry;
   }
