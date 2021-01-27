@@ -22,7 +22,6 @@ import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
 import { Points } from 'three/src/objects/Points';
 import { encode } from './utils/encoder';
-import LiteEvent from './event';
 import {
   IActionCallback,
   STATE,
@@ -100,8 +99,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private cursorTypeInternal: CURSORTYPE = CURSORTYPE.ARRAW;
 
   private capturedPointerId = -1;
-
-  public readonly faceClickedEvent = new LiteEvent<IHitTestResult>();
 
   public hitTestHandler: IHitTestHandler | undefined = undefined;
 
@@ -276,23 +273,12 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param newMesh new mesh to add
    * @param groupName the group if it is in a group.
    */
-  public addMesh(newMesh: Mesh | Points, groupName: string | undefined = undefined): void {
+  public addMesh(newMesh: Mesh | Points): void {
     if (!this.targetObject3D) {
       throw Error('invalid target object group');
     }
 
-    if (!groupName) {
-      this.targetObject3D.add(newMesh);
-    } else {
-      let targetGroup = RenderingEngine.findGroup(this.targetObject3D, groupName);
-      if (!targetGroup) {
-        targetGroup = new Group();
-        targetGroup.name = groupName;
-        this.targetObject3D.add(targetGroup);
-      }
-
-      targetGroup.add(newMesh);
-    }
+    this.targetObject3D.add(newMesh);
 
     this.updateScales();
   }
@@ -302,24 +288,22 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param name the mesh name to remove.
    * @param groupName the group name if it included.
    */
-  public removeMesh(name: string, groupName: string | undefined = undefined): boolean {
+  public removeMesh(name: string): boolean {
     if (!this.targetObject3D) {
       throw Error('no root.');
     }
 
-    const parent = groupName ? RenderingEngine.findGroup(this.targetObject3D, groupName) : this.targetObject3D;
-
-    if (parent) {
-      const index = parent.children.findIndex((mesh: Object3D) => mesh.name === name);
-      parent.children.splice(index, 1);
+    const index = this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === name);
+    if (index >= 0) {
+      this.targetObject3D.children.splice(index, 1);
       return true;
     }
 
     return false;
   }
 
-  public setVisible(visible: boolean, name: string, groupName: string | undefined = undefined): boolean {
-    const mesh = this.findMesh(name, groupName);
+  public setVisible(visible: boolean, name: string): boolean {
+    const mesh = this.findMesh(name);
     if (mesh) {
       mesh.visible = visible;
       return true;
@@ -338,20 +322,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.targetObject3D.clear();
   }
 
-  public calculateMeshVolume(name: string, groupName: string | undefined = undefined): number {
+  public calculateMeshVolume(name: string): number {
     if (!this.targetObject3D) {
       throw Error('no root.');
     }
 
-    const parent = groupName ? RenderingEngine.findGroup(this.targetObject3D, groupName) : this.targetObject3D;
-
-    if (parent) {
-      const obj = <BufferGeometry>(
-        (<Mesh>(<unknown>parent.children.find((mesh: Object3D) => mesh.name === name)))?.geometry
-      );
-      if (obj) {
-        return SelectionHelper.calculateGeometryVolume(obj);
-      }
+    const obj = <BufferGeometry>(
+      (<Mesh>(<unknown>this.targetObject3D.children.find((mesh: Object3D) => mesh.name === name)))?.geometry
+    );
+    if (obj) {
+      return SelectionHelper.calculateGeometryVolume(obj);
     }
 
     throw Error('no specified geometry.');
@@ -663,19 +643,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return null;
   }
 
-  private findMesh(name: string, groupName: string | undefined = undefined): Mesh | undefined {
+  private findMesh(name: string): Mesh | undefined {
     if (!this.targetObject3D) {
       throw Error('no root');
     }
-    const collection =
-      groupName === undefined
-        ? this.targetObject3D?.children
-        : RenderingEngine.findGroup(this.targetObject3D, groupName)?.children;
+    const collection = this.targetObject3D.children;
 
-    if (collection) {
-      return collection.find((mesh: Object3D) => mesh.name === name) as Mesh;
-    }
-    return undefined;
+    return collection.find((mesh: Object3D) => mesh.name === name) as Mesh;
   }
 
   private findGeometry(name: string): BufferGeometry | undefined {
@@ -751,19 +725,5 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.targetObject3D.matrix = matrix;
       this.targetObject3D.matrixWorldNeedsUpdate = true;
     }
-  }
-
-  private static findGroup(parent: Group, groupName: string): Group | undefined {
-    for (let i = 0; i < parent.children.length; i += 1) {
-      const group = <Group>parent.children[i];
-      if (group) {
-        if (group.name === groupName) return <Group>group;
-        const ret = RenderingEngine.findGroup(<Group>group, groupName);
-        if (ret) {
-          return ret;
-        }
-      }
-    }
-    return undefined;
   }
 }
