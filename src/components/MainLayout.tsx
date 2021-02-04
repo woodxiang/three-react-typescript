@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
 import { Points } from 'three/src/objects/Points';
+import { Color } from 'three/src/math/Color';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
@@ -198,6 +199,20 @@ export default function MainLayout(): JSX.Element {
     saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
   };
 
+  const onTest = () => {
+    if (!engineRef.current) {
+      throw Error('invalid engine');
+    }
+
+    const engine = engineRef.current;
+
+    if (selectedStls.length > 0) {
+      selectedStls.forEach((v) => {
+        engine.setMeshColor(new Color('red'), stlPrefix + v);
+      });
+    }
+  };
+
   // init effect when mount.
   useEffect(() => {
     // load all stl files if file is not in cache.
@@ -294,6 +309,7 @@ export default function MainLayout(): JSX.Element {
             label="Enable Multiple Flat Selection"
           />
           <Button onClick={onExportImage}>Export Image</Button>
+          <Button onClick={onTest}>Test</Button>
         </Grid>
         <Grid item md={2} className={classes.full}>
           <Tabs value={displayingTab} onChange={handleTabChange} aria-label="models">

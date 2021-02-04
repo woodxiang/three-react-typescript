@@ -311,6 +311,23 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return false;
   }
 
+  public setMeshColor(color: Color, name: string): boolean {
+    const mesh = this.findMesh(name);
+
+    if (mesh) {
+      const material = Array.isArray(mesh.material)
+        ? (mesh.material[0] as MeshPhongMaterial)
+        : (mesh.material as MeshPhongMaterial);
+      if (material) {
+        material.color.set(color);
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /**
    * Remove all the meshes
    */
