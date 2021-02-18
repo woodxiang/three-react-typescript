@@ -1,5 +1,5 @@
-import { IHitTestHandler, IHitTestResult } from '../engine/interfaces';
-import RenderingEngine from '../engine/RenderingEngine';
+import { IHitTestHandler, IHitTestResult } from './interfaces';
+import RenderingEngine from './RenderingEngine';
 
 export default class FlatManager implements IHitTestHandler {
   private isMultipleSelectionInternal = false;
@@ -8,7 +8,7 @@ export default class FlatManager implements IHitTestHandler {
 
   private engine: RenderingEngine | undefined;
 
-  public Bind(engine: RenderingEngine | undefined): void {
+  public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
       this.engine.hitTestHandler = undefined;

@@ -10,8 +10,8 @@ import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
 import MeshFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
-import FlatManager from './FlatsManager';
-import SensorManager from './SensorManager';
+import FlatManager from '../engine/FlatsManager';
+import SensorManager from '../engine/SensorManager';
 import DracoFilesView from './DracoFilesView';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -145,9 +145,9 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
     if (engine) {
       if (newValue) {
-        flatsManagerRef.current.Bind(engine);
+        flatsManagerRef.current.bind(engine);
       } else {
-        flatsManagerRef.current.Bind(undefined);
+        flatsManagerRef.current.bind(undefined);
       }
     }
   };
@@ -156,9 +156,9 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
     if (engine) {
       if (newValue) {
-        sensorsManagerRef.current.Bind(engine);
+        sensorsManagerRef.current.bind(engine);
       } else {
-        sensorsManagerRef.current.Bind(undefined);
+        sensorsManagerRef.current.bind(undefined);
       }
     }
   };
@@ -243,12 +243,12 @@ export default function MainLayout(): JSX.Element {
     if (engineRef.current !== eg) {
       if (engineRef.current) {
         // unintialize old engine.
-        flatsManagerRef.current.Bind(undefined);
+        flatsManagerRef.current.bind(undefined);
       }
 
       engineRef.current = eg;
 
-      flatsManagerRef.current.Bind(eg);
+      flatsManagerRef.current.bind(eg);
 
       if (engineRef.current) {
         engineRef.current = eg;

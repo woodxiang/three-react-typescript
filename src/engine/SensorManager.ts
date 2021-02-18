@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
-import RenderingEngine from '../engine/RenderingEngine';
-import { IHitTestHandler, IHitTestResult } from '../engine/interfaces';
+import RenderingEngine from './RenderingEngine';
+import { IHitTestHandler, IHitTestResult } from './interfaces';
 
 export default class SensorManager implements IHitTestHandler {
   private sensors: { targetName: string; id: string; position: number[] }[] = [];
@@ -9,7 +9,7 @@ export default class SensorManager implements IHitTestHandler {
 
   private engine: RenderingEngine | undefined;
 
-  public Bind(engine: RenderingEngine | undefined): void {
+  public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
       this.engine.hitTestHandler = undefined;
