@@ -12,6 +12,7 @@ import MeshFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
 import FlatManager from '../engine/FlatsManager';
 import SensorManager from '../engine/SensorManager';
+import ClippingManager from '../engine/ClippingManager';
 import DracoFilesView from './DracoFilesView';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -43,12 +44,14 @@ export default function MainLayout(): JSX.Element {
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
   const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(true);
   const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(true);
+  const [enableClipping, setEnableClipping] = useState<boolean>(true);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
   const [displayingTab, setDisplayingTab] = useState<number>(0);
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
   const flatsManagerRef = useRef<FlatManager>(new FlatManager());
   const sensorsManagerRef = useRef<SensorManager>(new SensorManager());
+  const clippingManagerRef = useRef<ClippingManager>(new ClippingManager());
 
   const stlPrefix = '/api/stls/';
   const dracoPrefix = 'api/dracos/';
@@ -173,6 +176,16 @@ export default function MainLayout(): JSX.Element {
     applyEnableSensorSelection(newValue);
   };
 
+  const applyEnableClipping = (newValue: boolean) => {
+    const engine = engineRef.current;
+    if (engine) {
+      if (newValue) {
+        clippingManagerRef.current.bind(engine);
+      } else {
+        clippingManagerRef.current.bind(undefined);
+      }
+    }
+  };
   const onToggleEnableSelection = () => {
     const newValue = !enableFlatSelection;
     if (newValue) {
@@ -187,6 +200,12 @@ export default function MainLayout(): JSX.Element {
     const newValue = !enableMultiFlatsSelection;
     setEnableMultiFlatsSelection(newValue);
     flatsManagerRef.current.isMultipleSelection = newValue;
+  };
+
+  const onToggleClipping = () => {
+    const newValue = !enableClipping;
+    setEnableClipping(newValue);
+    applyEnableClipping(newValue);
   };
 
   const onExportImage = () => {
@@ -244,11 +263,14 @@ export default function MainLayout(): JSX.Element {
       if (engineRef.current) {
         // unintialize old engine.
         flatsManagerRef.current.bind(undefined);
+        clippingManagerRef.current.bind(undefined);
       }
 
       engineRef.current = eg;
 
       flatsManagerRef.current.bind(eg);
+
+      clippingManagerRef.current.bind(eg);
 
       if (engineRef.current) {
         engineRef.current = eg;
@@ -308,6 +330,10 @@ export default function MainLayout(): JSX.Element {
             control={<Switch checked={enableMultiFlatsSelection} onChange={onToggleMultiSelection} />}
             label="Enable Multiple Flat Selection"
           />
+          <FormControlLabel
+            control={<Switch checked={enableClipping} onChange={onToggleClipping} />}
+            label="Enable Clipping"
+          />
           <Button onClick={onExportImage}>Export Image</Button>
           <Button onClick={onTest}>Test</Button>
         </Grid>
@@ -319,7 +345,7 @@ export default function MainLayout(): JSX.Element {
           {list}
         </Grid>{' '}
         <Grid item md={10} className={classes.full}>
-          {display3dView && <RenderingView engineCallback={setupEngine} />}6
+          {display3dView && <RenderingView engineCallback={setupEngine} />}
           {!display3dView && <RenderingView engineCallback={setupEngine} />}
         </Grid>
       </Grid>
