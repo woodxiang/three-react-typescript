@@ -73,6 +73,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private maxDim = 1;
 
+  private boundingBoxInternal: Box3 | undefined;
+
   private axesHelper: AxesHelper | undefined;
 
   private clickHandler: ClickHandler | undefined;
@@ -93,7 +95,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>();
 
-  public domainRangeChangedEvent = new LiteEvent<{ boundingBox: Box3; maxDim: number }>();
+  public domainRangeChangedEvent = new LiteEvent<Box3>();
 
   public objectTransformChangedEvent = new LiteEvent<Matrix4>();
 
@@ -230,6 +232,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         this.renderer.domElement.style.cursor = 'default';
         break;
     }
+  }
+
+  get boundingBox(): Box3 | undefined {
+    return this.boundingBoxInternal;
   }
 
   /**
@@ -460,6 +466,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.updateRootObjectMatrix();
   }
 
+  public getMatrix(): Matrix4 {
+    const matrix = this.rotateMatrix.clone();
+    matrix.multiply(this.adapteMatrix);
+
+    return matrix;
+  }
+
   /**
    * handle window size changed.
    * @param width new width
@@ -677,8 +690,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         throw Error('invalid face index.');
       }
 
-      const matrix = this.rotateMatrix.clone();
-      matrix.multiply(this.adapteMatrix);
+      const matrix = this.getMatrix();
 
       const m = matrix.invert();
       return { name: ret.object.name, index: ret.face.a / 3, pos: ret.point.applyMatrix4(m) };
@@ -720,7 +732,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (!this.targetObject3D) {
       throw Error('object not ready');
     }
-    let boundingBox: Box3 | null = null;
+    let boundingBox: Box3 | undefined;
 
     for (let i = 0; i < this.targetObject3D.children.length; i += 1) {
       const thisMesh = this.targetObject3D.children[i] as Mesh;
@@ -738,6 +750,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       }
     }
 
+    this.boundingBoxInternal = boundingBox;
+
     if (boundingBox) {
       // calculate the matrix to adapte object position and scale to the
       // center of the clip space.
@@ -754,7 +768,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       matScale.multiply(matTranslate);
       this.adapteMatrix = matScale;
 
-      this.domainRangeChangedEvent.trigger({ boundingBox, maxDim: this.maxDim });
+      this.domainRangeChangedEvent.trigger(boundingBox);
 
       // apply the adapte scale.
       this.updateRootObjectMatrix();
@@ -763,8 +777,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private updateRootObjectMatrix() {
-    const matrix = this.rotateMatrix.clone();
-    matrix.multiply(this.adapteMatrix);
+    const matrix = this.getMatrix();
 
     if (this.root) {
       this.root.matrix = matrix;

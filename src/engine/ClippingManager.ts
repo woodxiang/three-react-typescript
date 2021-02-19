@@ -115,6 +115,14 @@ export default class ClippingManager {
           this.clipGroup.add(this.createClippingSurfaces(mesh, iMesh));
         }
       }
+
+      if (this.engine.boundingBox) {
+        this.updateClippingRange(this.engine.boundingBox);
+      }
+
+      this.updateAllPlaneMesh();
+
+      this.applyTransform(this.engine.getMatrix());
     }
   }
 
@@ -227,10 +235,13 @@ export default class ClippingManager {
    * @param boundingBox the bounding box of all the objects. to limit the clipping boundary.
    * @param maxDim maximum length in all dimension.
    */
-  private updateClippingRange = (range: { boundingBox: Box3; maxDim: number } | undefined): void => {
-    if (range !== undefined) {
-      const { boundingBox, maxDim } = range;
+  private updateClippingRange = (boundingBox: Box3 | undefined): void => {
+    if (boundingBox !== undefined) {
       const limitBox = boundingBox.clone();
+
+      const sz = new Vector3();
+      limitBox.getSize(sz);
+      const maxDim = Math.max(sz.x, Math.max(sz.y, sz.z));
 
       this.minFragment = maxDim * 0.1;
 
