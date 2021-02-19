@@ -16,7 +16,7 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
-import { FrontSide } from 'three/src/constants';
+import { FrontSide, UnsignedByteType } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
@@ -406,7 +406,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (!this.renderer || !this.scene || !this.camera) {
       throw Error('invalid render');
     }
-    const target = new WebGLRenderTarget(width, height);
+    const target = new WebGLRenderTarget(width, height, { type: UnsignedByteType });
 
     this.renderer.setRenderTarget(target);
 
@@ -427,9 +427,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return jpgdata.data;
   }
 
-  private static flipImageData(img: Uint8Array, width: number, height: number) {
+  private static flipImageData(img: Uint8Array | Float32Array, width: number, height: number) {
     const nFlip = Math.floor(height / 2);
-    let buf: Uint8Array;
+
+    let buf: Uint8Array | Float32Array;
     for (let i = 0; i < nFlip; i += 1) {
       buf = img.slice(i * width * 4, (i + 1) * width * 4);
       img.copyWithin(i * width * 4, (height - i - 1) * width * 4, (height - i) * width * 4);
