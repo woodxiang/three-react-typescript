@@ -2,7 +2,7 @@ import { IHitTestHandler, IHitTestResult } from './interfaces';
 import RenderingEngine from './RenderingEngine';
 
 export default class FlatManager implements IHitTestHandler {
-  private isMultipleSelectionInternal = false;
+  private wrappedIsMultipleSelection = false;
 
   private selectedFlats: { name: string; indexes: number[]; normal: number[] }[] = [];
 
@@ -27,7 +27,7 @@ export default class FlatManager implements IHitTestHandler {
     const index = this.selectedFlats.findIndex((v) => v.name === res.name && v.indexes.indexOf(res.index) >= 0);
     if (index >= 0) {
       const { name } = this.selectedFlats[index];
-      if (this.isMultipleSelectionInternal) {
+      if (this.wrappedIsMultipleSelection) {
         // remove the selected
         const previousActiveFlatName = this.selectedFlats[this.selectedFlats.length - 1].name;
         this.selectedFlats.splice(index, 1);
@@ -47,7 +47,7 @@ export default class FlatManager implements IHitTestHandler {
     const flat = this.engine.findFlat(res.name, res.index);
     if (!flat) return false;
 
-    if (this.isMultipleSelectionInternal) {
+    if (this.wrappedIsMultipleSelection) {
       const lastActiveObjectName =
         this.selectedFlats.length > 0 ? this.selectedFlats[this.selectedFlats.length - 1].name : undefined;
       this.selectedFlats = this.selectedFlats.concat([
@@ -81,11 +81,11 @@ export default class FlatManager implements IHitTestHandler {
   }
 
   public get isMultipleSelection(): boolean {
-    return this.isMultipleSelectionInternal;
+    return this.wrappedIsMultipleSelection;
   }
 
   public set isMultipleSelection(newValue: boolean) {
-    this.isMultipleSelectionInternal = newValue;
+    this.wrappedIsMultipleSelection = newValue;
   }
 
   private updateFlats(name: string): void {

@@ -5,6 +5,7 @@ import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
 import { Points } from 'three/src/objects/Points';
 import { Color } from 'three/src/math/Color';
+import { Direction } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
@@ -14,6 +15,7 @@ import FlatManager from '../engine/FlatsManager';
 import SensorManager from '../engine/SensorManager';
 import ClippingManager from '../engine/ClippingManager';
 import DracoFilesView from './DracoFilesView';
+import ClippingSelector from './ClippingSelector';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -52,6 +54,8 @@ export default function MainLayout(): JSX.Element {
   const flatsManagerRef = useRef<FlatManager>(new FlatManager());
   const sensorsManagerRef = useRef<SensorManager>(new SensorManager());
   const clippingManagerRef = useRef<ClippingManager>(new ClippingManager());
+
+  const { clipPositions, limitBox } = clippingManagerRef.current;
 
   const stlPrefix = '/api/stls/';
   const dracoPrefix = 'api/dracos/';
@@ -208,6 +212,14 @@ export default function MainLayout(): JSX.Element {
     applyEnableClipping(newValue);
   };
 
+  const onClippingChanged = (newPosition: { dir: Direction; pos: number }) => {
+    if (!clippingManagerRef.current) {
+      return;
+    }
+    const clippingManager = clippingManagerRef.current;
+    clippingManager.updateClip(newPosition.dir, newPosition.pos);
+  };
+
   const onExportImage = () => {
     if (!engineRef.current) {
       throw Error('invalid engine.');
@@ -334,6 +346,7 @@ export default function MainLayout(): JSX.Element {
             control={<Switch checked={enableClipping} onChange={onToggleClipping} />}
             label="Enable Clipping"
           />
+          <ClippingSelector positions={clipPositions.slice(0)} range={limitBox} onClippingChanged={onClippingChanged} />
           <Button onClick={onExportImage}>Export Image</Button>
           <Button onClick={onTest}>Test</Button>
         </Grid>
@@ -343,7 +356,7 @@ export default function MainLayout(): JSX.Element {
             <Tab label="Draco" id="simple-tab-1" aria-controls="simple-tabpanel-1" />
           </Tabs>
           {list}
-        </Grid>{' '}
+        </Grid>
         <Grid item md={10} className={classes.full}>
           {display3dView && <RenderingView engineCallback={setupEngine} />}
           {!display3dView && <RenderingView engineCallback={setupEngine} />}

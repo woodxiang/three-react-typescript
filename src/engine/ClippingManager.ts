@@ -26,7 +26,7 @@ export default class ClippingManager {
   private static clippingGroupName = '#clipping#';
 
   // the position cut on all directions.
-  private clipPositions = [0, 0, 0, 0, 0, 0];
+  private wrappedClipPositions = [0, 0, 0, 0, 0, 0];
 
   // to indicate if the objects clipped on specified direction.
   private cliped = [false, false, false, false, false, false];
@@ -35,7 +35,7 @@ export default class ClippingManager {
   private clipGroup = new Group();
 
   // the clip box, same sequence to the directions
-  private limitBox: number[] = [];
+  private wrappedLimitBox: number[] = [];
 
   private minFragment = 1;
 
@@ -54,6 +54,14 @@ export default class ClippingManager {
     this.clipGroup.name = ClippingManager.clippingGroupName;
   }
 
+  public get clipPositions(): number[] {
+    return this.wrappedClipPositions;
+  }
+
+  public get limitBox(): number[] {
+    return this.wrappedLimitBox;
+  }
+
   /**
    * bind these object to rendering engine to enable clipping function
    * @param root the root group for all rendering objects in the scene. share rotation and translate action.
@@ -68,7 +76,7 @@ export default class ClippingManager {
       this.engine.enableClipping = false;
       // clear
       this.seed = 0;
-      this.limitBox.splice(0, this.limitBox.length);
+      this.wrappedLimitBox.splice(0, this.wrappedLimitBox.length);
       const index = this.engine.root.children.indexOf(this.clipGroup);
       this.engine.root.children.splice(index, 1);
       this.clipGroup.clear();
@@ -88,8 +96,10 @@ export default class ClippingManager {
 
       this.engine.enableClipping = true;
 
-      for (let i = 0; i < this.clipPositions.length; i += 1) {
-        this.transformedPlanes.push(new Plane(new Vector3(...normals[i]).multiplyScalar(-1), this.clipPositions[i]));
+      for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
+        this.transformedPlanes.push(
+          new Plane(new Vector3(...normals[i]).multiplyScalar(-1), this.wrappedClipPositions[i])
+        );
       }
 
       for (let dir = 0; dir < 6; dir += 1) {
@@ -163,31 +173,31 @@ export default class ClippingManager {
    */
   public updateClip(dir: Direction, newValue: number): void {
     if (dir <= Direction.ZPositive) {
-      if (newValue > this.limitBox[dir]) {
-        this.clipPositions[dir] = this.limitBox[dir];
-      } else if (newValue < -this.limitBox[dir + 3] + this.minFragment) {
-        this.clipPositions[dir] = -this.limitBox[dir + 3] + this.minFragment;
-        this.clipPositions[dir + 3] = this.limitBox[dir + 3];
+      if (newValue > this.wrappedLimitBox[dir]) {
+        this.wrappedClipPositions[dir] = this.wrappedLimitBox[dir];
+      } else if (newValue < -this.wrappedLimitBox[dir + 3] + this.minFragment) {
+        this.wrappedClipPositions[dir] = -this.wrappedLimitBox[dir + 3] + this.minFragment;
+        this.wrappedClipPositions[dir + 3] = this.wrappedLimitBox[dir + 3];
       } else {
-        if (newValue < this.clipPositions[dir + 3] - this.minFragment) {
-          this.clipPositions[dir + 3] = -newValue + this.minFragment;
+        if (newValue < this.wrappedClipPositions[dir + 3] - this.minFragment) {
+          this.wrappedClipPositions[dir + 3] = -newValue + this.minFragment;
         }
 
-        this.clipPositions[dir] = newValue;
+        this.wrappedClipPositions[dir] = newValue;
       }
     } else {
       const corrected = -newValue;
-      if (corrected > this.limitBox[dir]) {
-        this.clipPositions[dir] = this.limitBox[dir];
-      } else if (corrected < -this.limitBox[dir - 3] + this.minFragment) {
-        this.clipPositions[dir] = -this.limitBox[dir - 3] + this.minFragment;
-        this.clipPositions[dir - 3] = this.limitBox[dir - 3];
+      if (corrected > this.wrappedLimitBox[dir]) {
+        this.wrappedClipPositions[dir] = this.wrappedLimitBox[dir];
+      } else if (corrected < -this.wrappedLimitBox[dir - 3] + this.minFragment) {
+        this.wrappedClipPositions[dir] = -this.wrappedLimitBox[dir - 3] + this.minFragment;
+        this.wrappedClipPositions[dir - 3] = this.wrappedLimitBox[dir - 3];
       } else {
-        if (corrected < this.clipPositions[dir - 3] - this.minFragment) {
-          this.clipPositions[dir - 3] = -corrected + this.minFragment;
+        if (corrected < this.wrappedClipPositions[dir - 3] - this.minFragment) {
+          this.wrappedClipPositions[dir - 3] = -corrected + this.minFragment;
         }
 
-        this.clipPositions[dir] = corrected;
+        this.wrappedClipPositions[dir] = corrected;
       }
     }
   }
@@ -246,12 +256,21 @@ export default class ClippingManager {
       this.minFragment = maxDim * 0.1;
 
       // expend default limit to avoid z 1% fight
-      limitBox.expandByScalar(-this.minFragment);
-      this.limitBox = [limitBox.max.x, limitBox.max.y, limitBox.max.z, limitBox.min.x, limitBox.min.y, limitBox.min.z];
+      limitBox.expandByScalar(this.minFragment);
+      this.wrappedLimitBox = [
+        limitBox.max.x,
+        limitBox.max.y,
+        limitBox.max.z,
+        limitBox.min.x,
+        limitBox.min.y,
+        limitBox.min.z,
+      ];
 
       // the constant is the distance to origin
-      for (let i = 0; i < this.clipPositions.length; i += 1) {
-        if (!this.cliped[i]) this.clipPositions[i] = i < 3 ? this.limitBox[i] : -this.limitBox[i];
+      for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
+        if (!this.cliped[i]) {
+          this.wrappedClipPositions[i] = i < 3 ? this.wrappedLimitBox[i] : -this.wrappedLimitBox[i];
+        }
       }
     }
   };
@@ -262,9 +281,9 @@ export default class ClippingManager {
    */
   private applyTransform = (matrix: Matrix4 | undefined): void => {
     if (matrix !== undefined) {
-      if (this.clipPositions) {
-        for (let i = 0; i < this.clipPositions.length; i += 1) {
-          const v = this.clipPositions[i];
+      if (this.wrappedClipPositions) {
+        for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
+          const v = this.wrappedClipPositions[i];
           const t = this.transformedPlanes[i];
           t.copy(new Plane(new Vector3(...normals[i]).multiplyScalar(-1), v).applyMatrix4(matrix));
         }
@@ -287,7 +306,7 @@ export default class ClippingManager {
     planeMeshGroup.name = '#planes#';
     targetGroup.add(planeMeshGroup);
 
-    for (let i = 0; i < this.clipPositions.length; i += 1) {
+    for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
       const plane = this.transformedPlanes[i];
       const stencilPlaneGroup = ClippingManager.createPlaneStencilGroup(mesh.geometry, plane, iMesh * 6 + i + 1);
 
@@ -328,13 +347,13 @@ export default class ClippingManager {
       const planeMatrix = new Matrix4();
       planeMatrix.scale(
         new Vector3(
-          this.limitBox[0] - this.limitBox[3],
-          this.limitBox[1] - this.limitBox[4],
-          this.limitBox[2] - this.limitBox[5]
+          this.wrappedLimitBox[0] - this.wrappedLimitBox[3],
+          this.wrappedLimitBox[1] - this.wrappedLimitBox[4],
+          this.wrappedLimitBox[2] - this.wrappedLimitBox[5]
         )
       );
 
-      planeMatrix.setPosition(new Vector3(this.limitBox[3], this.limitBox[4], this.limitBox[5]));
+      planeMatrix.setPosition(new Vector3(this.wrappedLimitBox[3], this.wrappedLimitBox[4], this.wrappedLimitBox[5]));
       if (planeGroup) {
         planeGroup.matrix = planeMatrix;
         planeGroup.matrixAutoUpdate = false;
