@@ -28,6 +28,7 @@ export default class ClippingManager {
   // the position cut on all directions.
   private wrappedClipPositions = [0, 0, 0, 0, 0, 0];
 
+  // clip position of negitive direction are negitive to limit position.
   private static clipPositionMapRatio = [1, 1, 1, -1, -1, -1];
 
   // to indicate if the objects clipped on specified direction.
@@ -57,9 +58,7 @@ export default class ClippingManager {
   }
 
   public get clipPositions(): number[] {
-    return this.wrappedClipPositions.map((v, i) => {
-      return v * ClippingManager.clipPositionMapRatio[i];
-    });
+    return this.wrappedClipPositions;
   }
 
   public get limitBox(): number[] {
@@ -102,7 +101,10 @@ export default class ClippingManager {
 
       for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
         this.transformedPlanes.push(
-          new Plane(new Vector3(...normals[i]).multiplyScalar(-1), this.wrappedClipPositions[i])
+          new Plane(
+            new Vector3(...normals[i]).multiplyScalar(-1),
+            this.wrappedClipPositions[i] * ClippingManager.clipPositionMapRatio[i]
+          )
         );
       }
 
@@ -136,7 +138,7 @@ export default class ClippingManager {
 
       this.updateAllPlaneMesh();
 
-      this.applyTransform(this.engine.getMatrix());
+      this.updatePlaneTransformMatrix(this.engine.getMatrix());
     }
   }
 
@@ -177,33 +179,63 @@ export default class ClippingManager {
    */
   public updateClip(dir: Direction, newValue: number): void {
     if (dir <= Direction.ZPositive) {
-      if (newValue > this.wrappedLimitBox[dir]) {
-        this.wrappedClipPositions[dir] = this.wrappedLimitBox[dir];
-      } else if (newValue < -this.wrappedLimitBox[dir + 3] + this.minFragment) {
-        this.wrappedClipPositions[dir] = -this.wrappedLimitBox[dir + 3] + this.minFragment;
-        this.wrappedClipPositions[dir + 3] = this.wrappedLimitBox[dir + 3];
-      } else {
-        if (newValue < this.wrappedClipPositions[dir + 3] - this.minFragment) {
-          this.wrappedClipPositions[dir + 3] = -newValue + this.minFragment;
-        }
+      // positive direction
+      if (newValue === this.wrappedClipPositions[dir]) {
+        // No change.
+        return;
+      }
 
+      const otherDir = dir + 3;
+
+      if (newValue > this.limitBox[dir]) {
+        // too large;
+        this.wrappedClipPositions[dir] = this.limitBox[dir];
+      } else if (newValue < this.wrappedClipPositions[otherDir] + this.minFragment) {
+        // smaller than nagitive clip position. move other side at the same time.
+        let newOtherClippingPosition = newValue - this.minFragment;
+        let newThisClippingPosition = newValue;
+        if (newOtherClippingPosition < this.limitBox[otherDir]) {
+          // out of range from other side. update these two values.
+          newOtherClippingPosition = this.limitBox[otherDir];
+          newThisClippingPosition = this.limitBox[otherDir] + this.minFragment;
+        }
+        this.wrappedClipPositions[otherDir] = newOtherClippingPosition;
+        this.wrappedClipPositions[dir] = newThisClippingPosition;
+      } else {
+        // just in range
         this.wrappedClipPositions[dir] = newValue;
       }
     } else {
-      const corrected = -newValue;
-      if (corrected > this.wrappedLimitBox[dir]) {
-        this.wrappedClipPositions[dir] = this.wrappedLimitBox[dir];
-      } else if (corrected < -this.wrappedLimitBox[dir - 3] + this.minFragment) {
-        this.wrappedClipPositions[dir] = -this.wrappedLimitBox[dir - 3] + this.minFragment;
-        this.wrappedClipPositions[dir - 3] = this.wrappedLimitBox[dir - 3];
-      } else {
-        if (corrected < this.wrappedClipPositions[dir - 3] - this.minFragment) {
-          this.wrappedClipPositions[dir - 3] = -corrected + this.minFragment;
-        }
+      // nagitive direction
+      if (newValue === this.wrappedClipPositions[dir]) {
+        // No change.
+        return;
+      }
 
-        this.wrappedClipPositions[dir] = corrected;
+      const otherDir = dir - 3;
+
+      if (newValue < this.limitBox[dir]) {
+        // too small;
+        this.wrappedClipPositions[dir] = this.limitBox[dir];
+      } else if (newValue > this.wrappedClipPositions[otherDir] + this.minFragment) {
+        // larger than position clip position. move other side at the same time.
+        let newOtherClippingPosition = newValue + this.minFragment;
+        let newThisClippingPosition = newValue;
+        if (newOtherClippingPosition > this.limitBox[otherDir]) {
+          // out of range from other side. update these two values.
+          newOtherClippingPosition = this.limitBox[otherDir];
+          newThisClippingPosition = this.limitBox[otherDir] - this.minFragment;
+        }
+        this.wrappedClipPositions[otherDir] = newOtherClippingPosition;
+        this.wrappedClipPositions[dir] = newThisClippingPosition;
+      } else {
+        // just in range
+        this.wrappedClipPositions[dir] = newValue;
       }
     }
+
+    this.updateAllPlaneMesh();
+    if (this.engine) this.updatePlaneTransformMatrix(this.engine.getMatrix());
   }
 
   /**
@@ -273,7 +305,7 @@ export default class ClippingManager {
       // the constant is the distance to origin
       for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
         if (!this.cliped[i]) {
-          this.wrappedClipPositions[i] = i < 3 ? this.wrappedLimitBox[i] : -this.wrappedLimitBox[i];
+          this.wrappedClipPositions[i] = this.wrappedLimitBox[i];
         }
       }
     }
@@ -285,15 +317,25 @@ export default class ClippingManager {
    */
   private applyTransform = (matrix: Matrix4 | undefined): void => {
     if (matrix !== undefined) {
-      if (this.wrappedClipPositions) {
-        for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
-          const v = this.wrappedClipPositions[i];
-          const t = this.transformedPlanes[i];
-          t.copy(new Plane(new Vector3(...normals[i]).multiplyScalar(-1), v).applyMatrix4(matrix));
-        }
-      }
+      this.updatePlaneTransformMatrix(matrix);
     }
   };
+
+  /**
+   * The clipping planes will not transform with the matrix of their
+   * related mesh.
+   * update the transform matrix for clipping planes.
+   * @param matrix the matrix to apply to clipping planes
+   */
+  private updatePlaneTransformMatrix(matrix: Matrix4) {
+    if (this.wrappedClipPositions) {
+      for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
+        const v = this.wrappedClipPositions[i] * ClippingManager.clipPositionMapRatio[i];
+        const t = this.transformedPlanes[i];
+        t.copy(new Plane(new Vector3(...normals[i]).multiplyScalar(-1), v).applyMatrix4(matrix));
+      }
+    }
+  }
 
   /**
    * to create the meshes to render the clipping surface.
@@ -351,13 +393,15 @@ export default class ClippingManager {
       const planeMatrix = new Matrix4();
       planeMatrix.scale(
         new Vector3(
-          this.wrappedLimitBox[0] - this.wrappedLimitBox[3],
-          this.wrappedLimitBox[1] - this.wrappedLimitBox[4],
-          this.wrappedLimitBox[2] - this.wrappedLimitBox[5]
+          this.wrappedClipPositions[0] - this.wrappedClipPositions[3],
+          this.wrappedClipPositions[1] - this.wrappedClipPositions[4],
+          this.wrappedClipPositions[2] - this.wrappedClipPositions[5]
         )
       );
 
-      planeMatrix.setPosition(new Vector3(this.wrappedLimitBox[3], this.wrappedLimitBox[4], this.wrappedLimitBox[5]));
+      planeMatrix.setPosition(
+        new Vector3(this.wrappedClipPositions[3], this.wrappedClipPositions[4], this.wrappedClipPositions[5])
+      );
       if (planeGroup) {
         planeGroup.matrix = planeMatrix;
         planeGroup.matrixAutoUpdate = false;
