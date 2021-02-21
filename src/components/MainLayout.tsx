@@ -346,7 +346,7 @@ export default function MainLayout(): JSX.Element {
             control={<Switch checked={enableClipping} onChange={onToggleClipping} />}
             label="Enable Clipping"
           />
-          <ClippingSelector positions={clipPositions.slice(0)} range={limitBox} onClippingChanged={onClippingChanged} />
+          <ClippingSelector positions={clipPositions} range={limitBox} onClippingChanged={onClippingChanged} />
           <Button onClick={onExportImage}>Export Image</Button>
           <Button onClick={onTest}>Test</Button>
         </Grid>
