@@ -17,6 +17,7 @@ import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
+import ClippingBoundaryHelper from './ClippingBoundaryHelper';
 import { normals } from './Geometry/boxConstants';
 import IdentityPlaneBufferGeometry from './Geometry/IdentityPlaneBufferGeometry';
 import { Direction, renderingModelName } from './interfaces';
@@ -53,6 +54,8 @@ export default class ClippingManager {
 
   private engine: RenderingEngine | undefined;
 
+  private boundaryHelper = new ClippingBoundaryHelper();
+
   constructor() {
     this.clipGroup.name = ClippingManager.clippingGroupName;
   }
@@ -85,6 +88,8 @@ export default class ClippingManager {
       this.clipGroup.clear();
       this.transformedPlanes.splice(0, this.transformedPlanes.length);
       this.planeGeoms.splice(0, this.planeGeoms.length);
+
+      this.boundaryHelper.bind(undefined);
     }
 
     this.engine = engine;
@@ -139,13 +144,16 @@ export default class ClippingManager {
       this.updateAllPlaneMesh();
 
       this.updatePlaneTransformMatrix(this.engine.getMatrix());
+
+      this.boundaryHelper.bind(this.engine);
+      this.boundaryHelper.update(this.wrappedClipPositions);
     }
   }
 
   private bindEvents() {
     if (this.engine) {
       this.engine.meshAddedEvent.add(this.applyClip);
-      this.engine.meshRemovingEvent.add(this.remove);
+      this.engine.meshRemovedEvent.add(this.remove);
       this.engine.meshVisibleChangedEvent.add(this.onVisibleChanged);
       this.engine.domainRangeChangedEvent.add(this.updateClippingRange);
       this.engine.objectTransformChangedEvent.add(this.applyTransform);
@@ -155,7 +163,7 @@ export default class ClippingManager {
   private unbindEvents() {
     if (this.engine) {
       this.engine.meshAddedEvent.remove(this.applyClip);
-      this.engine.meshRemovingEvent.remove(this.remove);
+      this.engine.meshRemovedEvent.remove(this.remove);
       this.engine.meshVisibleChangedEvent.remove(this.onVisibleChanged);
       this.engine.domainRangeChangedEvent.remove(this.updateClippingRange);
       this.engine.objectTransformChangedEvent.remove(this.applyTransform);
@@ -236,6 +244,7 @@ export default class ClippingManager {
 
     this.updateAllPlaneMesh();
     if (this.engine) this.updatePlaneTransformMatrix(this.engine.getMatrix());
+    this.boundaryHelper.update(this.wrappedClipPositions);
   }
 
   /**
@@ -308,7 +317,11 @@ export default class ClippingManager {
           this.wrappedClipPositions[i] = this.wrappedLimitBox[i];
         }
       }
+    } else {
+      this.wrappedClipPositions = [0, 0, 0, 0, 0, 0];
     }
+
+    this.boundaryHelper.update(this.wrappedClipPositions);
   };
 
   /**

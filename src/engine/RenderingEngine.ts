@@ -91,7 +91,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public meshAddedEvent = new LiteEvent<Mesh | Points>();
 
-  public meshRemovingEvent = new LiteEvent<string>();
+  public meshRemovedEvent = new LiteEvent<string>();
 
   public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>();
 
@@ -322,7 +322,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const index = this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === name);
     if (index >= 0) {
       this.targetObject3D.children.splice(index, 1);
-      this.meshRemovingEvent.trigger(name);
+      this.updateScales();
+      this.meshRemovedEvent.trigger(name);
       return true;
     }
 
@@ -774,6 +775,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       // apply the adapte scale.
       this.updateRootObjectMatrix();
       this.selectionHelper.setMaxSize(this.maxDim);
+    } else {
+      this.adapteMatrix = new Matrix4();
+      this.domainRangeChangedEvent.trigger(undefined);
     }
   }
 
