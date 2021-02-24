@@ -49,7 +49,7 @@ export default function ClippingSelector(props: IClippingSelectorProps): JSX.Ele
   }, [range, currentClipDirection]);
 
   useEffect(() => {
-    setClipPosition(currentClipDirection >= 3 ? -positions[currentClipDirection] : positions[currentClipDirection]);
+    setClipPosition(positions[currentClipDirection]);
   }, [positions, currentClipDirection]);
 
   const onDirectionChanged = (
@@ -80,7 +80,7 @@ export default function ClippingSelector(props: IClippingSelectorProps): JSX.Ele
         <Select
           labelId="demo-simple-select-label"
           id="demo-simple-select"
-          value={Direction.XPositive}
+          value={currentClipDirection}
           onChange={onDirectionChanged}
         >
           <MenuItem value={Direction.XPositive}>X+</MenuItem>

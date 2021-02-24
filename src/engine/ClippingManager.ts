@@ -28,6 +28,8 @@ export default class ClippingManager {
   // the position cut on all directions.
   private wrappedClipPositions = [0, 0, 0, 0, 0, 0];
 
+  private static clipPositionMapRatio = [1, 1, 1, -1, -1, -1];
+
   // to indicate if the objects clipped on specified direction.
   private cliped = [false, false, false, false, false, false];
 
@@ -55,7 +57,9 @@ export default class ClippingManager {
   }
 
   public get clipPositions(): number[] {
-    return this.wrappedClipPositions;
+    return this.wrappedClipPositions.map((v, i) => {
+      return v * ClippingManager.clipPositionMapRatio[i];
+    });
   }
 
   public get limitBox(): number[] {
