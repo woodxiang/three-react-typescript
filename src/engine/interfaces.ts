@@ -16,6 +16,16 @@ enum CURSORTYPE {
   CROSS,
 }
 
+enum Direction {
+  Undefined = -1,
+  XPositive = 0,
+  YPositive,
+  ZPositive,
+  XNegative,
+  YNegative,
+  ZNegative,
+}
+
 interface IActionCallback {
   state: STATE;
   cursorType: CURSORTYPE;
@@ -65,5 +75,7 @@ interface IFlat {
   area: number;
 }
 
-export { STATE, CURSORTYPE };
+const renderingModelName = '#models#';
+
+export { STATE, CURSORTYPE, Direction, renderingModelName };
 export type { IActionCallback, IActionHandler, IObjectRotation, IHitTest, IHitTestResult, IHitTestHandler, IFlat };

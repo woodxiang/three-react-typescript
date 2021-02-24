@@ -10,7 +10,7 @@ import { Lut } from 'three/examples/jsm/math/Lut';
 import { PointsMaterial } from 'three/src/materials/PointsMaterial';
 import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './DracoExLoader';
-import ColorMapPhoneMaterial from './Materials/ColorMapPhongMaterial';
+import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -73,7 +73,7 @@ export default class MeshFactory {
   public static createColorMapMaterial(
     range: { min: number; max: number },
     lut: string | Lut | undefined
-  ): ColorMapPhoneMaterial {
+  ): ColorMapPhongMaterial {
     let lutInternal = lut;
     if (!lutInternal) {
       lutInternal = new Lut('rainbow', 8192);
@@ -86,7 +86,7 @@ export default class MeshFactory {
     }
     lutInternal.setMin(range.min);
     lutInternal.setMax(range.max);
-    const material = new ColorMapPhoneMaterial(lutInternal);
+    const material = new ColorMapPhongMaterial(lutInternal);
     material.specular.set(0.9);
     return material;
   }

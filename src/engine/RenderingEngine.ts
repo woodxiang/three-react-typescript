@@ -32,10 +32,12 @@ import {
   IObjectRotation,
   IHitTestHandler,
   IFlat,
+  renderingModelName,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
+import LiteEvent from './event';
 
 interface IInternalControlObject {
   fov: number;
@@ -61,7 +63,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private renderer: WebGLRenderer | undefined;
 
-  private targetObject3D: Group | undefined;
+  public root: Group = new Group(); // This is the root for all objects.
+
+  private targetObject3D = new Group(); // this is the root for all target models.
 
   private adapteMatrix: Matrix4 = new Matrix4();
 
@@ -82,6 +86,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private inactivePointMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
   private activePointMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+
+  public meshAddedEvent = new LiteEvent<Mesh | Points>();
+
+  public meshRemovingEvent = new LiteEvent<string>();
+
+  public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>();
+
+  public domainRangeChangedEvent = new LiteEvent<{ boundingBox: Box3; maxDim: number }>();
+
+  public objectTransformChangedEvent = new LiteEvent<Matrix4>();
 
   private debugMode = true;
 
@@ -142,9 +156,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.prepareEnvironment();
 
-    this.targetObject3D = new Group();
-    this.targetObject3D.matrixAutoUpdate = false;
-    this.scene.add(this.targetObject3D);
+    this.root.matrixAutoUpdate = false;
+
+    this.targetObject3D.name = renderingModelName;
+
+    this.root.add(this.targetObject3D);
+
+    this.scene.add(this.root);
 
     this.clickHandler = new ClickHandler();
     this.actionHandlers.push(this.clickHandler, new RotationHandler(this.camera, this));
@@ -253,19 +271,19 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return this.targetObject3D.children.map((v: { name: string }) => v.name);
   }
 
-  /**
-   * remove specified object.
-   * @param url name of the object to remove
-   */
-  public removeObject(url: string): void {
-    if (!this.targetObject3D) {
-      throw Error('object not ready');
+  public set enableClipping(enableClipping: boolean) {
+    if (!this.renderer) {
+      throw Error('not intialized.');
+    }
+    this.renderer.localClippingEnabled = enableClipping;
+  }
+
+  public get enableClipping(): boolean {
+    if (!this.renderer) {
+      throw Error('not intialized.');
     }
 
-    const toRemove = this.targetObject3D.children.find((v: { name: string }) => v.name === url);
-    if (toRemove) {
-      this.targetObject3D.remove(toRemove);
-    }
+    return this.renderer.localClippingEnabled;
   }
 
   /**
@@ -281,6 +299,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.targetObject3D.add(newMesh);
 
     this.updateScales();
+
+    this.meshAddedEvent.trigger(newMesh);
   }
 
   /**
@@ -296,6 +316,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const index = this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === name);
     if (index >= 0) {
       this.targetObject3D.children.splice(index, 1);
+      this.meshRemovingEvent.trigger(name);
       return true;
     }
 
@@ -306,6 +327,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const mesh = this.findMesh(name);
     if (mesh) {
       mesh.visible = visible;
+      this.meshVisibleChangedEvent.trigger({ target: name, visible });
       return true;
     }
     return false;
@@ -435,7 +457,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    */
   public setRotationMatrix(mat: Matrix4): void {
     this.rotateMatrix = mat;
-    this.updateTargetObject3dMatrix();
+    this.updateRootObjectMatrix();
   }
 
   /**
@@ -465,7 +487,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         throw Error('no default material.');
       }
       if (!Array.isArray(mesh.material)) {
-        mesh.material = [mesh.material, this.inactiveFlatMaterial, this.activedFlatMaterial];
+        const inactiveFlatMaterial = this.inactiveFlatMaterial.clone();
+        inactiveFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+        const activedFlatMaterial = this.activedFlatMaterial.clone();
+        activedFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+        mesh.material = [mesh.material, inactiveFlatMaterial, activedFlatMaterial];
       }
       const geo = mesh.geometry as BufferGeometry;
       if (!geo) {
@@ -704,7 +730,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         const thisBox = thisGeometry.boundingBox;
         if (thisBox) {
           if (!boundingBox) {
-            boundingBox = thisBox;
+            boundingBox = thisBox.clone();
           } else {
             boundingBox.union(thisBox);
           }
@@ -728,19 +754,23 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       matScale.multiply(matTranslate);
       this.adapteMatrix = matScale;
 
+      this.domainRangeChangedEvent.trigger({ boundingBox, maxDim: this.maxDim });
+
       // apply the adapte scale.
-      this.updateTargetObject3dMatrix();
+      this.updateRootObjectMatrix();
       this.selectionHelper.setMaxSize(this.maxDim);
     }
   }
 
-  private updateTargetObject3dMatrix() {
-    if (this.targetObject3D) {
-      const matrix = this.rotateMatrix.clone();
-      matrix.multiply(this.adapteMatrix);
+  private updateRootObjectMatrix() {
+    const matrix = this.rotateMatrix.clone();
+    matrix.multiply(this.adapteMatrix);
 
-      this.targetObject3D.matrix = matrix;
-      this.targetObject3D.matrixWorldNeedsUpdate = true;
+    if (this.root) {
+      this.root.matrix = matrix;
+      this.root.matrixWorldNeedsUpdate = true;
     }
+
+    this.objectTransformChangedEvent.trigger(matrix);
   }
 }
