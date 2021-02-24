@@ -1058,8 +1058,28 @@ class JPEGEncoder {
     }
   }
 
+  private static convert(inputImage: Uint8Array | Float32Array): Uint8Array {
+    if (inputImage instanceof Uint8Array) {
+      return inputImage;
+    }
+
+    const tmp = new Uint8Array(inputImage.length);
+    for (let i = 0; i < tmp.length; i += 1) {
+      const v = inputImage[i];
+      if (v <= 0) {
+        tmp[i] = 0;
+      } else if (v >= 1) {
+        tmp[i] = 255;
+      } else {
+        tmp[i] = 255 * v;
+      }
+    }
+
+    return tmp;
+  }
+
   public encode(
-    image: RawImageData<Uint8Array>,
+    image: RawImageData<Uint8Array | Float32Array>,
     quality: number // image data object
   ) {
     if (quality) this.setQuality(quality);
@@ -1085,7 +1105,7 @@ class JPEGEncoder {
     this.bytenew = 0;
     this.bytepos = 7;
 
-    const imageData = image.data;
+    const imageData = JPEGEncoder.convert(image.data);
     const { width } = image;
     const { height } = image;
 
@@ -1218,7 +1238,7 @@ export interface RawImageData<T> {
   data: T;
 }
 
-export function encode(imgData: RawImageData<Uint8Array>, qu: number): RawImageData<Uint8Array> {
+export function encode(imgData: RawImageData<Uint8Array | Float32Array>, qu: number): RawImageData<Uint8Array> {
   const encoder = new JPEGEncoder(qu);
   const data = encoder.encode(imgData, qu);
   return {
