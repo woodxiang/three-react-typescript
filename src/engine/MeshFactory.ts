@@ -74,19 +74,19 @@ export default class MeshFactory {
     range: { min: number; max: number },
     lut: string | Lut | undefined
   ): ColorMapPhongMaterial {
-    let lutInternal = lut;
-    if (!lutInternal) {
-      lutInternal = new Lut('rainbow', 8192);
+    let volatileLut = lut;
+    if (!volatileLut) {
+      volatileLut = new Lut('rainbow', 8192);
     }
-    if (typeof lutInternal === 'string') {
-      lutInternal = new Lut(<string>lutInternal, 8192);
+    if (typeof volatileLut === 'string') {
+      volatileLut = new Lut(<string>volatileLut, 8192);
     }
-    if (!(lutInternal instanceof Lut)) {
+    if (!(volatileLut instanceof Lut)) {
       throw Error('Invalid lut');
     }
-    lutInternal.setMin(range.min);
-    lutInternal.setMax(range.max);
-    const material = new ColorMapPhongMaterial(lutInternal);
+    volatileLut.setMin(range.min);
+    volatileLut.setMax(range.max);
+    const material = new ColorMapPhongMaterial(volatileLut);
     material.specular.set(0.9);
     return material;
   }

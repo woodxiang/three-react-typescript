@@ -73,7 +73,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private maxDim = 1;
 
-  private boundingBoxInternal: Box3 | undefined;
+  private wrappedBoundingBox: Box3 | undefined;
 
   private axesHelper: AxesHelper | undefined;
 
@@ -112,7 +112,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private actionHandlers: IActionHandler[] = [];
 
-  private cursorTypeInternal: CURSORTYPE = CURSORTYPE.ARRAW;
+  private wrappedCursorType: CURSORTYPE = CURSORTYPE.ARRAW;
 
   private capturedPointerId = -1;
 
@@ -210,14 +210,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   get cursorType(): CURSORTYPE {
-    return this.cursorTypeInternal;
+    return this.wrappedCursorType;
   }
 
   set cursorType(newType: CURSORTYPE) {
     if (!this.renderer) {
       throw Error('not initilaized.');
     }
-    this.cursorTypeInternal = newType;
+    this.wrappedCursorType = newType;
     switch (newType) {
       case CURSORTYPE.CROSS:
         this.renderer.domElement.style.cursor = 'crosshair';
@@ -235,7 +235,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   get boundingBox(): Box3 | undefined {
-    return this.boundingBoxInternal;
+    return this.wrappedBoundingBox;
   }
 
   /**
@@ -751,7 +751,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       }
     }
 
-    this.boundingBoxInternal = boundingBox;
+    this.wrappedBoundingBox = boundingBox;
 
     if (boundingBox) {
       // calculate the matrix to adapte object position and scale to the

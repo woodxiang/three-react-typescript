@@ -14,24 +14,24 @@ import { Mesh } from 'three/src/objects/Mesh';
  * REMARK: all this functions assume the geometry is not indexed.
  */
 export default class SelectionHelper {
-  private errorRateInternal = 0.001;
+  private wrappedErrorRate = 0.001;
 
   private error = 0.001;
 
   private maxSize = 1;
 
   public get errorRate(): number {
-    return this.errorRateInternal;
+    return this.wrappedErrorRate;
   }
 
   public set errorRate(newRate: number) {
-    this.errorRateInternal = newRate;
-    this.error = this.errorRateInternal * this.maxSize;
+    this.wrappedErrorRate = newRate;
+    this.error = this.wrappedErrorRate * this.maxSize;
   }
 
   public setMaxSize(newMaxSize: number): void {
     this.maxSize = newMaxSize;
-    this.error = this.errorRateInternal * this.maxSize;
+    this.error = this.wrappedErrorRate * this.maxSize;
   }
 
   /**
@@ -95,7 +95,7 @@ export default class SelectionHelper {
         currentTriangleNormal.fromBufferAttribute(normals, currentFaceVertexIndexes.x);
         currentTriangleNormal.normalize();
         const d = currentTriangleNormal.dot(selectedTriangleNormal);
-        if (d < 1 + this.errorRateInternal && d > 1 - this.errorRateInternal) {
+        if (d < 1 + this.wrappedErrorRate && d > 1 - this.wrappedErrorRate) {
           normalFilteredTrianglesIndex.push(i);
         }
       }
@@ -112,10 +112,10 @@ export default class SelectionHelper {
 
     const cosAngle = selectedTriangleNormal.dot(new Vector3(0, 0, 1));
     const mat = new Matrix4();
-    if (cosAngle < 1 - this.errorRateInternal) {
+    if (cosAngle < 1 - this.wrappedErrorRate) {
       let axis = new Vector3(0, 1, 0);
       let angle = Math.PI;
-      if (cosAngle > -1 + this.errorRateInternal) {
+      if (cosAngle > -1 + this.wrappedErrorRate) {
         axis = selectedTriangleNormal.clone().cross(new Vector3(0, 0, 1));
         angle = Math.asin(axis.length());
       }
@@ -307,7 +307,7 @@ export default class SelectionHelper {
                 SelectionHelper.getTriangleVert(dirsInTriangle2, j)
               )
             ) <
-          this.errorRateInternal
+          this.wrappedErrorRate
         ) {
           const l2p1 = SelectionHelper.getTriangleVert(face2, j);
           const l2p2 = SelectionHelper.getTriangleVert(face2, (j + 1) % 3);
@@ -328,9 +328,9 @@ export default class SelectionHelper {
             return true;
           }
           if (
-            1 - Math.abs(f1) < this.errorRateInternal &&
-            1 - Math.abs(f2) < this.errorRateInternal &&
-            Math.abs(f1 + f2) < this.errorRateInternal
+            1 - Math.abs(f1) < this.wrappedErrorRate &&
+            1 - Math.abs(f2) < this.wrappedErrorRate &&
+            Math.abs(f1 + f2) < this.wrappedErrorRate
           )
             return true;
         }
