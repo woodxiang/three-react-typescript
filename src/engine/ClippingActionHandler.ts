@@ -1,19 +1,9 @@
 import { IActionCallback, IActionHandler, IObjectRotation, STATE } from './interfaces';
 
-export default class ClippingHandler implements IActionHandler {
+export default class ClippingActionHandler implements IActionHandler {
   public isEnabled = true;
 
   public priority = 5;
-
-  private targetObject: IObjectRotation;
-
-  constructor(targetObject: IObjectRotation) {
-    if (!targetObject) {
-      throw Error('Invalid target object');
-    }
-
-    this.targetObject = targetObject;
-  }
 
   handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
@@ -21,45 +11,47 @@ export default class ClippingHandler implements IActionHandler {
       if (callbacker.state === STATE.NONE) {
       }
     }
+
+    return false;
   }
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleMouseWheel(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleKeyDown(event: KeyboardEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleKeyUp(event: KeyboardEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleMiddleButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleMiddleButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleRightButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 
   handleWhell(event: WheelEvent, callback: IActionCallback): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
 }

@@ -77,8 +77,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private axesHelper: AxesHelper | undefined;
 
-  private clickHandler: ClickHandler | undefined;
-
   private selectionHelper = new SelectionHelper();
 
   private inactiveFlatMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
@@ -110,7 +108,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     showAxesHelper: true,
   };
 
-  private actionHandlers: IActionHandler[] = [];
+  private wrappedActionHandlers: IActionHandler[] = [];
 
   private wrappedCursorType: CURSORTYPE = CURSORTYPE.ARRAW;
 
@@ -166,8 +164,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.scene.add(this.root);
 
-    this.clickHandler = new ClickHandler();
-    this.actionHandlers.push(this.clickHandler, new RotationHandler(this.camera, this));
+    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -232,6 +229,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         this.renderer.domElement.style.cursor = 'default';
         break;
     }
+  }
+
+  get actionHandler(): IActionHandler[] {
+    return this.wrappedActionHandlers;
   }
 
   get boundingBox(): Box3 | undefined {
@@ -586,8 +587,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
 
     this.renderer.domElement.addEventListener('pointerdown', (event: PointerEvent) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
+      for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
+        const handler = this.wrappedActionHandlers[i];
         if (handler.isEnabled) {
           let isTerminated = false;
           switch (event.button) {
@@ -612,8 +613,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     });
 
     this.renderer.domElement.addEventListener('pointerup', (event: PointerEvent) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
+      for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
+        const handler = this.wrappedActionHandlers[i];
         if (handler.isEnabled) {
           let isTerminated = false;
           switch (event.button) {
@@ -638,32 +639,32 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     });
 
     this.renderer.domElement.addEventListener('pointermove', (event: PointerEvent) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
+      for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
+        const handler = this.wrappedActionHandlers[i];
         if (handler.isEnabled && handler.handleMouseMove(event, this)) break;
       }
       event?.preventDefault();
     });
 
     this.renderer.domElement.addEventListener('keydown', (event: KeyboardEvent) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
+      for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
+        const handler = this.wrappedActionHandlers[i];
         if (handler.isEnabled && handler.handleKeyDown(event, this)) break;
       }
       event?.preventDefault();
     });
 
     this.renderer.domElement.addEventListener('keyup', (event: KeyboardEvent) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
+      for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
+        const handler = this.wrappedActionHandlers[i];
         if (handler.isEnabled && handler.handleKeyUp(event, this)) break;
       }
       event?.preventDefault();
     });
 
     this.renderer.domElement.addEventListener('wheel', (event: WheelEvent) => {
-      for (let i = 0; i < this.actionHandlers.length; i += 1) {
-        const handler = this.actionHandlers[i];
+      for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
+        const handler = this.wrappedActionHandlers[i];
         if (handler.isEnabled && handler.handleWhell(event, this)) break;
       }
       event?.preventDefault();

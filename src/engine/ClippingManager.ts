@@ -17,6 +17,7 @@ import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
+import ClippingActionHandler from './ClippingActionHandler';
 import ClippingBoundaryHelper from './ClippingBoundaryHelper';
 import { normals } from './Geometry/boxConstants';
 import IdentityPlaneBufferGeometry from './Geometry/IdentityPlaneBufferGeometry';
@@ -56,6 +57,8 @@ export default class ClippingManager {
 
   private boundaryHelper = new ClippingBoundaryHelper();
 
+  private clippingActionHandler = new ClippingActionHandler();
+
   constructor() {
     this.clipGroup.name = ClippingManager.clippingGroupName;
   }
@@ -90,6 +93,7 @@ export default class ClippingManager {
       this.planeGeoms.splice(0, this.planeGeoms.length);
 
       this.boundaryHelper.bind(undefined);
+      this.engine.actionHandler.splice(this.engine.actionHandler.indexOf(this.clippingActionHandler), 1);
     }
 
     this.engine = engine;
@@ -147,6 +151,7 @@ export default class ClippingManager {
 
       this.boundaryHelper.bind(this.engine);
       this.boundaryHelper.update(this.wrappedClipPositions);
+      this.engine.actionHandler.push(this.clippingActionHandler);
     }
   }
 
