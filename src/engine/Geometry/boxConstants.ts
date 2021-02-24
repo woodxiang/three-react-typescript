@@ -1,4 +1,4 @@
-import { Float32BufferAttribute } from 'three/src/core/BufferAttribute';
+import { Float32BufferAttribute, Uint16BufferAttribute } from 'three/src/core/BufferAttribute';
 import { Direction } from '../interfaces';
 
 /* eslint-disable prettier/prettier */
@@ -61,6 +61,42 @@ const edgesOnSurface = [
   [4, 5, 0, 1], // z-
 ];
 
+function concatFloatAttribute(input: number[][], itemSize: number): Float32BufferAttribute {
+  if (input.length === 0) {
+    throw Error('argument empty');
+  }
+  const resultLength = input.length * input[0].length;
+  if (resultLength === 0) {
+    throw Error('argument empty');
+  }
+  const ret = new Array<number>(resultLength);
+  let targetCursor = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    ret.splice(targetCursor, input[i].length, ...input[i]);
+    targetCursor += input[i].length;
+  }
+
+  return new Float32BufferAttribute(ret, itemSize);
+}
+
+function concatInt16Attribute(input: number[][], itemSize: number): Uint16BufferAttribute {
+  if (input.length === 0) {
+    throw Error('argument empty');
+  }
+  const resultLength = input.length * input[0].length;
+  if (resultLength === 0) {
+    throw Error('argument empty');
+  }
+  const ret = new Array<number>(resultLength);
+  let targetCursor = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    ret.splice(targetCursor, input[i].length, ...input[i]);
+    targetCursor += input[i].length;
+  }
+
+  return new Uint16BufferAttribute(ret, itemSize);
+}
+
 function getVerticeOfSurface(dir: Direction): Float32BufferAttribute {
   let indexes: number[] = [];
   if (dir >= 0) {
@@ -99,4 +135,14 @@ function getNormalOfSurface(dir: Direction): Float32BufferAttribute {
   return new Float32BufferAttribute(ret, 3);
 }
 
-export { vertices, normals, triangles, edges, edgesOnSurface, getVerticeOfSurface, getNormalOfSurface };
+export {
+  vertices,
+  normals,
+  triangles,
+  edges,
+  edgesOnSurface,
+  concatFloatAttribute,
+  concatInt16Attribute,
+  getVerticeOfSurface,
+  getNormalOfSurface,
+};
