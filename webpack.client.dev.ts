@@ -11,7 +11,7 @@ export default [
       port: 8081,
       proxy: {
         '/api': {
-          target: 'http://localhost:7890',
+          target: 'http://localhost:17890',
           pathRewrite: { '^/api': '' },
         },
       },
