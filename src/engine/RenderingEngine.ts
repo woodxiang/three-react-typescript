@@ -16,7 +16,7 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
-import { FrontSide, UnsignedByteType } from 'three/src/constants';
+import { FloatType, FrontSide, UnsignedByteType } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
@@ -427,6 +427,21 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     target.dispose();
 
     return jpgdata.data;
+  }
+
+  public renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array {
+    if (!this.renderer || !this.scene || !this.camera) {
+      throw Error('invalid render');
+    }
+    const { width, height } = this.viewPortSize;
+    const target = new WebGLRenderTarget(width, height, { type: FloatType });
+    this.renderer.setRenderTarget(target);
+    this.renderer.render(scene, this.camera);
+    const data = new Float32Array(4);
+    this.renderer.readRenderTargetPixels(target, xPos, height - yPos, 1, 1, data);
+    this.renderer.setRenderTarget(null);
+    target.dispose();
+    return data;
   }
 
   private static flipImageData(img: Uint8Array | Float32Array, width: number, height: number) {

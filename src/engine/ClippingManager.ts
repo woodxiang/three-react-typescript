@@ -17,14 +17,14 @@ import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
-import ClippingActionHandler from './ClippingActionHandler';
+import ClippingActionHandler, { IClippingSource } from './ClippingActionHandler';
 import ClippingBoundaryHelper from './ClippingBoundaryHelper';
 import { normals } from './Geometry/boxConstants';
 import IdentityPlaneBufferGeometry from './Geometry/IdentityPlaneBufferGeometry';
 import { Direction, renderingModelName } from './interfaces';
 import RenderingEngine from './RenderingEngine';
 
-export default class ClippingManager {
+export default class ClippingManager implements IClippingSource {
   private static clippingGroupName = '#clipping#';
 
   // the position cut on all directions.
@@ -57,7 +57,7 @@ export default class ClippingManager {
 
   private boundaryHelper = new ClippingBoundaryHelper();
 
-  private clippingActionHandler = new ClippingActionHandler();
+  private clippingActionHandler = new ClippingActionHandler(this);
 
   constructor() {
     this.clipGroup.name = ClippingManager.clippingGroupName;

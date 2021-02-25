@@ -1,6 +1,7 @@
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
+import { Scene } from 'three/src/scenes/Scene';
 
 enum STATE {
   NONE = 0,
@@ -29,8 +30,10 @@ enum Direction {
 interface IActionCallback {
   state: STATE;
   cursorType: CURSORTYPE;
+  getMatrix(): Matrix4;
   capturePointer(pointerId: number): void;
   releasePointer(): void;
+  renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array;
   viewPortSize: Vector2;
 }
 
