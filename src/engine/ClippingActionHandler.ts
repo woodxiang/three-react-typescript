@@ -3,14 +3,16 @@ import { MeshBasicMaterial } from 'three/src/materials/MeshBasicMaterial';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
+import { Vector4 } from 'three/src/math/Vector4';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Scene } from 'three/src/scenes/Scene';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
 import { CURSORTYPE, Direction, IActionCallback, IActionHandler, STATE } from './interfaces';
 
-export interface IClippingSource {
+export interface IClippingManager {
   clipPositions: number[];
+  updateClip(dir: Direction, newValue: number): void;
 }
 
 const CLIPPING = 10;
@@ -29,9 +31,9 @@ export default class ClippingActionHandler implements IActionHandler {
 
   private clipperMesh: Mesh;
 
-  private manager: IClippingSource;
+  private manager: IClippingManager;
 
-  constructor(manager: IClippingSource) {
+  constructor(manager: IClippingManager) {
     this.manager = manager;
     this.scene.add(this.root);
 
@@ -86,6 +88,20 @@ export default class ClippingActionHandler implements IActionHandler {
   }
 
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
+    if (this.isEnabled) {
+      const callbacker = callback;
+      if (callbacker.state === CLIPPING) {
+        if (this.activeDir === Direction.Undefined) {
+          throw Error('invalid dir');
+        }
+        const currentPos = new Vector2(event.offsetX, event.offsetY);
+        const delta = currentPos.clone().sub(this.previousPosition);
+
+        this.dragClipSurface(delta, callback);
+
+        this.previousPosition = currentPos;
+      }
+    }
     return false;
   }
 
@@ -143,5 +159,47 @@ export default class ClippingActionHandler implements IActionHandler {
 
     const ret = callback.renderTargetAndReadFloat(this.scene, offsetX, offsetY);
     return Math.round(ret[0]) - 1;
+  }
+
+  private dragClipSurface(deltaPos: Vector2, callback: IActionCallback) {
+    const dirNormalMap = [
+      new Vector4(1, 0, 0, 1),
+      new Vector4(0, 1, 0, 1),
+      new Vector4(0, 0, 1, 1),
+      new Vector4(-1, 0, 0, 1),
+      new Vector4(0, -1, 0, 1),
+      new Vector4(0, 0, -1, 1),
+    ];
+
+    const pd = dirNormalMap[this.activeDir];
+    const viewSize = callback.viewPortSize;
+
+    const matrixShift = callback.getRotationMatrix().clone();
+    matrixShift.elements[12] = 0;
+    matrixShift.elements[13] = 0;
+    matrixShift.elements[14] = 0;
+    matrixShift.elements[15] = 1;
+
+    pd.applyMatrix4(matrixShift);
+    const p1 = new Vector3(deltaPos.x, -deltaPos.y, 0);
+    const p2 = new Vector3(pd.x, pd.y, pd.z);
+    const dotMultiple = p1.clone().dot(p2);
+
+    const ratio = viewSize.width / viewSize.height;
+    const screenScale = ratio > 1 ? viewSize.height / 2.0 : viewSize.width / 2.0;
+
+    const ratio2 =
+      (Math.tan(((callback.cameraFov / 180) * Math.PI) / 2.0) * (callback.camaerAt.z - callback.cameraEye.z)) /
+      screenScale;
+    const delta = pd.z === 1 ? 0 : (dotMultiple * ratio2) / (1 - pd.z * pd.z) / (2.0 / callback.maxDim);
+
+    if (delta !== 0) {
+      this.drag(delta);
+    }
+  }
+
+  private drag(delta: number) {
+    const newValue = this.manager.clipPositions[this.activeDir] + (this.activeDir < 3 ? -delta : delta);
+    this.manager.updateClip(this.activeDir, newValue);
   }
 }

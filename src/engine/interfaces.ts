@@ -1,3 +1,4 @@
+import { Box3 } from 'three';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
@@ -30,6 +31,12 @@ enum Direction {
 interface IActionCallback {
   state: STATE;
   cursorType: CURSORTYPE;
+  cameraFov: number;
+  cameraEye: Vector3;
+  camaerAt: Vector3;
+  boundingBox: Box3 | undefined;
+  maxDim: number;
+  getRotationMatrix(): Matrix4;
   getMatrix(): Matrix4;
   capturePointer(pointerId: number): void;
   releasePointer(): void;

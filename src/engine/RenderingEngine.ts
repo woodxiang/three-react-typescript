@@ -71,7 +71,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private rotateMatrix: Matrix4 = new Matrix4();
 
-  private maxDim = 1;
+  private wrappedMaxDim = 1;
 
   private wrappedBoundingBox: Box3 | undefined;
 
@@ -237,6 +237,33 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   get boundingBox(): Box3 | undefined {
     return this.wrappedBoundingBox;
+  }
+
+  get cameraFov(): number {
+    const ret = this.camera?.fov;
+    if (ret === undefined) {
+      throw Error('invalid camera');
+    }
+
+    return ret;
+  }
+
+  get cameraEye(): Vector3 {
+    const ret = this.camera?.position;
+    if (ret === undefined) {
+      throw Error('invalid camera');
+    }
+
+    return ret;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  get camaerAt(): Vector3 {
+    return new Vector3(0, 0, 0);
+  }
+
+  get maxDim(): number {
+    return this.wrappedMaxDim;
   }
 
   /**
@@ -570,7 +597,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('no container.');
     }
 
-    const ball = new SphereGeometry(this.maxDim / 300, 4, 4);
+    const ball = new SphereGeometry(this.wrappedMaxDim / 300, 4, 4);
     const mesh = new Mesh(ball, this.activePointMaterial);
     mesh.translateX(pos[0]);
     mesh.translateY(pos[1]);
@@ -777,11 +804,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       boundingBox.getCenter(center);
       const size = new Vector3();
       boundingBox.getSize(size);
-      this.maxDim = Math.max(size.x, size.y, size.z);
+      this.wrappedMaxDim = Math.max(size.x, size.y, size.z);
       const matTranslate = new Matrix4();
       matTranslate.makeTranslation(-center.x, -center.y, -center.z);
       const matScale = new Matrix4();
-      matScale.makeScale(2.0 / this.maxDim, 2.0 / this.maxDim, 2.0 / this.maxDim);
+      matScale.makeScale(2.0 / this.wrappedMaxDim, 2.0 / this.wrappedMaxDim, 2.0 / this.wrappedMaxDim);
 
       matScale.multiply(matTranslate);
       this.adapteMatrix = matScale;
@@ -790,7 +817,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
       // apply the adapte scale.
       this.updateRootObjectMatrix();
-      this.selectionHelper.setMaxSize(this.maxDim);
+      this.selectionHelper.setMaxSize(this.wrappedMaxDim);
     } else {
       this.adapteMatrix = new Matrix4();
       this.domainRangeChangedEvent.trigger(undefined);
