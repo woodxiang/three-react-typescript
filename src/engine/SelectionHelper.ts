@@ -257,8 +257,11 @@ export default class SelectionHelper {
         this.clearIndexes(<Group>child);
       } else {
         const mesh = <Mesh>child;
-        const geo = <BufferGeometry>mesh.geometry;
-        this.resetGroups(geo);
+
+        const geo = mesh.geometry as BufferGeometry;
+        if (geo) {
+          this.resetGroups(geo);
+        }
       }
     });
   }
