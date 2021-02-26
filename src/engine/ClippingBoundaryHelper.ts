@@ -1,6 +1,8 @@
-import { LineSegments, Matrix4, Vector3 } from 'three';
 import { LineBasicMaterial } from 'three/src/materials/LineBasicMaterial';
+import { Matrix4 } from 'three/src/math/Matrix4';
+import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
+import { LineSegments } from 'three/src/objects/LineSegments';
 import IdentityBoxBoundaryBufferGeometry from './Geometry/IdentityBoxBoundaryBufferGeometry';
 import RenderingEngine from './RenderingEngine';
 

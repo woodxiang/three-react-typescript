@@ -1,8 +1,9 @@
 import { ShaderMaterial } from 'three/src/materials/ShaderMaterial';
 import { Lut } from 'three/examples/jsm/math/Lut';
-import { Color, Material } from 'three';
 import { ShaderLib } from 'three/src/renderers/shaders/ShaderLib';
 import { UniformsUtils } from 'three/src/renderers/shaders/UniformsUtils';
+import { Color } from 'three/src/math/Color';
+import { Material } from 'three/src/materials/Material';
 import vert from '../shaders/colormap.vert.glsl';
 import frag from '../shaders/colormap.frag.glsl';
 import TextureFactory from './TextureFactory';
