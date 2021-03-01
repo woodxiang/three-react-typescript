@@ -57,13 +57,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private parentDiv: HTMLDivElement | undefined;
 
-  private scene: Scene | undefined;
+  private wrappedScene: Scene = new Scene();
 
   private camera: PerspectiveCamera | undefined;
 
   private renderer: WebGLRenderer | undefined;
 
-  public root: Group = new Group(); // This is the root for all objects.
+  private wrappedRoot: Group = new Group(); // This is the root for all objects.
 
   private targetObject3D = new Group(); // this is the root for all target models.
 
@@ -116,8 +116,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public hitTestHandler: IHitTestHandler | undefined = undefined;
 
-  private testScene = new Scene();
-
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
 
@@ -144,7 +142,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('already initialzied.');
     }
     this.parentDiv = div;
-    this.scene = new Scene();
     this.camera = new PerspectiveCamera(this.internalControl.fov, width / height, 0.01, 100);
     this.camera.position.set(0, 0, 10);
 
@@ -158,13 +155,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.prepareEnvironment();
 
-    this.root.matrixAutoUpdate = false;
+    this.wrappedRoot.matrixAutoUpdate = false;
 
     this.targetObject3D.name = renderingModelName;
 
-    this.root.add(this.targetObject3D);
+    this.wrappedRoot.add(this.targetObject3D);
 
-    this.scene.add(this.root);
+    this.wrappedScene.add(this.wrappedRoot);
 
     this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
 
@@ -181,15 +178,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         }
       });
       this.gui.add(this.internalControl, 'showAxesHelper').onChange((value: boolean) => {
-        if (!this.scene) return;
+        if (!this.wrappedScene) return;
         if (value) {
           if (!this.axesHelper) {
             const axesHelper = new AxesHelper(1);
-            this.scene.add(axesHelper);
+            this.wrappedScene.add(axesHelper);
             this.axesHelper = axesHelper;
           }
         } else if (this.axesHelper) {
-          this.scene.remove(this.axesHelper);
+          this.wrappedScene.remove(this.axesHelper);
           this.axesHelper = undefined;
         }
       });
@@ -204,8 +201,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
 
     this.targetObject3D?.clear();
-    this.scene?.clear();
+    this.wrappedScene?.clear();
     this.camera?.clear();
+  }
+
+  get root(): Group {
+    return this.wrappedRoot;
+  }
+
+  get scene(): Scene {
+    return this.wrappedScene;
   }
 
   get cursorType(): CURSORTYPE {
@@ -417,31 +422,31 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * start animation.
    */
   public startAnimate(): void {
-    if (!(this.renderer && this.scene && this.camera)) {
+    if (!(this.renderer && this.wrappedScene && this.camera)) {
       throw new Error('Invalid renderer');
     }
 
     const animate = () => {
       if (!this) throw new Error('invalid this pointer');
-      if (!(this.renderer && this.scene && this.camera)) {
+      if (!(this.renderer && this.wrappedScene && this.camera)) {
         throw new Error('Invalid renderer');
       }
       requestAnimationFrame(animate);
-      this.renderer.render(this.scene, this.camera);
+      this.renderer.render(this.wrappedScene, this.camera);
       this.stats?.update();
     };
     animate();
   }
 
   public exportImage(width: number, height: number, scene: Scene | undefined = undefined): Uint8Array {
-    if (!this.renderer || !this.scene || !this.camera) {
+    if (!this.renderer || !this.wrappedScene || !this.camera) {
       throw Error('invalid render');
     }
-    const target = new WebGLRenderTarget(width, height, { type: UnsignedByteType });
+    const target = new WebGLRenderTarget(width, height, { type: UnsignedByteType, stencilBuffer: true });
 
     this.renderer.setRenderTarget(target);
 
-    this.renderer.render(scene === undefined ? this.scene : scene, this.camera);
+    this.renderer.render(scene === undefined ? this.wrappedScene : scene, this.camera);
 
     const data = new Uint8Array(width * height * 4);
 
@@ -459,11 +464,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   public renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array {
-    if (!this.renderer || !this.scene || !this.camera) {
+    if (!this.renderer || !this.wrappedScene || !this.camera) {
       throw Error('invalid render');
     }
     const { width, height } = this.viewPortSize;
-    const target = new WebGLRenderTarget(width, height, { type: FloatType });
+    const target = new WebGLRenderTarget(width, height, { type: FloatType, stencilBuffer: true });
     this.renderer.setRenderTarget(target);
     this.renderer.render(scene, this.camera);
     const data = new Float32Array(4);
@@ -761,18 +766,18 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private prepareEnvironment(): void {
-    if (!this.scene) {
+    if (!this.wrappedScene) {
       throw new Error('scene not intialized.');
     }
-    this.scene.background = new Color(0xaaaaaa);
+    this.wrappedScene.background = new Color(0xaaaaaa);
     const ambientLight = new AmbientLight(0x4d4d4d);
     const light1 = new PointLight(0xffffff, 0.7);
     light1.position.set(3.0, 3.0, 3.0);
     const light2 = new PointLight(0xffffff, 0.7);
     light2.position.set(-3.0, -3.0, 3.0);
-    this.scene.add(ambientLight);
-    this.scene.add(light1);
-    this.scene.add(light2);
+    this.wrappedScene.add(ambientLight);
+    this.wrappedScene.add(light1);
+    this.wrappedScene.add(light2);
   }
 
   private updateScales(): void {
@@ -829,9 +834,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private updateRootObjectMatrix() {
     const matrix = this.getMatrix();
 
-    if (this.root) {
-      this.root.matrix = matrix;
-      this.root.matrixWorldNeedsUpdate = true;
+    if (this.wrappedRoot) {
+      this.wrappedRoot.matrix = matrix;
+      this.wrappedRoot.matrixWorldNeedsUpdate = true;
     }
 
     this.objectTransformChangedEvent.trigger(matrix);
