@@ -116,6 +116,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public hitTestHandler: IHitTestHandler | undefined = undefined;
 
+  private testScene = new Scene();
+
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
 
@@ -431,7 +433,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     animate();
   }
 
-  public exportImage(width: number, height: number): Uint8Array {
+  public exportImage(width: number, height: number, scene: Scene | undefined = undefined): Uint8Array {
     if (!this.renderer || !this.scene || !this.camera) {
       throw Error('invalid render');
     }
@@ -439,7 +441,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.renderer.setRenderTarget(target);
 
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(scene === undefined ? this.scene : scene, this.camera);
 
     const data = new Uint8Array(width * height * 4);
 
