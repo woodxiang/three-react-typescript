@@ -44,6 +44,10 @@ interface IActionCallback {
   viewPortSize: Vector2;
 }
 
+interface ITransformed {
+  objectTransform: Matrix4 | undefined;
+}
+
 interface IActionHandler {
   isEnabled: boolean;
   priority: number;
@@ -88,4 +92,13 @@ interface IFlat {
 const renderingModelName = '#models#';
 
 export { STATE, CURSORTYPE, Direction, renderingModelName };
-export type { IActionCallback, IActionHandler, IObjectRotation, IHitTest, IHitTestResult, IHitTestHandler, IFlat };
+export type {
+  IActionCallback,
+  IActionHandler,
+  IObjectRotation,
+  IHitTest,
+  IHitTestResult,
+  IHitTestHandler,
+  IFlat,
+  ITransformed,
+};

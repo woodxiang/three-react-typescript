@@ -2,6 +2,7 @@ import { Material } from 'three/src/materials/Material';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Scene } from 'three/src/scenes/Scene';
+import { ITransformed } from './interfaces';
 import PositionDetectMaterial from './Materials/PositionDetectMaterial';
 
 export default class PositionDetectHelper {
@@ -13,7 +14,7 @@ export default class PositionDetectHelper {
   }
 
   public static createPositionDetectMaterial(srcMaterial: Material, id: number): PositionDetectMaterial {
-    const ret = new PositionDetectMaterial(id);
+    const ret = new PositionDetectMaterial(id * 10);
     ret.clippingPlanes = srcMaterial.clippingPlanes;
     ret.stencilWrite = srcMaterial.stencilWrite;
     ret.stencilRef = srcMaterial.stencilRef;
@@ -23,6 +24,11 @@ export default class PositionDetectHelper {
     ret.stencilZPass = srcMaterial.stencilZPass;
 
     ret.name = srcMaterial.name;
+
+    const tmp = <ITransformed>(<unknown>srcMaterial);
+    if (tmp && tmp.objectTransform) {
+      ret.objectTransform = tmp.objectTransform;
+    }
 
     return ret;
   }

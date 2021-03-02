@@ -21,7 +21,7 @@ import ClippingActionHandler, { IClippingManager } from './ClippingActionHandler
 import ClippingBoundaryHelper from './ClippingBoundaryHelper';
 import { normals } from './Geometry/boxConstants';
 import IdentityPlaneBufferGeometry from './Geometry/IdentityPlaneBufferGeometry';
-import { Direction, renderingModelName } from './interfaces';
+import { Direction, ITransformed, renderingModelName } from './interfaces';
 import RenderingEngine from './RenderingEngine';
 
 export default class ClippingManager implements IClippingManager {
@@ -424,6 +424,20 @@ export default class ClippingManager implements IClippingManager {
         planeGroup.matrix = planeMatrix;
         planeGroup.matrixAutoUpdate = false;
       }
+
+      planeGroup?.children.forEach((v1) => {
+        const m = v1 as Mesh;
+        if (m) {
+          if (m.material instanceof Array) {
+            m.material.forEach((m1) => {
+              const tmp = <ITransformed>(<unknown>m1);
+              tmp.objectTransform = planeMatrix;
+            });
+          } else {
+            (<ITransformed>(<unknown>m.material)).objectTransform = planeMatrix;
+          }
+        }
+      });
     });
   }
 
