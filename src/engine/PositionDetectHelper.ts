@@ -1,0 +1,87 @@
+import { Material } from 'three/src/materials/Material';
+import { Group } from 'three/src/objects/Group';
+import { Mesh } from 'three/src/objects/Mesh';
+import { Scene } from 'three/src/scenes/Scene';
+import PositionDetectMaterial from './Materials/PositionDetectMaterial';
+
+export default class PositionDetectHelper {
+  public static createDetectScene(srcScene: Scene): Scene {
+    const mapList = Array<{ id: number; key: string }>();
+    const ret = this.createPositionDetectGroup(srcScene, 1, mapList, ['#stencil#']);
+
+    return ret as Scene;
+  }
+
+  public static createPositionDetectMaterial(srcMaterial: Material, id: number): PositionDetectMaterial {
+    const ret = new PositionDetectMaterial(id);
+    ret.clippingPlanes = srcMaterial.clippingPlanes;
+    ret.stencilWrite = srcMaterial.stencilWrite;
+    ret.stencilRef = srcMaterial.stencilRef;
+    ret.stencilFunc = srcMaterial.stencilFunc;
+    ret.stencilFail = srcMaterial.stencilFail;
+    ret.stencilZFail = srcMaterial.stencilZFail;
+    ret.stencilZPass = srcMaterial.stencilZPass;
+
+    ret.name = srcMaterial.name;
+
+    return ret;
+  }
+
+  public static createPositionDetectMesh(srcMesh: Mesh, id: number): Mesh {
+    const srcGeo = srcMesh.geometry;
+    const srcMaterial = srcMesh.material;
+    let targetMaterial: Material | Material[];
+    if (srcMaterial instanceof Array) {
+      targetMaterial = new Array<PositionDetectMaterial>(srcMaterial.length);
+      for (let i = 0; i < srcMaterial.length; i += 1) {
+        targetMaterial[i] = PositionDetectHelper.createPositionDetectMaterial(srcMaterial[i], id);
+      }
+    } else {
+      targetMaterial = PositionDetectHelper.createPositionDetectMaterial(srcMaterial, id);
+    }
+    const ret = new Mesh(srcGeo, targetMaterial);
+    ret.name = srcMesh.name;
+    ret.matrix = srcMesh.matrix;
+    ret.matrixAutoUpdate = false;
+    ret.renderOrder = srcMesh.renderOrder;
+    ret.onAfterRender = srcMesh.onAfterRender;
+
+    return ret;
+  }
+
+  public static createPositionDetectGroup(
+    srcGroup: Group | Scene,
+    seedId: number,
+    objIdNumber: Array<{ id: number; key: string }>,
+    exclude: string[] | undefined = undefined
+  ): Group | Scene {
+    if (exclude && exclude.indexOf(srcGroup.name) >= 0) {
+      return srcGroup.clone() as Group | Scene;
+    }
+
+    const ret = srcGroup instanceof Scene ? new Scene() : new Group();
+    ret.name = srcGroup.name;
+
+    let nextSeed = seedId;
+    srcGroup.children.forEach((v) => {
+      if (v instanceof Group || v instanceof Scene) {
+        const newGroup = PositionDetectHelper.createPositionDetectGroup(v, nextSeed, objIdNumber, exclude);
+        if (newGroup.children.length > 0) {
+          newGroup.matrix = v.matrix;
+          newGroup.matrixAutoUpdate = false;
+          ret.add(newGroup);
+          nextSeed = objIdNumber[objIdNumber.length - 1].id + 1;
+        }
+      } else if (v instanceof Mesh) {
+        const newMesh = this.createPositionDetectMesh(v, nextSeed);
+        objIdNumber.push({ id: nextSeed, key: v.uuid });
+        ret.add(newMesh);
+        nextSeed = objIdNumber[objIdNumber.length - 1].id + 1;
+      } else {
+        console.log('invalid object type. ingore');
+      }
+    });
+
+    return ret;
+  }
+}

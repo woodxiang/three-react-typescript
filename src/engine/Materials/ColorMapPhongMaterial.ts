@@ -46,6 +46,7 @@ export default class ColorMapPhongMaterial extends ShaderMaterial {
       this.colorMapOffset = 0;
       this.colorMapRatio = 1;
     }
+    this.clipping = true;
   }
 
   public copy(source: Material): this {

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
 import { Points } from 'three/src/objects/Points';
-import { Color } from 'three/src/math/Color';
+import PositionDetectHelper from '../engine/PositionDetectHelper';
 import { Direction } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
@@ -237,11 +237,9 @@ export default function MainLayout(): JSX.Element {
 
     const engine = engineRef.current;
 
-    if (selectedStls.length > 0) {
-      selectedStls.forEach((v) => {
-        engine.setMeshColor(new Color('red'), stlPrefix + v);
-      });
-    }
+    const testScene = PositionDetectHelper.createDetectScene(engine.scene);
+    const jpegdata = engine.exportImage(1920, 1080, testScene);
+    saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
   };
 
   // init effect when mount.

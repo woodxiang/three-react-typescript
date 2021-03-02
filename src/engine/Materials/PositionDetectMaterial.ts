@@ -21,6 +21,7 @@ export default class PositionDetectMaterial extends ShaderMaterial {
     this.lights = false;
     this.blending = NoBlending;
     this.objectId = objectId;
+    this.clipping = true;
   }
 
   public copy(source: Material): this {
