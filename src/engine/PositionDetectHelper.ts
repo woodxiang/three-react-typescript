@@ -56,6 +56,7 @@ export default class PositionDetectHelper {
     ret.matrixAutoUpdate = false;
     ret.renderOrder = srcMesh.renderOrder;
     ret.onAfterRender = srcMesh.onAfterRender;
+    ret.visible = srcMesh.visible;
 
     return ret;
   }
@@ -72,6 +73,7 @@ export default class PositionDetectHelper {
 
     const ret = srcGroup instanceof Scene ? new Scene() : new Group();
     ret.name = srcGroup.name;
+    ret.visible = srcGroup.visible;
 
     let nextSeed = seedId;
     srcGroup.children.forEach((v) => {
