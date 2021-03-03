@@ -94,8 +94,7 @@ export default class ClippingActionHandler implements IActionHandler {
         }
 
         if (event.buttons === 1) {
-          if (newPosition.x === this.previousPosition.x && newPosition.y === this.previousPosition.y)
-            callbacker.capturePointer(event.pointerId);
+          callbacker.capturePointer(event.pointerId);
           callbacker.state = CLIPPING;
           callbacker.cursorType = CURSORTYPE.HAND;
         }

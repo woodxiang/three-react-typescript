@@ -54,8 +54,7 @@ export default class RotationHandler implements IActionHandler {
       const newPosition = new Vector2(event.offsetX, event.offsetY);
       if (callbacker.state === STATE.NONE) {
         if (event.buttons === 1) {
-          if (newPosition.x === this.previousPosition.x && newPosition.y === this.previousPosition.y)
-            callbacker.capturePointer(event.pointerId);
+          callbacker.capturePointer(event.pointerId);
           callbacker.state = STATE.ROTATE;
           callbacker.cursorType = CURSORTYPE.HAND;
         }
