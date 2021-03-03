@@ -9,11 +9,8 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
 import { PointsMaterial } from 'three/src/materials/PointsMaterial';
 import { Points } from 'three/src/objects/Points';
-import { Matrix4 } from 'three/src/math/Matrix4';
-import { Vector3 } from 'three/src/math/Vector3';
 import DracoExLoader from './DracoExLoader';
 import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
-import PositionDetectMaterial from './Materials/PositionDetectMaterial';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -51,16 +48,6 @@ export default class MeshFactory {
     });
     material.specular.set(0.9);
 
-    // const material = new PositionDetectMaterial(1);
-    // geometry.computeBoundingBox();
-    // const box = geometry.boundingBox;
-    // const sz = new Vector3();
-    // box?.getSize(sz);
-    // const dim = Math.max(sz?.x, Math.max(sz?.y, sz?.z));
-
-    // const m = new Matrix4();
-    // m.scale(new Vector3(1 / dim, 1 / dim, 1 / dim));
-    // material.objectTransform = m;
     const mesh = new Mesh(geometry, material);
     mesh.name = url;
 

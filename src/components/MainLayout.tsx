@@ -238,7 +238,7 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
 
     const testScene = PositionDetectHelper.createDetectScene(engine.scene);
-    const jpegdata = engine.exportImage(1920, 1080, testScene);
+    const jpegdata = engine.exportImage(1920, 1080, testScene.scene);
     saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
   };
 

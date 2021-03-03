@@ -69,7 +69,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private adapteMatrix: Matrix4 = new Matrix4();
 
-  private rotateMatrix: Matrix4 = new Matrix4();
+  private wrappedRotateMatrix: Matrix4 = new Matrix4();
 
   private wrappedMaxDim = 1;
 
@@ -238,8 +238,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
   }
 
-  get actionHandler(): IActionHandler[] {
-    return this.wrappedActionHandlers;
+  public addActionHandler(handler: IActionHandler): void {
+    this.wrappedActionHandlers.push(handler);
+    this.wrappedActionHandlers.sort((a, b) => a.priority - b.priority);
+  }
+
+  public removeActionHandler(handler: IActionHandler): void {
+    const index = this.wrappedActionHandlers.indexOf(handler);
+    if (index >= 0) {
+      this.wrappedActionHandlers.splice(index, 1);
+    }
   }
 
   get boundingBox(): Box3 | undefined {
@@ -505,21 +513,21 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   /**
    * Get the matrix of rotation.
    */
-  public getRotationMatrix(): Matrix4 {
-    return this.rotateMatrix;
+  public get rotationMatrix(): Matrix4 {
+    return this.wrappedRotateMatrix;
   }
 
   /**
    * update rotation matrix and apply it.
    * @param mat new matrix for rotaion.
    */
-  public setRotationMatrix(mat: Matrix4): void {
-    this.rotateMatrix = mat;
+  public set rotationMatrix(mat: Matrix4) {
+    this.wrappedRotateMatrix = mat;
     this.updateRootObjectMatrix();
   }
 
-  public getMatrix(): Matrix4 {
-    const matrix = this.rotateMatrix.clone();
+  public get matrix(): Matrix4 {
+    const matrix = this.wrappedRotateMatrix.clone();
     matrix.multiply(this.adapteMatrix);
 
     return matrix;
@@ -742,7 +750,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         throw Error('invalid face index.');
       }
 
-      const matrix = this.getMatrix();
+      const { matrix } = this;
 
       const m = matrix.invert();
       return { name: ret.object.name, index: ret.face.a / 3, pos: ret.point.applyMatrix4(m) };
@@ -832,7 +840,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private updateRootObjectMatrix() {
-    const matrix = this.getMatrix();
+    const { matrix } = this;
 
     if (this.wrappedRoot) {
       this.wrappedRoot.matrix = matrix;

@@ -93,7 +93,7 @@ export default class ClippingManager implements IClippingManager {
       this.planeGeoms.splice(0, this.planeGeoms.length);
 
       this.boundaryHelper.bind(undefined);
-      this.engine.actionHandler.splice(this.engine.actionHandler.indexOf(this.clippingActionHandler), 1);
+      this.engine.removeActionHandler(this.clippingActionHandler);
     }
 
     this.engine = engine;
@@ -147,11 +147,12 @@ export default class ClippingManager implements IClippingManager {
 
       this.updateAllPlaneMesh();
 
-      this.updatePlaneTransformMatrix(this.engine.getMatrix());
+      this.updatePlaneTransformMatrix(this.engine.matrix);
 
       this.boundaryHelper.bind(this.engine);
       this.boundaryHelper.update(this.wrappedClipPositions);
-      this.engine.actionHandler.push(this.clippingActionHandler);
+
+      this.engine.addActionHandler(this.clippingActionHandler);
     }
   }
 
@@ -248,7 +249,7 @@ export default class ClippingManager implements IClippingManager {
     }
 
     this.updateAllPlaneMesh();
-    if (this.engine) this.updatePlaneTransformMatrix(this.engine.getMatrix());
+    if (this.engine) this.updatePlaneTransformMatrix(this.engine.matrix);
     this.boundaryHelper.update(this.wrappedClipPositions);
   }
 
@@ -389,6 +390,7 @@ export default class ClippingManager implements IClippingManager {
       planeMat.stencilZPass = ReplaceStencilOp;
 
       const po = new Mesh(planeGeom, planeMat);
+      po.name = mesh.name;
       po.onAfterRender = (renderer) => {
         renderer.clearStencil();
       };

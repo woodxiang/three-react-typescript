@@ -19,7 +19,7 @@ const CLIPPING = 10;
 export default class ClippingActionHandler implements IActionHandler {
   public isEnabled = true;
 
-  public priority = 5;
+  public readonly priority = 5;
 
   private previousPosition: Vector2 = new Vector2();
 
@@ -63,9 +63,6 @@ export default class ClippingActionHandler implements IActionHandler {
           return false;
         }
         this.previousPosition = new Vector2(event.offsetX, event.offsetY);
-        callbacker.cursorType = CURSORTYPE.HAND;
-        callbacker.capturePointer(event.pointerId);
-        callbacker.state = CLIPPING;
         return true;
       }
     }
@@ -90,16 +87,25 @@ export default class ClippingActionHandler implements IActionHandler {
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
       const callbacker = callback;
-      if (callbacker.state === CLIPPING) {
+      const newPosition = new Vector2(event.offsetX, event.offsetY);
+      if (callbacker.state === STATE.NONE) {
         if (this.activeDir === Direction.Undefined) {
-          throw Error('invalid dir');
+          return false;
         }
-        const currentPos = new Vector2(event.offsetX, event.offsetY);
-        const delta = currentPos.clone().sub(this.previousPosition);
 
+        if (event.buttons === 1) {
+          if (newPosition.x === this.previousPosition.x && newPosition.y === this.previousPosition.y)
+            callbacker.capturePointer(event.pointerId);
+          callbacker.state = CLIPPING;
+          callbacker.cursorType = CURSORTYPE.HAND;
+        }
+      }
+
+      if (callbacker.state === CLIPPING) {
+        const delta = newPosition.clone().sub(this.previousPosition);
         this.dragClipSurface(delta, callback);
-
-        this.previousPosition = currentPos;
+        this.previousPosition = newPosition;
+        return true;
       }
     }
     return false;
@@ -154,7 +160,7 @@ export default class ClippingActionHandler implements IActionHandler {
     this.clipperMesh.matrix = matrixClip;
     this.clipperMesh.matrixAutoUpdate = false;
 
-    this.root.matrix = callback.getMatrix();
+    this.root.matrix = callback.matrix;
     this.root.matrixAutoUpdate = false;
 
     const ret = callback.renderTargetAndReadFloat(this.scene, offsetX, offsetY);
@@ -174,7 +180,7 @@ export default class ClippingActionHandler implements IActionHandler {
     const pd = dirNormalMap[this.activeDir];
     const viewSize = callback.viewPortSize;
 
-    const matrixShift = callback.getRotationMatrix().clone();
+    const matrixShift = callback.rotationMatrix.clone();
     matrixShift.elements[12] = 0;
     matrixShift.elements[13] = 0;
     matrixShift.elements[14] = 0;

@@ -6,15 +6,20 @@ import { ITransformed } from './interfaces';
 import PositionDetectMaterial from './Materials/PositionDetectMaterial';
 
 export default class PositionDetectHelper {
-  public static createDetectScene(srcScene: Scene): Scene {
+  public static createDetectScene(srcScene: Scene): { scene: Scene; map: Map<number, string> } {
     const mapList = Array<{ id: number; key: string }>();
     const ret = this.createPositionDetectGroup(srcScene, 1, mapList, ['#stencil#']);
 
-    return ret as Scene;
+    const objectMap = new Map<number, string>();
+    mapList.forEach((v) => {
+      objectMap.set(v.id, v.key);
+    });
+
+    return { scene: ret as Scene, map: objectMap };
   }
 
   public static createPositionDetectMaterial(srcMaterial: Material, id: number): PositionDetectMaterial {
-    const ret = new PositionDetectMaterial(id * 10);
+    const ret = new PositionDetectMaterial(id);
     ret.clippingPlanes = srcMaterial.clippingPlanes;
     ret.stencilWrite = srcMaterial.stencilWrite;
     ret.stencilRef = srcMaterial.stencilRef;
@@ -80,7 +85,7 @@ export default class PositionDetectHelper {
         }
       } else if (v instanceof Mesh) {
         const newMesh = this.createPositionDetectMesh(v, nextSeed);
-        objIdNumber.push({ id: nextSeed, key: v.uuid });
+        objIdNumber.push({ id: nextSeed, key: v.name });
         ret.add(newMesh);
         nextSeed = objIdNumber[objIdNumber.length - 1].id + 1;
       } else {

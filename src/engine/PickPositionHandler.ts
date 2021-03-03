@@ -1,11 +1,14 @@
-import { IActionCallback, IActionHandler, IHitTest, STATE } from './interfaces';
+/* eslint-disable class-methods-use-this */
+import { Vector3 } from 'three/src/math/Vector3';
+import { IActionCallback, IActionHandler, STATE } from './interfaces';
+import PositionDetectHelper from './PositionDetectHelper';
 
-export default class ClickHandler implements IActionHandler {
+export default class PickPositionHandler implements IActionHandler {
   public readonly priority;
 
   public isEnabled = true;
 
-  constructor(priority = 15) {
+  constructor(priority: number) {
     this.priority = priority;
   }
 
@@ -18,16 +21,20 @@ export default class ClickHandler implements IActionHandler {
     if (this.isEnabled) {
       const callbacker = callback;
       if (callbacker.state === STATE.NONE) {
-        const hitTester = <IHitTest>(<unknown>callbacker);
-        if (hitTester) {
-          return hitTester.hit(
-            (event.offsetX / callbacker.viewPortSize.x) * 2 - 1,
-            -(event.offsetY / callbacker.viewPortSize.y) * 2 + 1
-          );
-        }
+        const detectScene = PositionDetectHelper.createDetectScene(callback.scene);
+        const ret = callback.renderTargetAndReadFloat(detectScene.scene, event.offsetX, event.offsetY);
+        const position = new Vector3(ret[0], ret[1], ret[2]);
+        const objId = Math.round(ret[3]);
+        const objName = detectScene.map.get(objId);
+        this.onHit(position, objName);
       }
     }
 
+    return false;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected onHit(position: Vector3, name: string | undefined): boolean {
     return false;
   }
 

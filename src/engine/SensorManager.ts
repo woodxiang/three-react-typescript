@@ -1,31 +1,38 @@
 import { v4 as uuid } from 'uuid';
+import { Vector3 } from 'three/src/math/Vector3';
 import RenderingEngine from './RenderingEngine';
-import { IHitTestHandler, IHitTestResult } from './interfaces';
+import PickPositionHandler from './PickPositionHandler';
 
-export default class SensorManager implements IHitTestHandler {
+export default class SensorManager extends PickPositionHandler {
   private sensors: { targetName: string; id: string; position: number[] }[] = [];
 
   private activeSensorName: string | undefined = undefined;
 
   private engine: RenderingEngine | undefined;
 
+  constructor() {
+    super(20);
+  }
+
   public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
-      this.engine.hitTestHandler = undefined;
+      this.engine.removeActionHandler(this);
     }
     this.engine = engine;
-    if (this.engine !== undefined) {
-      this.engine.hitTestHandler = <IHitTestHandler>this;
+    if (this.engine) {
+      this.engine?.addActionHandler(this);
     }
   }
 
-  public onHit(res: IHitTestResult): boolean {
+  public onHit(pos: Vector3, name: string | undefined): boolean {
     if (!this.engine) {
       throw Error('bind engine before invoke.');
     }
 
-    const { name, pos } = res;
+    if (name === undefined) {
+      return false;
+    }
 
     const pickedSensor = this.sensors.find((v) => v.id === name);
     if (pickedSensor) {

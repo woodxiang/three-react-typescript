@@ -7,7 +7,7 @@ import { CURSORTYPE, IActionCallback, IActionHandler, IObjectRotation, STATE } f
 export default class RotationHandler implements IActionHandler {
   public isEnabled = true;
 
-  public priority = 10;
+  public readonly priority = 10;
 
   private previousPosition = new Vector2();
 
@@ -160,6 +160,6 @@ export default class RotationHandler implements IActionHandler {
       }
     }
 
-    this.targetObject.setRotationMatrix(matrix.multiply(this.targetObject.getRotationMatrix()));
+    this.targetObject.rotationMatrix = matrix.multiply(this.targetObject.rotationMatrix);
   }
 }

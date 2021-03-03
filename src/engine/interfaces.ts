@@ -31,17 +31,18 @@ enum Direction {
 interface IActionCallback {
   state: STATE;
   cursorType: CURSORTYPE;
-  cameraFov: number;
-  cameraEye: Vector3;
-  camaerAt: Vector3;
-  boundingBox: Box3 | undefined;
-  maxDim: number;
-  getRotationMatrix(): Matrix4;
-  getMatrix(): Matrix4;
+  readonly scene: Scene;
+  readonly cameraFov: number;
+  readonly cameraEye: Vector3;
+  readonly camaerAt: Vector3;
+  readonly boundingBox: Box3 | undefined;
+  readonly maxDim: number;
+  readonly rotationMatrix: Matrix4;
+  readonly matrix: Matrix4;
+  readonly viewPortSize: Vector2;
   capturePointer(pointerId: number): void;
   releasePointer(): void;
   renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array;
-  viewPortSize: Vector2;
 }
 
 interface ITransformed {
@@ -50,7 +51,7 @@ interface ITransformed {
 
 interface IActionHandler {
   isEnabled: boolean;
-  priority: number;
+  readonly priority: number;
 
   handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean;
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
@@ -74,13 +75,16 @@ interface IHitTest {
   hit(xPos: number, yPos: number): boolean;
 }
 
+interface IPositionObjectDetect {
+  hit(position: Vector3, objectName: string): boolean;
+}
+
 interface IHitTestHandler {
   onHit(res: IHitTestResult): boolean;
 }
 
 interface IObjectRotation {
-  getRotationMatrix(): Matrix4;
-  setRotationMatrix(mat: Matrix4): void;
+  rotationMatrix: Matrix4;
 }
 
 interface IFlat {
@@ -101,4 +105,5 @@ export type {
   IHitTestHandler,
   IFlat,
   ITransformed,
+  IPositionObjectDetect,
 };
