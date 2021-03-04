@@ -245,7 +245,7 @@ export default class ClippingManager implements IClippingManager {
       if (newValue < this.limitBox[dir]) {
         // too small;
         this.wrappedClipPositions[dir] = this.limitBox[dir];
-      } else if (newValue > this.wrappedClipPositions[otherDir] + this.minFragment) {
+      } else if (newValue > this.wrappedClipPositions[otherDir] - this.minFragment) {
         // larger than position clip position. move other side at the same time.
         let newOtherClippingPosition = newValue + this.minFragment;
         let newThisClippingPosition = newValue;
