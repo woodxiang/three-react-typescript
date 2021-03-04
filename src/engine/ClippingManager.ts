@@ -226,10 +226,13 @@ export default class ClippingManager implements IClippingManager {
         }
         this.wrappedClipPositions[otherDir] = newOtherClippingPosition;
         this.wrappedClipPositions[dir] = newThisClippingPosition;
+
+        this.cliped[otherDir] = this.wrappedClipPositions[otherDir] !== this.limitBox[otherDir];
       } else {
         // just in range
         this.wrappedClipPositions[dir] = newValue;
       }
+      this.cliped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
     } else {
       // nagitive direction
       if (newValue === this.wrappedClipPositions[dir]) {
@@ -253,10 +256,14 @@ export default class ClippingManager implements IClippingManager {
         }
         this.wrappedClipPositions[otherDir] = newOtherClippingPosition;
         this.wrappedClipPositions[dir] = newThisClippingPosition;
+
+        this.cliped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
       } else {
         // just in range
         this.wrappedClipPositions[dir] = newValue;
       }
+
+      this.cliped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
     }
 
     this.updateAllPlaneMesh();
@@ -284,6 +291,7 @@ export default class ClippingManager implements IClippingManager {
       }
 
       this.clipGroup.add(this.createClippingSurfaces(mesh, id));
+      this.updateClippingPlane(mesh);
     }
   };
 
@@ -437,6 +445,47 @@ export default class ClippingManager implements IClippingManager {
    * apply transform matrix to surfaces.
    */
   private updateAllPlaneMesh(): void {
+    const planeMatrix = this.generatePlaneMatrix();
+
+    this.clipGroup.children.forEach((v) => {
+      const g = v as Group;
+      if (g) {
+        ClippingManager.applyPlaneGroupMatrix(g, planeMatrix);
+      }
+    });
+  }
+
+  private updateClippingPlane(mesh: Mesh | Points): void {
+    const { name } = mesh;
+    const group = this.clipGroup.children.find((v) => v.name === name) as Group;
+    if (group) {
+      ClippingManager.applyPlaneGroupMatrix(group, this.generatePlaneMatrix());
+    }
+  }
+
+  private static applyPlaneGroupMatrix(v: Group, planeMatrix: Matrix4): void {
+    const planeGroup = v.children.find((v1) => v1.name === '#planes#');
+
+    if (planeGroup) {
+      planeGroup.matrix = planeMatrix;
+      planeGroup.matrixAutoUpdate = false;
+      planeGroup?.children.forEach((v1) => {
+        const m = v1 as Mesh;
+        if (m) {
+          if (m.material instanceof Array) {
+            m.material.forEach((m1) => {
+              const tmp = <ITransformed>(<unknown>m1);
+              tmp.objectTransform = planeMatrix;
+            });
+          } else {
+            (<ITransformed>(<unknown>m.material)).objectTransform = planeMatrix;
+          }
+        }
+      });
+    }
+  }
+
+  private generatePlaneMatrix() {
     const planeMatrix = new Matrix4();
     planeMatrix.scale(
       new Vector3(
@@ -449,28 +498,7 @@ export default class ClippingManager implements IClippingManager {
     planeMatrix.setPosition(
       new Vector3(this.wrappedClipPositions[3], this.wrappedClipPositions[4], this.wrappedClipPositions[5])
     );
-
-    this.clipGroup.children.forEach((v) => {
-      const planeGroup = v.children.find((v1) => v1.name === '#planes#');
-
-      if (planeGroup) {
-        planeGroup.matrix = planeMatrix;
-        planeGroup.matrixAutoUpdate = false;
-        planeGroup?.children.forEach((v1) => {
-          const m = v1 as Mesh;
-          if (m) {
-            if (m.material instanceof Array) {
-              m.material.forEach((m1) => {
-                const tmp = <ITransformed>(<unknown>m1);
-                tmp.objectTransform = planeMatrix;
-              });
-            } else {
-              (<ITransformed>(<unknown>m.material)).objectTransform = planeMatrix;
-            }
-          }
-        });
-      }
-    });
+    return planeMatrix;
   }
 
   private static createPlaneStencilGroup(geometry: BufferGeometry, plane: Plane, renderOrder: number): Group {
