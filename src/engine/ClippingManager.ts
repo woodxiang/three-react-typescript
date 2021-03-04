@@ -84,6 +84,19 @@ export default class ClippingManager implements IClippingManager {
       this.unbindEvents();
       this.engine.enableClipping = false;
       // clear
+      const { root } = this.engine;
+      const modelsGroup = root.children.find((v) => v.name === renderingModelName);
+      if (!modelsGroup) {
+        throw Error('model group not exists.');
+      }
+
+      modelsGroup.children.forEach((v) => {
+        const m = v as Mesh;
+        if (m) {
+          this.unApplyClip(m);
+        }
+      });
+
       this.seed = 0;
       this.wrappedLimitBox.splice(0, this.wrappedLimitBox.length);
       const index = this.engine.root.children.indexOf(this.clipGroup);
@@ -136,9 +149,7 @@ export default class ClippingManager implements IClippingManager {
       // add the clipping surfaces for each object to clip
       for (let iMesh = 0; iMesh < modelsGroup.children.length; iMesh += 1) {
         const mesh = <Mesh>modelsGroup.children[iMesh];
-        if (mesh) {
-          this.clipGroup.add(this.createClippingSurfaces(mesh, iMesh));
-        }
+        this.applyClip(mesh);
       }
 
       if (this.engine.boundingBox) {
@@ -273,8 +284,27 @@ export default class ClippingManager implements IClippingManager {
       }
 
       this.clipGroup.add(this.createClippingSurfaces(mesh, id));
+    }
+  };
 
-      this.updateAllPlaneMesh();
+  /**
+   * remove clipping objects related to the specified mesh.
+   * @param mesh the specified mesh.
+   */
+  private unApplyClip = (mesh: Mesh | Points | undefined): void => {
+    if (mesh !== undefined) {
+      const { material } = mesh;
+      if (material instanceof Array) {
+        const materials = material as Array<Material>;
+        materials.forEach((mat) => {
+          const m = mat;
+          m.clippingPlanes = null;
+        });
+      } else {
+        material.clippingPlanes = null;
+      }
+      const index = this.clipGroup.children.findIndex((v) => v.name === mesh.name);
+      this.clipGroup.children.splice(index, 1);
     }
   };
 
@@ -407,39 +437,39 @@ export default class ClippingManager implements IClippingManager {
    * apply transform matrix to surfaces.
    */
   private updateAllPlaneMesh(): void {
+    const planeMatrix = new Matrix4();
+    planeMatrix.scale(
+      new Vector3(
+        this.wrappedClipPositions[0] - this.wrappedClipPositions[3],
+        this.wrappedClipPositions[1] - this.wrappedClipPositions[4],
+        this.wrappedClipPositions[2] - this.wrappedClipPositions[5]
+      )
+    );
+
+    planeMatrix.setPosition(
+      new Vector3(this.wrappedClipPositions[3], this.wrappedClipPositions[4], this.wrappedClipPositions[5])
+    );
+
     this.clipGroup.children.forEach((v) => {
       const planeGroup = v.children.find((v1) => v1.name === '#planes#');
 
-      const planeMatrix = new Matrix4();
-      planeMatrix.scale(
-        new Vector3(
-          this.wrappedClipPositions[0] - this.wrappedClipPositions[3],
-          this.wrappedClipPositions[1] - this.wrappedClipPositions[4],
-          this.wrappedClipPositions[2] - this.wrappedClipPositions[5]
-        )
-      );
-
-      planeMatrix.setPosition(
-        new Vector3(this.wrappedClipPositions[3], this.wrappedClipPositions[4], this.wrappedClipPositions[5])
-      );
       if (planeGroup) {
         planeGroup.matrix = planeMatrix;
         planeGroup.matrixAutoUpdate = false;
-      }
-
-      planeGroup?.children.forEach((v1) => {
-        const m = v1 as Mesh;
-        if (m) {
-          if (m.material instanceof Array) {
-            m.material.forEach((m1) => {
-              const tmp = <ITransformed>(<unknown>m1);
-              tmp.objectTransform = planeMatrix;
-            });
-          } else {
-            (<ITransformed>(<unknown>m.material)).objectTransform = planeMatrix;
+        planeGroup?.children.forEach((v1) => {
+          const m = v1 as Mesh;
+          if (m) {
+            if (m.material instanceof Array) {
+              m.material.forEach((m1) => {
+                const tmp = <ITransformed>(<unknown>m1);
+                tmp.objectTransform = planeMatrix;
+              });
+            } else {
+              (<ITransformed>(<unknown>m.material)).objectTransform = planeMatrix;
+            }
           }
-        }
-      });
+        });
+      }
     });
   }
 

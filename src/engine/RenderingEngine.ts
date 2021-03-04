@@ -741,7 +741,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('invalid camera');
     }
     const rayCaster = new Raycaster();
+    rayCaster.layers.set(2);
     rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);
+    this.targetObject3D.children.forEach((element) => {
+      if (element.visible) {
+        element.layers.enable(2);
+      } else {
+        element.layers.disable(2);
+      }
+    });
     const intersection = rayCaster.intersectObjects(this.targetObject3D.children);
 
     if (intersection.length > 0) {
