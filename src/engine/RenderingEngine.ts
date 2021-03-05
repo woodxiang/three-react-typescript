@@ -2,7 +2,6 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { Scene } from 'three/src/scenes/Scene';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
-import { AxesHelper } from 'three/src/helpers/AxesHelper';
 import { Color } from 'three/src/math/Color';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
 import { Box3 } from 'three/src/math/Box3';
@@ -10,7 +9,6 @@ import { Mesh } from 'three/src/objects/Mesh';
 import { Vector3 } from 'three/src/math/Vector3';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Raycaster } from 'three/src/core/Raycaster';
-import * as dat from 'dat.gui';
 import { Vector2 } from 'three/src/math/Vector2';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
@@ -39,16 +37,11 @@ import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
 
-interface IInternalControlObject {
-  fov: number;
-  showAxesHelper: boolean;
-}
-
 /**
  * Rendering Engine
  */
 export default class RenderingEngine implements IActionCallback, IObjectRotation, IHitTest {
-  public viewPortSize: Vector2 = new Vector2();
+  private wrappedViewPortSize: Vector2 = new Vector2();
 
   /**
    * Current State: moving or rotation or picking.
@@ -59,9 +52,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedScene: Scene = new Scene();
 
-  private camera: PerspectiveCamera | undefined;
+  private renderer = new WebGLRenderer({ antialias: true });
 
-  private renderer: WebGLRenderer | undefined;
+  private camera = new PerspectiveCamera(15, 1, 0.01, 100);
 
   private wrappedRoot: Group = new Group(); // This is the root for all objects.
 
@@ -74,8 +67,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private wrappedMaxDim = 1;
 
   private wrappedBoundingBox: Box3 | undefined;
-
-  private axesHelper: AxesHelper | undefined;
 
   private selectionHelper = new SelectionHelper();
 
@@ -100,13 +91,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private debugMode = true;
 
   private stats: Stats | undefined;
-
-  private gui: dat.GUI | undefined;
-
-  private internalControl: IInternalControlObject = {
-    fov: 15,
-    showAxesHelper: true,
-  };
 
   private wrappedActionHandlers: IActionHandler[] = [];
 
@@ -142,14 +126,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('already initialzied.');
     }
     this.parentDiv = div;
-    this.camera = new PerspectiveCamera(this.internalControl.fov, width / height, 0.01, 100);
     this.camera.position.set(0, 0, 10);
 
-    this.viewPortSize = new Vector2(width, height);
+    this.wrappedViewPortSize = new Vector2(width, height);
 
-    // Create Render
-    this.renderer = new WebGLRenderer({ antialias: true });
-    this.renderer.setSize(width, height);
+    this.resize(width, height);
 
     div.appendChild(this.renderer.domElement);
 
@@ -169,40 +150,19 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.stats = Stats();
       this.stats.dom.style.position = 'absolute';
       div.appendChild(this.stats.dom);
-
-      this.gui = new dat.GUI();
-      this.gui.add(this.internalControl, 'fov', 0.1, 180).onChange((newFov: number) => {
-        if (this.camera) {
-          this.camera.fov = newFov;
-          this.camera.updateProjectionMatrix();
-        }
-      });
-      this.gui.add(this.internalControl, 'showAxesHelper').onChange((value: boolean) => {
-        if (!this.wrappedScene) return;
-        if (value) {
-          if (!this.axesHelper) {
-            const axesHelper = new AxesHelper(1);
-            this.wrappedScene.add(axesHelper);
-            this.axesHelper = axesHelper;
-          }
-        } else if (this.axesHelper) {
-          this.wrappedScene.remove(this.axesHelper);
-          this.axesHelper = undefined;
-        }
-      });
     }
 
     this.initEvents();
   }
 
   public dispose(): void {
-    if (this.debugMode) {
-      this.gui?.destroy();
-    }
+    this.targetObject3D.clear();
+    this.wrappedScene.clear();
+    this.camera.clear();
+  }
 
-    this.targetObject3D?.clear();
-    this.wrappedScene?.clear();
-    this.camera?.clear();
+  get viewPortSize(): Vector2 {
+    return this.wrappedViewPortSize;
   }
 
   get root(): Group {
@@ -218,9 +178,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   set cursorType(newType: CURSORTYPE) {
-    if (!this.renderer) {
-      throw Error('not initilaized.');
-    }
     this.wrappedCursorType = newType;
     switch (newType) {
       case CURSORTYPE.CROSS:
@@ -255,21 +212,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   get cameraFov(): number {
-    const ret = this.camera?.fov;
-    if (ret === undefined) {
-      throw Error('invalid camera');
-    }
-
-    return ret;
+    return this.camera.fov;
   }
 
   get cameraEye(): Vector3 {
-    const ret = this.camera?.position;
-    if (ret === undefined) {
-      throw Error('invalid camera');
-    }
-
-    return ret;
+    return this.camera.position;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -286,9 +233,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param pointerId the device captured.
    */
   public capturePointer(pointerId: number): void {
-    if (!this.renderer) {
-      throw Error('not initilaized.');
-    }
     if (this.capturedPointerId >= 0) {
       return;
     }
@@ -300,9 +244,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * release captured pointer.
    */
   public releasePointer(): void {
-    if (!this.renderer) {
-      throw Error('not initilaized.');
-    }
     if (this.capturedPointerId >= 0) {
       this.renderer.domElement.releasePointerCapture(this.capturedPointerId);
       this.capturedPointerId = -1;
@@ -313,25 +254,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * get the name of objects.
    */
   public getObjects(): string[] {
-    if (!this.targetObject3D) {
-      throw Error('object not ready.');
-    }
-
     return this.targetObject3D.children.map((v: { name: string }) => v.name);
   }
 
   public set enableClipping(enableClipping: boolean) {
-    if (!this.renderer) {
-      throw Error('not intialized.');
-    }
     this.renderer.localClippingEnabled = enableClipping;
   }
 
   public get enableClipping(): boolean {
-    if (!this.renderer) {
-      throw Error('not intialized.');
-    }
-
     return this.renderer.localClippingEnabled;
   }
 
@@ -430,15 +360,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * start animation.
    */
   public startAnimate(): void {
-    if (!(this.renderer && this.wrappedScene && this.camera)) {
-      throw new Error('Invalid renderer');
-    }
-
     const animate = () => {
-      if (!this) throw new Error('invalid this pointer');
-      if (!(this.renderer && this.wrappedScene && this.camera)) {
-        throw new Error('Invalid renderer');
-      }
       requestAnimationFrame(animate);
       this.renderer.render(this.wrappedScene, this.camera);
       this.stats?.update();
@@ -447,9 +369,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   public exportImage(width: number, height: number, scene: Scene | undefined = undefined): Uint8Array {
-    if (!this.renderer || !this.wrappedScene || !this.camera) {
-      throw Error('invalid render');
-    }
     const target = new WebGLRenderTarget(width, height, { type: UnsignedByteType, stencilBuffer: true });
 
     this.renderer.setRenderTarget(target);
@@ -472,10 +391,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   public renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array {
-    if (!this.renderer || !this.wrappedScene || !this.camera) {
-      throw Error('invalid render');
-    }
-    const { width, height } = this.viewPortSize;
+    const { width, height } = this.wrappedViewPortSize;
     const target = new WebGLRenderTarget(width, height, { type: FloatType, stencilBuffer: true });
     this.renderer.setRenderTarget(target);
     this.renderer.render(scene, this.camera);
@@ -539,12 +455,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param height new height
    */
   public resize(width: number, height: number): void {
-    if (this.camera) {
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
-    }
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
 
-    if (this.renderer) this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height);
   }
 
   /**
@@ -639,10 +553,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private initEvents() {
-    if (!this.renderer) {
-      throw Error('Not initliazed.');
-    }
-
     this.renderer.domElement.addEventListener('pointerdown', (event: PointerEvent) => {
       for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
         const handler = this.wrappedActionHandlers[i];
@@ -734,12 +644,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param yPos hit position y
    */
   private hitTest(xPos: number, yPos: number): IHitTestResult | null {
-    if (!this.targetObject3D) {
-      throw Error('invalid target object');
-    }
-    if (!this.camera) {
-      throw Error('invalid camera');
-    }
     const rayCaster = new Raycaster();
     rayCaster.layers.set(2);
     rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);
