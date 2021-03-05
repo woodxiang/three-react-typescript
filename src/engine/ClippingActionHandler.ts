@@ -7,8 +7,9 @@ import { Vector4 } from 'three/src/math/Vector4';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Scene } from 'three/src/scenes/Scene';
+import ActionHandlerBase from './ActionHandlerBase';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
-import { CURSORTYPE, Direction, IActionCallback, IActionHandler, STATE } from './interfaces';
+import { CURSORTYPE, Direction, IActionCallback, STATE } from './interfaces';
 
 export interface IClippingManager {
   clipPositions: number[];
@@ -16,11 +17,7 @@ export interface IClippingManager {
 }
 
 const CLIPPING = 10;
-export default class ClippingActionHandler implements IActionHandler {
-  public isEnabled = true;
-
-  public readonly priority = 5;
-
+export default class ClippingActionHandler extends ActionHandlerBase {
   private previousPosition: Vector2 = new Vector2();
 
   private activeDir = Direction.Undefined;
@@ -34,6 +31,7 @@ export default class ClippingActionHandler implements IActionHandler {
   private manager: IClippingManager;
 
   constructor(manager: IClippingManager) {
+    super(5);
     this.manager = manager;
     this.scene.add(this.root);
 
@@ -107,46 +105,6 @@ export default class ClippingActionHandler implements IActionHandler {
         return true;
       }
     }
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMouseWheel(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleKeyDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleKeyUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMiddleButtonDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMiddleButtonUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleRightButtonDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleRightButtonUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleWhell(): boolean {
     return false;
   }
 

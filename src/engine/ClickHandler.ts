@@ -1,12 +1,9 @@
-import { IActionCallback, IActionHandler, IHitTest, STATE } from './interfaces';
+import ActionHandlerBase from './ActionHandlerBase';
+import { IActionCallback, IHitTest, STATE } from './interfaces';
 
-export default class ClickHandler implements IActionHandler {
-  public readonly priority;
-
-  public isEnabled = true;
-
+export default class ClickHandler extends ActionHandlerBase {
   constructor(priority = 15) {
-    this.priority = priority;
+    super(priority);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -28,51 +25,6 @@ export default class ClickHandler implements IActionHandler {
       }
     }
 
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMouseMove(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMouseWheel(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleKeyDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleKeyUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMiddleButtonDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMiddleButtonUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleRightButtonDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleRightButtonUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleWhell(): boolean {
     return false;
   }
 }

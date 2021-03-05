@@ -2,13 +2,10 @@ import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
-import { CURSORTYPE, IActionCallback, IActionHandler, IObjectRotation, STATE } from './interfaces';
+import ActionHandlerBase from './ActionHandlerBase';
+import { CURSORTYPE, IActionCallback, IObjectRotation, STATE } from './interfaces';
 
-export default class RotationHandler implements IActionHandler {
-  public isEnabled = true;
-
-  public readonly priority = 10;
-
+export default class RotationHandler extends ActionHandlerBase {
   private previousPosition = new Vector2();
 
   private camera: PerspectiveCamera;
@@ -16,6 +13,8 @@ export default class RotationHandler implements IActionHandler {
   private targetObject: IObjectRotation;
 
   constructor(camera: PerspectiveCamera, targetObject: IObjectRotation) {
+    super(10);
+
     if (!camera || !targetObject) {
       throw Error('Invalid camera or target object.');
     }
@@ -107,26 +106,6 @@ export default class RotationHandler implements IActionHandler {
       }
     }
 
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMiddleButtonDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleMiddleButtonUp(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleRightButtonDown(): boolean {
-    return false;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  handleRightButtonUp(): boolean {
     return false;
   }
 
