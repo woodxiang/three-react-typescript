@@ -1,4 +1,6 @@
 import { Float32BufferAttribute, Uint16BufferAttribute } from 'three/src/core/BufferAttribute';
+import { Vector2 } from 'three/src/math/Vector2';
+import { Vector3 } from 'three/src/math/Vector3';
 import { Direction } from '../interfaces';
 
 /* eslint-disable prettier/prettier */
@@ -205,6 +207,111 @@ function getUVOfSurface(dir: Direction): Float32BufferAttribute {
   return new Float32BufferAttribute(ret, 2);
 }
 
+function vec3ToNumberArray(input: Vector3[]): number[] {
+  const ret = new Array<number>(input.length * 3);
+  for (let i = 0; i < input.length; i += 1) {
+    ret[i * 3 + 0] = input[i].x;
+    ret[i * 3 + 1] = input[i].y;
+    ret[i * 3 + 2] = input[i].z;
+  }
+  return ret;
+}
+
+function generateArrow(
+  length: number,
+  headLength: number,
+  radius: number,
+  headRadius: number,
+  slidesNumber: number
+): { position: Float32BufferAttribute; normal: Float32BufferAttribute } {
+  const anchors = new Array<Vector2>(slidesNumber * 2);
+  const step = Math.PI / slidesNumber;
+
+  for (let i = 0; i < slidesNumber * 2; i += 1) {
+    anchors[i] = new Vector2(Math.cos(step * i), Math.sin(step * i));
+  }
+
+  const stickAnchors = new Array<Vector2>(slidesNumber * 2);
+  const headAnchors = new Array<Vector2>(slidesNumber * 2);
+  for (let i = 0; i < slidesNumber * 2; i += 1) {
+    stickAnchors[i] = anchors[i].clone().multiplyScalar(radius);
+    headAnchors[i] = anchors[i].clone().multiplyScalar(headRadius);
+  }
+
+  const pos = new Array<Vector3>(slidesNumber * 5 * 3);
+  const norm = new Array<Vector3>(slidesNumber * 5 * 3);
+
+  let cursor = 0;
+  // bottom
+  for (let i = 0; i < slidesNumber; i += 1) {
+    const v1 = stickAnchors[((i + 1) % slidesNumber) * 2];
+    const v2 = stickAnchors[i * 2];
+
+    pos[i * 3 + 0] = new Vector3(0, 0, 0);
+    norm[i * 3 + 0] = new Vector3(0, 0, -1);
+    pos[i * 3 + 1] = new Vector3(v1.x, v1.y, 0);
+    norm[i * 3 + 1] = new Vector3(0, 0, -1);
+    pos[i * 3 + 2] = new Vector3(v2.x, v2.y, 0);
+    norm[i * 3 + 2] = new Vector3(0, 0, -1);
+  }
+
+  cursor += slidesNumber * 3;
+  // stick side
+  for (let i = 0; i < slidesNumber; i += 1) {
+    const v1 = stickAnchors[i * 2];
+    const v2 = stickAnchors[((i + 1) % slidesNumber) * 2];
+
+    pos[cursor + i * 6 + 0] = new Vector3(v1.x, v1.y, 0);
+    norm[cursor + i * 6 + 0] = new Vector3(v1.x, v1.y, 0);
+    pos[cursor + i * 6 + 1] = new Vector3(v2.x, v2.y, 0);
+    norm[cursor + i * 6 + 1] = new Vector3(v2.x, v2.y, 0);
+    pos[cursor + i * 6 + 2] = new Vector3(v1.x, v1.y, length);
+    norm[cursor + i * 6 + 2] = new Vector3(v1.x, v1.y, 0);
+
+    pos[cursor + i * 6 + 3] = new Vector3(v2.x, v2.y, 0);
+    norm[cursor + i * 6 + 3] = new Vector3(v2.x, v2.y, 0);
+    pos[cursor + i * 6 + 4] = new Vector3(v2.x, v2.y, length);
+    norm[cursor + i * 6 + 4] = new Vector3(v2.x, v2.y, 0);
+    pos[cursor + i * 6 + 5] = new Vector3(v1.x, v1.y, length);
+    norm[cursor + i * 6 + 5] = new Vector3(v1.x, v1.y, 0);
+  }
+
+  cursor += slidesNumber * 6;
+  // head bottom
+  for (let i = 0; i < slidesNumber; i += 1) {
+    const v1 = headAnchors[i * 2];
+    const v2 = headAnchors[((i + 1) % slidesNumber) * 2];
+    pos[cursor + i * 3 + 0] = new Vector3(0, 0, length);
+    norm[cursor + i * 3 + 0] = new Vector3(0, 0, -1);
+    pos[cursor + i * 3 + 1] = new Vector3(v2.x, v2.y, length);
+    norm[cursor + i * 3 + 1] = new Vector3(0, 0, -1);
+    pos[cursor + i * 3 + 2] = new Vector3(v1.x, v1.y, length);
+    norm[cursor + i * 3 + 2] = new Vector3(0, 0, -1);
+  }
+
+  cursor += slidesNumber * 3;
+
+  const z = (headRadius * headRadius) / headLength;
+  // head slopes
+  for (let i = 0; i < slidesNumber; i += 1) {
+    const v1 = headAnchors[i * 2];
+    const v2 = headAnchors[(i * 2 + 1) % (slidesNumber * 2)];
+    const v3 = headAnchors[((i + 1) % slidesNumber) * 2];
+
+    pos[cursor + i * 3 + 0] = new Vector3(0, 0, length + headLength);
+    norm[cursor + i * 3 + 0] = new Vector3(v2.x, v2.y, z);
+    pos[cursor + i * 3 + 1] = new Vector3(v1.x, v1.y, length);
+    norm[cursor + i * 3 + 1] = new Vector3(v1.x, v1.y, z);
+    pos[cursor + i * 3 + 2] = new Vector3(v3.x, v3.y, length);
+    norm[cursor + i * 3 + 2] = new Vector3(v3.x, v3.y, z);
+  }
+
+  const posAttribute = new Float32BufferAttribute(vec3ToNumberArray(pos), 3);
+  const normAttribute = new Float32BufferAttribute(vec3ToNumberArray(norm), 3);
+
+  return { position: posAttribute, normal: normAttribute };
+}
+
 export {
   vertices,
   normals,
@@ -216,4 +323,5 @@ export {
   getVerticeOfSurface,
   getNormalOfSurface,
   getUVOfSurface,
+  generateArrow,
 };

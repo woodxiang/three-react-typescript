@@ -54,8 +54,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedScene: Scene = new Scene();
 
-  private wrappedConverScene = new Scene();
-
   private renderer = new WebGLRenderer({ antialias: true });
 
   private camera = new PerspectiveCamera(15, 1, 0.01, 100);
@@ -712,9 +710,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private prepareEnvironment(): void {
-    if (!this.wrappedScene) {
-      throw new Error('scene not intialized.');
-    }
     this.wrappedScene.background = new Color(0xaaaaaa);
     const ambientLight = new AmbientLight(0x4d4d4d);
     const light1 = new PointLight(0xffffff, 0.7);

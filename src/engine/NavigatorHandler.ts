@@ -1,14 +1,21 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { TextureLoader, Vector4, WebGLRenderer } from 'three';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
-import { MeshBasicMaterial } from 'three/src/materials/Materials';
+import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { AmbientLight } from 'three/src/lights/AmbientLight';
+import { PointLight } from 'three/src/lights/PointLight';
+import { TextureLoader } from 'three/src/loaders/TextureLoader';
+import { MeshBasicMaterial, MeshLambertMaterial } from 'three/src/materials/Materials';
+import { Color } from 'three/src/math/Color';
 import { Matrix4 } from 'three/src/math/Matrix4';
+import { Vector4 } from 'three/src/math/Vector4';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 import ActionHandlerBase from './ActionHandlerBase';
 import LiteEvent from './event';
+import { generateArrow } from './Geometry/boxConstants';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
 import { IRenderHandler } from './interfaces';
 
@@ -34,12 +41,16 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     super(3);
     this.camera.position.set(0, 0, 10);
 
+    this.prepareEnvironment();
+
     const cubeGeo = new IdentityBoxBufferGeometry(true);
 
     const texture = new TextureLoader().load('./asset/dice.png');
-    const cubeMaterial = new MeshBasicMaterial({ map: texture });
+    const cubeMaterial = new MeshLambertMaterial({ map: texture });
 
     const mesh = new Mesh(cubeGeo, cubeMaterial);
+
+    const { position, normal } = generateArrow(0.7, 0.2, 0.05, 0.1, 10);
 
     const matrix = new Matrix4();
     matrix.setPosition(-0.5, -0.5, -0.5);
@@ -47,6 +58,27 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     mesh.matrixAutoUpdate = false;
 
     this.navigatorGroup.add(mesh);
+
+    const xGeo = new BufferGeometry();
+    xGeo.attributes.position = position;
+    xGeo.attributes.normal = normal;
+    const xMesh = new Mesh(xGeo, new MeshLambertMaterial({ color: 'red' }));
+    xMesh.rotateY(Math.PI / 2);
+    this.navigatorGroup.add(xMesh);
+
+    const yGeo = new BufferGeometry();
+    yGeo.attributes.position = position;
+    yGeo.attributes.normal = normal;
+    const yMesh = new Mesh(yGeo, new MeshLambertMaterial({ color: 'green' }));
+    yMesh.rotateX(-Math.PI / 2);
+    this.navigatorGroup.add(yMesh);
+
+    const zGeo = new BufferGeometry();
+    zGeo.attributes.position = position;
+    zGeo.attributes.normal = normal;
+    const zMesh = new Mesh(zGeo, new MeshLambertMaterial({ color: 'blue' }));
+    this.navigatorGroup.add(zMesh);
+
     this.scene.add(this.navigatorGroup);
   }
 
@@ -80,6 +112,18 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     renderer.setViewport(10, 10, 100, 100);
     renderer.render(this.scene, this.camera);
     renderer.setViewport(oldViewPort);
+  }
+
+  private prepareEnvironment(): void {
+    this.scene.background = new Color(0xaaaaaa);
+    const ambientLight = new AmbientLight(0x4d4d4d);
+    const light1 = new PointLight(0xffffff, 0.7);
+    light1.position.set(3.0, 3.0, 3.0);
+    const light2 = new PointLight(0xffffff, 0.7);
+    light2.position.set(-3.0, -3.0, 3.0);
+    this.scene.add(ambientLight);
+    this.scene.add(light1);
+    this.scene.add(light2);
   }
 
   private onTransformChanged = (): void => {
