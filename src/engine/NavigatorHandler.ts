@@ -1,15 +1,15 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Vector4, WebGLRenderer } from 'three';
+import { TextureLoader, Vector4, WebGLRenderer } from 'three';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
-import { BoxGeometry } from 'three/src/geometries/BoxGeometry';
-import { MeshBasicMaterial, MeshLambertMaterial } from 'three/src/materials/Materials';
+import { MeshBasicMaterial } from 'three/src/materials/Materials';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Scene } from 'three/src/scenes/Scene';
 import ActionHandlerBase from './ActionHandlerBase';
 import LiteEvent from './event';
+import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
 import { IRenderHandler } from './interfaces';
 
 interface INavigatorSource {
@@ -34,10 +34,17 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     super(3);
     this.camera.position.set(0, 0, 10);
 
-    const cubeGeo = new BoxGeometry(1, 1, 1);
-    const cubeMaterial = new MeshBasicMaterial({ color: 'red' });
+    const cubeGeo = new IdentityBoxBufferGeometry(true);
+
+    const texture = new TextureLoader().load('./asset/dice.png');
+    const cubeMaterial = new MeshBasicMaterial({ map: texture });
 
     const mesh = new Mesh(cubeGeo, cubeMaterial);
+
+    const matrix = new Matrix4();
+    matrix.setPosition(-0.5, -0.5, -0.5);
+    mesh.matrix = matrix;
+    mesh.matrixAutoUpdate = false;
 
     this.navigatorGroup.add(mesh);
     this.scene.add(this.navigatorGroup);

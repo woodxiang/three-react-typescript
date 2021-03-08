@@ -95,6 +95,9 @@ const clientConfig: webpack.Configuration = {
     new CopyWebpackPlugin({
       patterns: [{ from: 'src/wasm/dracoEx', to: 'wasm/dracoEx' }],
     }),
+    new CopyWebpackPlugin({
+      patterns: [{ from: 'src/engine/asset/', to: 'asset' }],
+    }),
     new HtmlWebPackPlugin({
       template: './src/index.html',
       filename: './index.html',

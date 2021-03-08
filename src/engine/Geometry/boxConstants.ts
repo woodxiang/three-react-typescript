@@ -37,6 +37,56 @@ const triangles = [
   [0, 2, 3],
 ];
 
+const uvs = [
+  [3 / 4, 1 / 3], // x+
+  [3 / 4, 2 / 3],
+  [1 / 2, 2 / 3],
+
+  [3 / 4, 1 / 3],
+  [1 / 2, 2 / 3],
+  [1 / 2, 1 / 3],
+
+  [1 / 4, 1], // y+
+  [1 / 4, 2 / 3],
+  [1 / 2, 2 / 3],
+
+  [1 / 4, 1],
+  [1 / 2, 2 / 3],
+  [1 / 2, 1],
+
+  [1 / 4, 1 / 3], // z+
+  [1 / 2, 1 / 3],
+  [1 / 2, 2 / 3],
+
+  [1 / 4, 1 / 3],
+  [1 / 2, 2 / 3],
+  [1 / 4, 2 / 3],
+
+  [0, 1 / 3], // x-
+  [1 / 4, 2 / 3],
+  [0, 2 / 3],
+
+  [0, 1 / 3],
+  [1 / 4, 1 / 3],
+  [1 / 4, 2 / 3],
+
+  [1 / 4, 0], // y-
+  [1 / 2, 0],
+  [1 / 2, 1 / 3],
+
+  [1 / 4, 0],
+  [1 / 2, 1 / 3],
+  [1 / 4, 1 / 3],
+
+  [1, 1 / 3], // z-
+  [3 / 4, 2 / 3],
+  [3 / 4, 1 / 3],
+
+  [1, 1 / 3],
+  [1, 2 / 3],
+  [3 / 4, 2 / 3],
+];
+
 const edges = [
   [0, 1], // 0 x
   [2, 3], // 1
@@ -135,6 +185,26 @@ function getNormalOfSurface(dir: Direction): Float32BufferAttribute {
   return new Float32BufferAttribute(ret, 3);
 }
 
+function getUVOfSurface(dir: Direction): Float32BufferAttribute {
+  let dirs: number[];
+  if (dir >= 0) {
+    dirs = [dir];
+  } else {
+    dirs = [0, 1, 2, 3, 4, 5];
+  }
+
+  const ret = new Array<number>(dirs.length * 3 * 2 * 2);
+  for (let index = 0; index < dirs.length; index += 1) {
+    const srcIndex = dirs[index];
+
+    for (let i = 0; i < 6; i += 1) {
+      [ret[(index * 6 + i) * 2], ret[(index * 6 + i) * 2 + 1]] = uvs[srcIndex * 6 + i];
+    }
+  }
+
+  return new Float32BufferAttribute(ret, 2);
+}
+
 export {
   vertices,
   normals,
@@ -145,4 +215,5 @@ export {
   concatInt16Attribute,
   getVerticeOfSurface,
   getNormalOfSurface,
+  getUVOfSurface,
 };
