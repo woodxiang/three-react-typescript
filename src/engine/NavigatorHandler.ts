@@ -109,13 +109,12 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     renderer.clearDepth();
     const oldViewPort = new Vector4();
     renderer.getViewport(oldViewPort);
-    renderer.setViewport(10, 10, 100, 100);
+    renderer.setViewport(10, 10, 150, 150);
     renderer.render(this.scene, this.camera);
     renderer.setViewport(oldViewPort);
   }
 
   private prepareEnvironment(): void {
-    this.scene.background = new Color(0xaaaaaa);
     const ambientLight = new AmbientLight(0x4d4d4d);
     const light1 = new PointLight(0xffffff, 0.7);
     light1.position.set(3.0, 3.0, 3.0);
