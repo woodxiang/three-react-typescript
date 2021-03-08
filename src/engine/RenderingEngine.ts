@@ -31,11 +31,13 @@ import {
   IHitTestHandler,
   IFlat,
   renderingModelName,
+  IRenderHandler,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
+import NavigatorHandler from './NavigatorHandler';
 
 /**
  * Rendering Engine
@@ -51,6 +53,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private parentDiv: HTMLDivElement | undefined;
 
   private wrappedScene: Scene = new Scene();
+
+  private wrappedConverScene = new Scene();
 
   private renderer = new WebGLRenderer({ antialias: true });
 
@@ -94,11 +98,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedActionHandlers: IActionHandler[] = [];
 
+  private wrappedRenderHandlers: IRenderHandler[] = [];
+
   private wrappedCursorType: CURSORTYPE = CURSORTYPE.ARRAW;
 
   private capturedPointerId = -1;
 
   public hitTestHandler: IHitTestHandler | undefined = undefined;
+
+  private navigator = new NavigatorHandler();
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -145,6 +153,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.wrappedScene.add(this.wrappedRoot);
 
     this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
+    this.navigator.bind(this);
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -204,6 +213,18 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const index = this.wrappedActionHandlers.indexOf(handler);
     if (index >= 0) {
       this.wrappedActionHandlers.splice(index, 1);
+    }
+  }
+
+  public addRenderHandler(handler: IRenderHandler): void {
+    this.wrappedRenderHandlers.push(handler);
+    this.wrappedRenderHandlers.sort((a, b) => a.renderOrder - b.renderOrder);
+  }
+
+  public removeRenderHandler(handler: IRenderHandler): void {
+    const index = this.wrappedRenderHandlers.indexOf(handler);
+    if (index >= 0) {
+      this.wrappedRenderHandlers.splice(index, 1);
     }
   }
 
@@ -363,6 +384,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const animate = () => {
       requestAnimationFrame(animate);
       this.renderer.render(this.wrappedScene, this.camera);
+      this.renderer.autoClear = false;
+      this.wrappedRenderHandlers.forEach((v) => {
+        v.render(this.renderer);
+      });
+      this.renderer.autoClear = true;
       this.stats?.update();
     };
     animate();

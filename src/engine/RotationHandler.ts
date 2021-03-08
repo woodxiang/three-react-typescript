@@ -110,7 +110,7 @@ export default class RotationHandler extends ActionHandlerBase {
   }
 
   private zoom(delta: number): void {
-    this.camera.position.z *= 1.0 - delta / 120 / 10;
+    this.camera.position.z *= 1.0 + delta / 120 / 10;
   }
 
   private rotate(x: number, y: number, callback: IActionCallback): void {

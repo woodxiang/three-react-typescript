@@ -1,7 +1,7 @@
-import { Box3 } from 'three/src/math/Box3';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 
 enum STATE {
@@ -35,7 +35,6 @@ interface IActionCallback {
   readonly cameraFov: number;
   readonly cameraEye: Vector3;
   readonly camaerAt: Vector3;
-  readonly boundingBox: Box3 | undefined;
   readonly maxDim: number;
   readonly rotationMatrix: Matrix4;
   readonly matrix: Matrix4;
@@ -64,6 +63,11 @@ interface IActionHandler {
   handleRightButtonDown(event: PointerEvent, callback: IActionCallback): boolean;
   handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
   handleWhell(event: WheelEvent, callback: IActionCallback): boolean;
+}
+
+interface IRenderHandler {
+  readonly renderOrder: number;
+  render(renderer: WebGLRenderer): void;
 }
 
 interface IHitTestResult {
@@ -99,6 +103,7 @@ export { STATE, CURSORTYPE, Direction, renderingModelName };
 export type {
   IActionCallback,
   IActionHandler,
+  IRenderHandler,
   IObjectRotation,
   IHitTest,
   IHitTestResult,
