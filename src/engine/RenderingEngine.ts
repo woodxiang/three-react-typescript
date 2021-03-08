@@ -104,7 +104,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public hitTestHandler: IHitTestHandler | undefined = undefined;
 
-  private navigator = new NavigatorHandler();
+  private navigator: NavigatorHandler | undefined;
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -151,6 +151,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.wrappedScene.add(this.wrappedRoot);
 
     this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
+    this.navigator = new NavigatorHandler();
     this.navigator.bind(this);
 
     if (this.debugMode) {
