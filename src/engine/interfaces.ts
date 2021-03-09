@@ -1,6 +1,8 @@
+import { Camera } from 'three/src/cameras/Camera';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
+import { Vector4 } from 'three/src/math/Vector4';
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 
@@ -36,12 +38,25 @@ interface IActionCallback {
   readonly cameraEye: Vector3;
   readonly camaerAt: Vector3;
   readonly maxDim: number;
-  readonly rotationMatrix: Matrix4;
+  rotationMatrix: Matrix4;
   readonly matrix: Matrix4;
   readonly viewPortSize: Vector2;
   capturePointer(pointerId: number): void;
   releasePointer(): void;
-  renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array;
+  exportImage(
+    width: number,
+    height: number,
+    scene: Scene | undefined,
+    camera: Camera | undefined,
+    viewPort: Vector4 | undefined
+  ): Uint8Array;
+  renderTargetAndReadFloat(
+    scene: Scene,
+    xPos: number,
+    yPos: number,
+    camera: Camera | undefined,
+    viewPort: Vector4 | undefined
+  ): Float32Array;
 }
 
 interface ITransformed {

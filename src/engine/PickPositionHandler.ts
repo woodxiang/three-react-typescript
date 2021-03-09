@@ -15,7 +15,13 @@ export default class PickPositionHandler extends ActionHandlerBase {
       const callbacker = callback;
       if (callbacker.state === STATE.NONE) {
         const detectScene = PositionDetectHelper.createDetectScene(callback.scene);
-        const ret = callback.renderTargetAndReadFloat(detectScene.scene, event.offsetX, event.offsetY);
+        const ret = callback.renderTargetAndReadFloat(
+          detectScene.scene,
+          event.offsetX,
+          event.offsetY,
+          undefined,
+          undefined
+        );
         const position = new Vector3(ret[0], ret[1], ret[2]);
         const objId = Math.round(ret[3]);
         const objName = detectScene.map.get(objId);

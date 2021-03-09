@@ -19,6 +19,8 @@ import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
 import { Points } from 'three/src/objects/Points';
+import { Vector4 } from 'three/src/math/Vector4';
+import { Camera } from 'three/src/cameras/Camera';
 import { encode } from './utils/encoder';
 import {
   IActionCallback,
@@ -150,9 +152,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedScene.add(this.wrappedRoot);
 
-    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera, this));
     this.navigator = new NavigatorHandler();
     this.navigator.bind(this);
+    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera), this.navigator);
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -393,12 +395,27 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     animate();
   }
 
-  public exportImage(width: number, height: number, scene: Scene | undefined = undefined): Uint8Array {
+  public exportImage(
+    width: number,
+    height: number,
+    scene: Scene | undefined = undefined,
+    camera: Camera | undefined = undefined,
+    viewPort: Vector4 | undefined = undefined
+  ): Uint8Array {
     const target = new WebGLRenderTarget(width, height, { type: UnsignedByteType, stencilBuffer: true });
 
     this.renderer.setRenderTarget(target);
+    let oldViewPort;
+    if (viewPort) {
+      oldViewPort = new Vector4();
+      this.renderer.getViewport(oldViewPort);
+      this.renderer.setViewport(viewPort);
+    }
+    this.renderer.render(scene === undefined ? this.wrappedScene : scene, camera === undefined ? this.camera : camera);
 
-    this.renderer.render(scene === undefined ? this.wrappedScene : scene, this.camera);
+    if (oldViewPort) {
+      this.renderer.setViewport(oldViewPort);
+    }
 
     const data = new Uint8Array(width * height * 4);
 
@@ -415,11 +432,26 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return jpgdata.data;
   }
 
-  public renderTargetAndReadFloat(scene: Scene, xPos: number, yPos: number): Float32Array {
+  public renderTargetAndReadFloat(
+    scene: Scene,
+    xPos: number,
+    yPos: number,
+    camera: Camera | undefined = undefined,
+    viewPort: Vector4 | undefined = undefined
+  ): Float32Array {
     const { width, height } = this.wrappedViewPortSize;
     const target = new WebGLRenderTarget(width, height, { type: FloatType, stencilBuffer: true });
     this.renderer.setRenderTarget(target);
-    this.renderer.render(scene, this.camera);
+    let oldViewPort;
+    if (viewPort) {
+      oldViewPort = new Vector4();
+      this.renderer.getViewport(oldViewPort);
+      this.renderer.setViewport(viewPort);
+    }
+    this.renderer.render(scene, camera === undefined ? this.camera : camera);
+    if (oldViewPort) {
+      this.renderer.setViewport(oldViewPort);
+    }
     const data = new Float32Array(4);
     this.renderer.readRenderTargetPixels(target, xPos, height - yPos, 1, 1, data);
     this.renderer.setRenderTarget(null);

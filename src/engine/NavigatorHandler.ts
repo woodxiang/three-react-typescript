@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { Vector3 } from 'three';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
@@ -17,7 +18,7 @@ import ActionHandlerBase from './ActionHandlerBase';
 import LiteEvent from './event';
 import { generateArrow } from './Geometry/boxConstants';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
-import { IRenderHandler } from './interfaces';
+import { IActionCallback, IRenderHandler, STATE } from './interfaces';
 
 interface INavigatorSource {
   addRenderHandler(handler: IRenderHandler): void;
@@ -26,6 +27,14 @@ interface INavigatorSource {
   objectTransformChangedEvent: LiteEvent<Matrix4>;
 }
 
+const dirs = [
+  new Vector3(1, 0, 0),
+  new Vector3(0, 1, 0),
+  new Vector3(0, 0, 1),
+  new Vector3(-1, 0, 0),
+  new Vector3(0, -1, 0),
+  new Vector3(0, 0, -1),
+];
 export default class NavigatorHandler extends ActionHandlerBase implements IRenderHandler {
   public readonly renderOrder = 10;
 
@@ -36,6 +45,14 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
   private camera = new PerspectiveCamera(15, 1, 0.01, 100);
 
   private navigatorGroup = new Group();
+
+  private viewPort = new Vector4(10, 10, 150, 150);
+
+  private arrowGroup = new Group();
+
+  private detectScene = new Scene();
+
+  private detectGroup = new Group();
 
   constructor() {
     super(3);
@@ -50,6 +67,25 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
 
     const mesh = new Mesh(cubeGeo, cubeMaterial);
 
+    const detectGeo = new IdentityBoxBufferGeometry(true);
+    const detectMaterials = [
+      new MeshBasicMaterial({ color: new Color(1, 0, 0) }),
+      new MeshBasicMaterial({ color: new Color(0, 1, 0) }),
+      new MeshBasicMaterial({ color: new Color(0, 0, 1) }),
+      new MeshBasicMaterial({ color: new Color(-1, 0, 0) }),
+      new MeshBasicMaterial({ color: new Color(0, -1, 0) }),
+      new MeshBasicMaterial({ color: new Color(0, 0, -1) }),
+    ];
+
+    for (let i = 0; i < 6; i += 1) {
+      detectGeo.addGroup(i * 6, 6, i);
+    }
+
+    const testMesh = new Mesh(detectGeo, detectMaterials);
+    this.detectGroup.matrixAutoUpdate = false;
+    this.detectGroup.add(testMesh);
+    this.detectScene.add(this.detectGroup);
+
     const { position, normal } = generateArrow(0.7, 0.2, 0.05, 0.1, 10);
 
     const matrix = new Matrix4();
@@ -57,27 +93,31 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     mesh.matrix = matrix;
     mesh.matrixAutoUpdate = false;
 
+    testMesh.matrix = matrix;
+    testMesh.matrixAutoUpdate = false;
+
     this.navigatorGroup.add(mesh);
+    this.navigatorGroup.add(this.arrowGroup);
 
     const xGeo = new BufferGeometry();
     xGeo.attributes.position = position;
     xGeo.attributes.normal = normal;
     const xMesh = new Mesh(xGeo, new MeshLambertMaterial({ color: 'red' }));
     xMesh.rotateY(Math.PI / 2);
-    this.navigatorGroup.add(xMesh);
+    this.arrowGroup.add(xMesh);
 
     const yGeo = new BufferGeometry();
     yGeo.attributes.position = position;
     yGeo.attributes.normal = normal;
     const yMesh = new Mesh(yGeo, new MeshLambertMaterial({ color: 'green' }));
     yMesh.rotateX(-Math.PI / 2);
-    this.navigatorGroup.add(yMesh);
+    this.arrowGroup.add(yMesh);
 
     const zGeo = new BufferGeometry();
     zGeo.attributes.position = position;
     zGeo.attributes.normal = normal;
     const zMesh = new Mesh(zGeo, new MeshLambertMaterial({ color: 'blue' }));
-    this.navigatorGroup.add(zMesh);
+    this.arrowGroup.add(zMesh);
 
     this.scene.add(this.navigatorGroup);
   }
@@ -109,9 +149,106 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     renderer.clearDepth();
     const oldViewPort = new Vector4();
     renderer.getViewport(oldViewPort);
-    renderer.setViewport(10, 10, 150, 150);
+    renderer.setViewport(this.viewPort);
     renderer.render(this.scene, this.camera);
     renderer.setViewport(oldViewPort);
+  }
+
+  handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
+    if (this.isEnabled) {
+      const callbacker = callback;
+      if (callbacker.state === STATE.NONE) {
+        if (
+          event.offsetX >= this.viewPort.x &&
+          event.offsetX <= this.viewPort.x + this.viewPort.z &&
+          callbacker.viewPortSize.y - event.offsetY >= this.viewPort.y &&
+          callbacker.viewPortSize.y - event.offsetY <= this.viewPort.y + this.viewPort.w
+        ) {
+          // detect clicked direction
+          //
+          const result = callbacker.renderTargetAndReadFloat(
+            this.detectScene,
+            event.offsetX,
+            event.offsetY,
+            this.camera,
+            this.viewPort
+          );
+
+          let dir = result[0] + result[1] * 2 + result[2] * 3;
+          if (dir < 0) dir = -dir + 3;
+          dir -= 1;
+          if (dir < 0) {
+            return false;
+          }
+
+          const r = callbacker.rotationMatrix.clone();
+          // trun selected direction to Z direction.
+          //
+          let matrix = this.turnSelectedDir2Z(dir, r);
+
+          // rotate around z axis to align other axes
+          matrix = this.alignSelectedDir(dir, matrix);
+
+          callbacker.rotationMatrix = matrix;
+
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private alignSelectedDir(dir: number, r: Matrix4): Matrix4 {
+    const nextDir = (dir + 2) % 6;
+    const v = dirs[nextDir].clone();
+    const v2 = v.applyMatrix4(r);
+
+    // find the closest axis
+    //
+    let maxAngle = -1000;
+    let maxIndex = 0;
+    for (let i = 0; i < dirs.length; i += 1) {
+      if (i !== nextDir) {
+        const x = v2.clone().dot(dirs[i]);
+        if (x > maxAngle) {
+          maxAngle = x;
+          maxIndex = i;
+        }
+      }
+    }
+
+    const vz = dirs[maxIndex].clone();
+    const rotateAxis = v2.clone().cross(vz);
+    const rotateAngle = Math.asin(rotateAxis.length());
+    rotateAxis.normalize();
+    const matrix = new Matrix4().makeRotationAxis(rotateAxis, rotateAngle);
+    matrix.multiply(r);
+
+    return matrix;
+  }
+
+  private turnSelectedDir2Z(dir: number, r: Matrix4): Matrix4 {
+    const matrix = new Matrix4();
+    const v2 = dirs[dir].clone();
+    const vz = new Vector3(0, 0, 1);
+    v2.applyMatrix4(r);
+
+    let rotateAxis = v2.clone().cross(vz);
+    let rotateAngle = 0;
+    if (rotateAxis.length() < 0.00001) {
+      rotateAxis = new Vector3(0, 1, 0);
+      if (v2.z + vz.z < 1) {
+        // trun back around Y axis
+        rotateAngle = Math.PI;
+      }
+    } else {
+      rotateAxis.normalize();
+      rotateAngle = Math.acos(v2.clone().dot(vz));
+    }
+
+    matrix.makeRotationAxis(rotateAxis, rotateAngle);
+    matrix.multiply(r);
+    return matrix;
   }
 
   private prepareEnvironment(): void {
@@ -128,6 +265,7 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
   private onTransformChanged = (): void => {
     if (this.engine && this.engine.rotationMatrix) {
       this.navigatorGroup.matrix = this.engine.rotationMatrix;
+      this.detectGroup.matrix = this.engine.rotationMatrix;
     }
   };
 }

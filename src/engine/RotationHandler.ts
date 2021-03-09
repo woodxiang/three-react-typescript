@@ -3,24 +3,21 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
 import ActionHandlerBase from './ActionHandlerBase';
-import { CURSORTYPE, IActionCallback, IObjectRotation, STATE } from './interfaces';
+import { CURSORTYPE, IActionCallback, STATE } from './interfaces';
 
 export default class RotationHandler extends ActionHandlerBase {
   private previousPosition = new Vector2();
 
   private camera: PerspectiveCamera;
 
-  private targetObject: IObjectRotation;
-
-  constructor(camera: PerspectiveCamera, targetObject: IObjectRotation) {
+  constructor(camera: PerspectiveCamera) {
     super(10);
 
-    if (!camera || !targetObject) {
-      throw Error('Invalid camera or target object.');
+    if (!camera) {
+      throw Error('Invalid camera');
     }
 
     this.camera = camera;
-    this.targetObject = targetObject;
   }
 
   handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
@@ -114,7 +111,8 @@ export default class RotationHandler extends ActionHandlerBase {
   }
 
   private rotate(x: number, y: number, callback: IActionCallback): void {
-    const size = callback.viewPortSize;
+    const callbacker = callback;
+    const size = callbacker.viewPortSize;
     const ratio = size.x / size.y;
     const scale = ratio > 1 ? size.y / 2 : size.x / 2;
 
@@ -138,6 +136,6 @@ export default class RotationHandler extends ActionHandlerBase {
       }
     }
 
-    this.targetObject.rotationMatrix = matrix.multiply(this.targetObject.rotationMatrix);
+    callbacker.rotationMatrix = matrix.multiply(callbacker.rotationMatrix);
   }
 }

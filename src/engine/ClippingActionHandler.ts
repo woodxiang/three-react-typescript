@@ -120,7 +120,7 @@ export default class ClippingActionHandler extends ActionHandlerBase {
     this.root.matrix = callback.matrix;
     this.root.matrixAutoUpdate = false;
 
-    const ret = callback.renderTargetAndReadFloat(this.scene, offsetX, offsetY);
+    const ret = callback.renderTargetAndReadFloat(this.scene, offsetX, offsetY, undefined, undefined);
     return Math.round(ret[0]) - 1;
   }
 
