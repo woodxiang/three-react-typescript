@@ -129,7 +129,7 @@ export default class MeshFactory {
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
     const loader = new DRACOLoader();
-    loader.setDecoderPath('./wasm/draco/');
+    loader.setDecoderPath('/wasm/draco/');
     const geo = await loader.loadAsync(url, onProgress);
 
     geo.computeVertexNormals();

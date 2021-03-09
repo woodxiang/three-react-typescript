@@ -187,7 +187,7 @@ export default class ClippingManager implements IClippingManager {
     }
   }
 
-  private onVisibleChanged(args: { target: string; visible: boolean } | undefined): void {
+  private onVisibleChanged = (args: { target: string; visible: boolean } | undefined): void => {
     if (args !== undefined) {
       const { target, visible } = args;
       const t = this.clipGroup.children.find((v) => v.name === target);
@@ -195,7 +195,7 @@ export default class ClippingManager implements IClippingManager {
         t.visible = visible;
       }
     }
-  }
+  };
 
   /**
    * update the clipping position
@@ -402,6 +402,7 @@ export default class ClippingManager implements IClippingManager {
   private createClippingSurfaces(mesh: Mesh | Points, iMesh: number): Group {
     const targetGroup = new Group();
     targetGroup.name = mesh.name;
+    targetGroup.visible = mesh.visible;
     const stencilGroup = new Group();
     stencilGroup.name = '#stencil#';
     targetGroup.add(stencilGroup);

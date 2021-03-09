@@ -62,7 +62,7 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
 
     const cubeGeo = new IdentityBoxBufferGeometry(true);
 
-    const texture = new TextureLoader().load('./asset/dice.png');
+    const texture = new TextureLoader().load('/asset/dice.png');
     const cubeMaterial = new MeshLambertMaterial({ map: texture });
 
     const mesh = new Mesh(cubeGeo, cubeMaterial);
