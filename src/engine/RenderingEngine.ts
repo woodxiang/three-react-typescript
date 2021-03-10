@@ -64,7 +64,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private targetObject3D = new Group(); // this is the root for all target models.
 
-  private adapteMatrix: Matrix4 = new Matrix4();
+  private adaptMatrix: Matrix4 = new Matrix4();
 
   private wrappedRotateMatrix: Matrix4 = new Matrix4();
 
@@ -81,6 +81,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private inactivePointMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
   private activePointMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+
+  public wrappedAdaptRange: Box3 | undefined;
 
   public meshAddedEvent = new LiteEvent<Mesh | Points>();
 
@@ -169,6 +171,19 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.targetObject3D.clear();
     this.wrappedScene.clear();
     this.camera.clear();
+  }
+
+  get adaptRange(): Box3 | undefined {
+    return this.wrappedAdaptRange;
+  }
+
+  set adaptRange(boundingBox: Box3 | undefined) {
+    this.wrappedAdaptRange = boundingBox;
+    if (boundingBox) {
+      this.adaptMatrix = RenderingEngine.calculateAdaptMatrix(boundingBox).mat;
+    } else if (this.wrappedBoundingBox) {
+      this.adaptMatrix = RenderingEngine.calculateAdaptMatrix(this.wrappedBoundingBox).mat;
+    }
   }
 
   get viewPortSize(): Vector2 {
@@ -509,7 +524,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public get matrix(): Matrix4 {
     const matrix = this.wrappedRotateMatrix.clone();
-    matrix.multiply(this.adapteMatrix);
+    matrix.multiply(this.adaptMatrix);
 
     return matrix;
   }
@@ -789,18 +804,12 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (boundingBox) {
       // calculate the matrix to adapte object position and scale to the
       // center of the clip space.
-      const center = new Vector3();
-      boundingBox.getCenter(center);
-      const size = new Vector3();
-      boundingBox.getSize(size);
-      this.wrappedMaxDim = Math.max(size.x, size.y, size.z);
-      const matTranslate = new Matrix4();
-      matTranslate.makeTranslation(-center.x, -center.y, -center.z);
-      const matScale = new Matrix4();
-      matScale.makeScale(2.0 / this.wrappedMaxDim, 2.0 / this.wrappedMaxDim, 2.0 / this.wrappedMaxDim);
 
-      matScale.multiply(matTranslate);
-      this.adapteMatrix = matScale;
+      const adapt = RenderingEngine.calculateAdaptMatrix(boundingBox);
+      if (this.wrappedAdaptRange === undefined) {
+        this.adaptMatrix = adapt.mat;
+      }
+      this.wrappedMaxDim = adapt.maxDim;
 
       this.domainRangeChangedEvent.trigger(boundingBox);
 
@@ -808,9 +817,24 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.updateRootObjectMatrix();
       this.selectionHelper.setMaxSize(this.wrappedMaxDim);
     } else {
-      this.adapteMatrix = new Matrix4();
+      this.adaptMatrix = new Matrix4();
       this.domainRangeChangedEvent.trigger(undefined);
     }
+  }
+
+  private static calculateAdaptMatrix(boundingBox: Box3): { mat: Matrix4; maxDim: number } {
+    const center = new Vector3();
+    boundingBox.getCenter(center);
+    const size = new Vector3();
+    boundingBox.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const matTranslate = new Matrix4();
+    matTranslate.makeTranslation(-center.x, -center.y, -center.z);
+    const matScale = new Matrix4();
+    matScale.makeScale(2.0 / maxDim, 2.0 / maxDim, 2.0 / maxDim);
+
+    matScale.multiply(matTranslate);
+    return { mat: matScale, maxDim };
   }
 
   private updateRootObjectMatrix() {

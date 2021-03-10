@@ -35,7 +35,8 @@ export default class MeshFactory {
   public static async createSolidMesh(
     url: string,
     dataType: GeometryDataType,
-    color: string
+    color: string,
+    opacity = 1
   ): Promise<Mesh | undefined> {
     const geometry = await MeshFactory.loadAsync(url, dataType);
 
@@ -45,6 +46,8 @@ export default class MeshFactory {
     const material = new MeshPhongMaterial({
       color: materialColor,
       side: FrontSide,
+      opacity,
+      transparent: opacity < 1,
     });
     material.specular.set(0.9);
 
@@ -54,7 +57,12 @@ export default class MeshFactory {
     return mesh;
   }
 
-  public static async createColorMapMesh(url: string, dataType: GeometryDataType): Promise<Mesh | Points | undefined> {
+  public static async createColorMapMesh(
+    url: string,
+    dataType: GeometryDataType,
+    lut: string | Lut | undefined = undefined,
+    opacity = 1
+  ): Promise<Mesh | Points | undefined> {
     const geometry = await MeshFactory.loadAsync(url, dataType);
     const range = MeshFactory.calculateValueRange(geometry, 'generic');
     let material: Material;
@@ -64,7 +72,7 @@ export default class MeshFactory {
       points.name = url;
       return points;
     }
-    material = this.createColorMapMaterial(range, 'rainbow');
+    material = this.createColorMapMaterial(range, lut, opacity);
     const mesh = new Mesh(geometry, material);
     mesh.name = url;
 
@@ -73,7 +81,8 @@ export default class MeshFactory {
 
   public static createColorMapMaterial(
     range: { min: number; max: number },
-    lut: string | Lut | undefined
+    lut: string | Lut | undefined,
+    opacity = 1
   ): ColorMapPhongMaterial {
     let volatileLut = lut;
     if (!volatileLut) {
@@ -87,18 +96,20 @@ export default class MeshFactory {
     }
     volatileLut.setMin(range.min);
     volatileLut.setMax(range.max);
-    const material = new ColorMapPhongMaterial(volatileLut);
+    const material = new ColorMapPhongMaterial(volatileLut, { opacity, transparent: opacity < 1 });
     material.specular.set(0.9);
     return material;
   }
 
-  public static createSolidMaterial(color: string): MeshPhongMaterial {
+  public static createSolidMaterial(color: string, opacity = 1): MeshPhongMaterial {
     const materialColor = new Color();
     materialColor.set(color);
 
     return new MeshPhongMaterial({
       color: materialColor,
       side: FrontSide,
+      opacity,
+      transparent: opacity < 1,
     });
   }
 

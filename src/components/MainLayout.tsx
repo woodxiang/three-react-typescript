@@ -44,9 +44,9 @@ export default function MainLayout(): JSX.Element {
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
   const [selectedDracos, setSelectedDracos] = useState<string[]>([]);
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
-  const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(true);
-  const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(true);
-  const [enableClipping, setEnableClipping] = useState<boolean>(true);
+  const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(false);
+  const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(false);
+  const [enableClipping, setEnableClipping] = useState<boolean>(false);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
   const [displayingTab, setDisplayingTab] = useState<number>(0);
 
@@ -278,12 +278,10 @@ export default function MainLayout(): JSX.Element {
 
       engineRef.current = eg;
 
-      flatsManagerRef.current.bind(eg);
-
-      clippingManagerRef.current.bind(eg);
-
       if (engineRef.current) {
         engineRef.current = eg;
+
+        applyEnableClipping(enableClipping);
 
         // update selection setting
         applyEnableSelection(enableFlatSelection);

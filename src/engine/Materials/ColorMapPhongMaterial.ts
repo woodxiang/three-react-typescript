@@ -1,4 +1,4 @@
-import { ShaderMaterial } from 'three/src/materials/ShaderMaterial';
+import { ShaderMaterial, ShaderMaterialParameters } from 'three/src/materials/ShaderMaterial';
 import { Lut } from 'three/examples/jsm/math/Lut';
 import { ShaderLib } from 'three/src/renderers/shaders/ShaderLib';
 import { UniformsUtils } from 'three/src/renderers/shaders/UniformsUtils';
@@ -17,7 +17,7 @@ export default class ColorMapPhongMaterial extends ShaderMaterial {
 
   public colorMapRatio: number;
 
-  constructor(lut: Lut | undefined = undefined) {
+  constructor(lut: Lut | undefined = undefined, parameters: ShaderMaterialParameters | undefined) {
     if (lut) {
       const colorMapOffset = -lut.minV;
       const colorMapRatio = 1 / (lut.maxV - lut.minV);
@@ -29,6 +29,7 @@ export default class ColorMapPhongMaterial extends ShaderMaterial {
       };
 
       super({
+        ...parameters,
         uniforms: UniformsUtils.merge([ShaderLib.phong.uniforms, extraUniforms]),
         vertexShader: vert,
         fragmentShader: frag,
@@ -39,6 +40,10 @@ export default class ColorMapPhongMaterial extends ShaderMaterial {
       this.shininess = 30;
       this.colorMapOffset = colorMapOffset;
       this.colorMapRatio = colorMapRatio;
+
+      if (parameters && parameters.opacity) {
+        this.uniforms.opacity = { value: parameters?.opacity };
+      }
     } else {
       super();
       this.specular = new Color();
