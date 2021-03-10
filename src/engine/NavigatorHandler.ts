@@ -1,6 +1,5 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Vector3 } from 'three';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
@@ -10,6 +9,7 @@ import { MeshBasicMaterial, MeshLambertMaterial } from 'three/src/materials/Mate
 import { Color } from 'three/src/math/Color';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector4 } from 'three/src/math/Vector4';
+import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
