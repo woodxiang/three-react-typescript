@@ -14,7 +14,7 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
 import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
-import { FloatType, FrontSide, UnsignedByteType } from 'three/src/constants';
+import { FloatType, FrontSide, LinearFilter, UnsignedByteType } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
@@ -40,6 +40,7 @@ import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
 import NavigatorHandler from './NavigatorHandler';
+import TextureFactory from './Materials/TextureFactory';
 
 /**
  * Rendering Engine
@@ -629,6 +630,18 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const toUpdate = <Mesh>this.targetObject3D.children.find((v) => v.name === name);
     if (toUpdate) {
       toUpdate.material = enable ? this.activePointMaterial : this.inactivePointMaterial;
+    }
+  }
+
+  public updateBackground(newBackground: Color | Color[] | null): void {
+    if (newBackground instanceof Array) {
+      const colors = <Color[]>newBackground;
+      const texture = TextureFactory.vertical1DFromColors(colors);
+      texture.magFilter = LinearFilter;
+      texture.minFilter = LinearFilter;
+      this.wrappedScene.background = texture;
+    } else {
+      this.wrappedScene.background = newBackground;
     }
   }
 

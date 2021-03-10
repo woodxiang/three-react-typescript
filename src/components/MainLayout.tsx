@@ -16,6 +16,7 @@ import SensorManager from '../engine/SensorManager';
 import ClippingManager from '../engine/ClippingManager';
 import DracoFilesView from './DracoFilesView';
 import ClippingSelector from './ClippingSelector';
+import { Color } from 'three';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -237,9 +238,7 @@ export default function MainLayout(): JSX.Element {
 
     const engine = engineRef.current;
 
-    const testScene = PositionDetectHelper.createDetectScene(engine.scene);
-    const jpegdata = engine.exportImage(1920, 1080, testScene.scene);
-    saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
+    engine.updateBackground([new Color(), new Color('gray')]);
   };
 
   // init effect when mount.
