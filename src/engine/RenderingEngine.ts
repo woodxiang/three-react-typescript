@@ -413,6 +413,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
     this.renderer.render(scene === undefined ? this.wrappedScene : scene, camera === undefined ? this.camera : camera);
 
+    if (scene === undefined) {
+      this.renderer.autoClear = false;
+      this.wrappedRenderHandlers.forEach((v) => {
+        v.render(this.renderer);
+      });
+      this.renderer.autoClear = true;
+    }
+
     if (oldViewPort) {
       this.renderer.setViewport(oldViewPort);
     }

@@ -197,6 +197,15 @@ export default class ClippingManager implements IClippingManager {
     }
   };
 
+  public set enableAction(enable: boolean) {
+    this.clippingActionHandler.isEnabled = enable;
+    this.boundaryHelper.visible = enable;
+  }
+
+  public get enableAction(): boolean {
+    return this.clippingActionHandler.isEnabled;
+  }
+
   /**
    * update the clipping position
    * @param dir the direction of clipping.

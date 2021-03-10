@@ -20,6 +20,14 @@ export default class ClippingBoundaryHelper {
     this.clippingBoundary.name = ClippingBoundaryHelper.clippingBoundaryName;
   }
 
+  set visible(visible: boolean) {
+    this.clippingBoundary.visible = visible;
+  }
+
+  get visible(): boolean {
+    return this.clippingBoundary.visible;
+  }
+
   public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) {
       return;
