@@ -12,6 +12,7 @@ import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './DracoExLoader';
 import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
 import TextureFactory from './TextureFactory';
+import LutEx from './LutEx';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -61,7 +62,7 @@ export default class MeshFactory {
   public static async createColorMapMesh(
     url: string,
     dataType: GeometryDataType,
-    lut: string | Lut | undefined = undefined,
+    lut: string | Lut | LutEx | undefined = undefined,
     opacity = 1
   ): Promise<Mesh | Points | undefined> {
     const geometry = await MeshFactory.loadAsync(url, dataType);
@@ -82,27 +83,23 @@ export default class MeshFactory {
 
   public static createColorMapMaterial(
     range: { min: number; max: number },
-    lut: string | Lut | undefined,
+    lut: string | Lut | LutEx | undefined,
     opacity = 1
   ): ColorMapPhongMaterial {
     let volatileLut = lut;
     if (!volatileLut) {
-      volatileLut = new Lut('rainbow', 8192);
+      volatileLut = new LutEx('rainbow', 64);
     }
     if (typeof volatileLut === 'string') {
-      volatileLut = new Lut(<string>volatileLut, 8192);
+      volatileLut = new LutEx(<string>volatileLut, 64);
     }
-    if (!(volatileLut instanceof Lut)) {
+    if (!(volatileLut instanceof Lut) && !(volatileLut instanceof LutEx)) {
       throw Error('Invalid lut');
     }
-    volatileLut.setMin(range.min);
-    volatileLut.setMax(range.max);
-    const material = new ColorMapPhongMaterial(
-      volatileLut.minV,
-      volatileLut.maxV,
-      TextureFactory.fromLut(volatileLut),
-      { opacity, transparent: opacity < 1 }
-    );
+    const material = new ColorMapPhongMaterial(range.min, range.max, TextureFactory.fromLut(volatileLut), {
+      opacity,
+      transparent: opacity < 1,
+    });
     material.specular.set(0.9);
     return material;
   }
