@@ -40,7 +40,7 @@ import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
 import NavigatorHandler from './NavigatorHandler';
-import TextureFactory from './Materials/TextureFactory';
+import TextureFactory from './TextureFactory';
 
 /**
  * Rendering Engine
