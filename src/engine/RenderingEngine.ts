@@ -400,12 +400,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   public startAnimate(): void {
     const animate = () => {
       requestAnimationFrame(animate);
-      this.renderer.render(this.wrappedScene, this.camera);
-      this.renderer.autoClear = false;
-      this.wrappedRenderHandlers.forEach((v) => {
-        v.render(this.renderer);
-      });
-      this.renderer.autoClear = true;
+      this.render(this.camera);
       this.stats?.update();
     };
     animate();
@@ -427,14 +422,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.renderer.getViewport(oldViewPort);
       this.renderer.setViewport(viewPort);
     }
-    this.renderer.render(scene === undefined ? this.wrappedScene : scene, camera === undefined ? this.camera : camera);
-
     if (scene === undefined) {
-      this.renderer.autoClear = false;
-      this.wrappedRenderHandlers.forEach((v) => {
-        v.render(this.renderer);
-      });
-      this.renderer.autoClear = true;
+      this.render(this.camera);
+    } else {
+      this.renderer.render(
+        scene === undefined ? this.wrappedScene : scene,
+        camera === undefined ? this.camera : camera
+      );
     }
 
     if (oldViewPort) {
@@ -730,6 +724,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       event?.preventDefault();
     });
   }
+
+  private render = (camera: Camera) => {
+    this.renderer.render(this.wrappedScene, camera);
+    this.renderer.autoClear = false;
+    this.wrappedRenderHandlers.forEach((v) => {
+      v.render(this.renderer);
+    });
+    this.renderer.autoClear = true;
+  };
 
   /**
    * test the triangle on specified position.

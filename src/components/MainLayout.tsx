@@ -278,8 +278,7 @@ export default function MainLayout(): JSX.Element {
       engineRef.current = eg;
 
       if (engineRef.current) {
-        engineRef.current = eg;
-
+        engineRef.current.updateBackground([new Color('gray'), new Color('white')]);
         applyEnableClipping(enableClipping);
 
         // update selection setting
