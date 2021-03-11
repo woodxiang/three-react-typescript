@@ -1,12 +1,11 @@
 import { ShaderMaterial, ShaderMaterialParameters } from 'three/src/materials/ShaderMaterial';
-import { Lut } from 'three/examples/jsm/math/Lut';
 import { ShaderLib } from 'three/src/renderers/shaders/ShaderLib';
 import { UniformsUtils } from 'three/src/renderers/shaders/UniformsUtils';
 import { Color } from 'three/src/math/Color';
 import { Material } from 'three/src/materials/Material';
+import { Texture } from 'three/src/textures/Texture';
 import vert from '../shaders/colormap.vert.glsl';
 import frag from '../shaders/colormap.frag.glsl';
-import TextureFactory from './TextureFactory';
 
 export default class ColorMapPhongMaterial extends ShaderMaterial {
   public specular: Color;
@@ -17,11 +16,10 @@ export default class ColorMapPhongMaterial extends ShaderMaterial {
 
   public colorMapRatio: number;
 
-  constructor(lut: Lut | undefined = undefined, parameters: ShaderMaterialParameters | undefined) {
-    if (lut) {
-      const colorMapOffset = -lut.minV;
-      const colorMapRatio = 1 / (lut.maxV - lut.minV);
-      const texture = TextureFactory.fromLut(lut);
+  constructor(min = 0, max = 1, texture: Texture | undefined, parameters: ShaderMaterialParameters | undefined) {
+    if (texture) {
+      const colorMapOffset = -min;
+      const colorMapRatio = 1 / (max - min);
       const extraUniforms = {
         colorMapTexture: { value: texture },
         colorMapOffset: { value: colorMapOffset },
