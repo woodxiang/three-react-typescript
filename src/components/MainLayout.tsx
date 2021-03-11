@@ -4,7 +4,6 @@ import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
 import { Points } from 'three/src/objects/Points';
-import PositionDetectHelper from '../engine/PositionDetectHelper';
 import { Direction } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';

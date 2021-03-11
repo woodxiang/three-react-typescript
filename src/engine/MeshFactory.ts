@@ -11,6 +11,7 @@ import { PointsMaterial } from 'three/src/materials/PointsMaterial';
 import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './DracoExLoader';
 import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
+import TextureFactory from './TextureFactory';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -96,7 +97,12 @@ export default class MeshFactory {
     }
     volatileLut.setMin(range.min);
     volatileLut.setMax(range.max);
-    const material = new ColorMapPhongMaterial(volatileLut, { opacity, transparent: opacity < 1 });
+    const material = new ColorMapPhongMaterial(
+      volatileLut.minV,
+      volatileLut.maxV,
+      TextureFactory.fromLut(volatileLut),
+      { opacity, transparent: opacity < 1 }
+    );
     material.specular.set(0.9);
     return material;
   }
