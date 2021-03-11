@@ -12,6 +12,7 @@ import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './loaders/DracoExLoader';
 import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
 import TextureFactory from './TextureFactory';
+import LutEx from './LutEx';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -89,22 +90,18 @@ export default class MeshFactory {
   ): ColorMapPhongMaterial {
     let volatileLut = lut;
     if (!volatileLut) {
-      volatileLut = new Lut('rainbow', 64);
+      volatileLut = new LutEx('rainbow', 64);
     }
     if (typeof volatileLut === 'string') {
-      volatileLut = new Lut(<string>volatileLut, 64);
+      volatileLut = new LutEx(<string>volatileLut, 64);
     }
     if (!(volatileLut instanceof Lut) && !(volatileLut instanceof LutEx)) {
       throw Error('Invalid lut');
     }
-    volatileLut.setMin(range.min);
-    volatileLut.setMax(range.max);
-    const material = new ColorMapPhongMaterial(
-      volatileLut.minV,
-      volatileLut.maxV,
-      TextureFactory.fromLut(volatileLut),
-      { opacity, transparent: opacity < 1 }
-    );
+    const material = new ColorMapPhongMaterial(range.min, range.max, TextureFactory.fromLut(volatileLut), {
+      opacity,
+      transparent: opacity < 1,
+    });
     material.specular.set(0.9);
     return material;
   }
