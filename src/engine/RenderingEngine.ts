@@ -39,15 +39,12 @@ import RotationHandler from './RotationHandler';
 import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
-import NavigatorHandler from './NavigatorHandler';
 import TextureFactory from './TextureFactory';
 
 /**
  * Rendering Engine
  */
 export default class RenderingEngine implements IActionCallback, IObjectRotation, IHitTest {
-  private wrappedViewPortSize: Vector2 = new Vector2();
-
   /**
    * Current State: moving or rotation or picking.
    */
@@ -95,7 +92,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public objectTransformChangedEvent = new LiteEvent<Matrix4>();
 
-  private debugMode = true;
+  public sizeChangedEvent = new LiteEvent<{ width: number; height: number }>();
+
+  private debugMode = false;
 
   private stats: Stats | undefined;
 
@@ -108,8 +107,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private capturedPointerId = -1;
 
   public hitTestHandler: IHitTestHandler | undefined = undefined;
-
-  private navigator: NavigatorHandler | undefined;
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -139,8 +136,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.parentDiv = div;
     this.camera.position.set(0, 0, 10);
 
-    this.wrappedViewPortSize = new Vector2(width, height);
-
     this.resize(width, height);
 
     div.appendChild(this.renderer.domElement);
@@ -155,9 +150,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedScene.add(this.wrappedRoot);
 
-    this.navigator = new NavigatorHandler();
-    this.navigator.bind(this);
-    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera), this.navigator);
+    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -188,7 +181,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   get viewPortSize(): Vector2 {
-    return this.wrappedViewPortSize;
+    const size = new Vector2();
+    this.renderer.getSize(size);
+    return size;
   }
 
   get root(): Group {
@@ -457,8 +452,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     camera: Camera | undefined = undefined,
     viewPort: Vector4 | undefined = undefined
   ): Float32Array {
-    const { width, height } = this.wrappedViewPortSize;
-    const target = new WebGLRenderTarget(width, height, { type: FloatType, stencilBuffer: true });
+    const size = new Vector2();
+    this.renderer.getSize(size);
+    const target = new WebGLRenderTarget(size.x, size.y, { type: FloatType, stencilBuffer: true });
     this.renderer.setRenderTarget(target);
     let oldViewPort;
     if (viewPort) {
@@ -471,7 +467,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.renderer.setViewport(oldViewPort);
     }
     const data = new Float32Array(4);
-    this.renderer.readRenderTargetPixels(target, xPos, height - yPos, 1, 1, data);
+    this.renderer.readRenderTargetPixels(target, xPos, size.y - yPos, 1, 1, data);
     this.renderer.setRenderTarget(null);
     target.dispose();
     return data;
@@ -534,6 +530,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(width, height);
+    this.sizeChangedEvent?.trigger({ width, height });
   }
 
   /**

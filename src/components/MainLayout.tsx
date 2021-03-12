@@ -4,18 +4,16 @@ import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
 import { Points } from 'three/src/objects/Points';
+import { Color } from 'three/src/math/Color';
+import ContentManager from '../engine/ContentManager';
 import { Direction } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
 import MeshFactory, { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
-import FlatManager from '../engine/FlatsManager';
-import SensorManager from '../engine/SensorManager';
-import ClippingManager from '../engine/ClippingManager';
 import DracoFilesView from './DracoFilesView';
 import ClippingSelector from './ClippingSelector';
-import { Color } from 'three';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -51,11 +49,10 @@ export default function MainLayout(): JSX.Element {
   const [displayingTab, setDisplayingTab] = useState<number>(0);
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
-  const flatsManagerRef = useRef<FlatManager>(new FlatManager());
-  const sensorsManagerRef = useRef<SensorManager>(new SensorManager());
-  const clippingManagerRef = useRef<ClippingManager>(new ClippingManager());
 
-  const { clipPositions, limitBox } = clippingManagerRef.current;
+  const contentManagerRef = useRef<ContentManager>(new ContentManager());
+
+  const { clipPositions, limitBox } = contentManagerRef.current.clipping;
 
   const stlPrefix = '/api/stls/';
   const dracoPrefix = 'api/dracos/';
@@ -152,9 +149,9 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
     if (engine) {
       if (newValue) {
-        flatsManagerRef.current.bind(engine);
+        contentManagerRef.current.flats.bind(engine);
       } else {
-        flatsManagerRef.current.bind(undefined);
+        contentManagerRef.current.flats.bind(undefined);
       }
     }
   };
@@ -163,9 +160,9 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
     if (engine) {
       if (newValue) {
-        sensorsManagerRef.current.bind(engine);
+        contentManagerRef.current.sensors.bind(engine);
       } else {
-        sensorsManagerRef.current.bind(undefined);
+        contentManagerRef.current.sensors.bind(undefined);
       }
     }
   };
@@ -184,9 +181,9 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
     if (engine) {
       if (newValue) {
-        clippingManagerRef.current.bind(engine);
+        contentManagerRef.current.clipping.bind(engine);
       } else {
-        clippingManagerRef.current.bind(undefined);
+        contentManagerRef.current.clipping.bind(undefined);
       }
     }
   };
@@ -203,7 +200,7 @@ export default function MainLayout(): JSX.Element {
   const onToggleMultiSelection = () => {
     const newValue = !enableMultiFlatsSelection;
     setEnableMultiFlatsSelection(newValue);
-    flatsManagerRef.current.isMultipleSelection = newValue;
+    contentManagerRef.current.flats.isMultipleSelection = newValue;
   };
 
   const onToggleClipping = () => {
@@ -213,10 +210,10 @@ export default function MainLayout(): JSX.Element {
   };
 
   const onClippingChanged = (newPosition: { dir: Direction; pos: number }) => {
-    if (!clippingManagerRef.current) {
+    if (!contentManagerRef.current.clipping) {
       return;
     }
-    const clippingManager = clippingManagerRef.current;
+    const clippingManager = contentManagerRef.current.clipping;
     clippingManager.updateClip(newPosition.dir, newPosition.pos);
   };
 
@@ -270,19 +267,19 @@ export default function MainLayout(): JSX.Element {
     if (engineRef.current !== eg) {
       if (engineRef.current) {
         // unintialize old engine.
-        flatsManagerRef.current.bind(undefined);
-        clippingManagerRef.current.bind(undefined);
+        contentManagerRef.current.bind(undefined);
       }
 
       engineRef.current = eg;
 
       if (engineRef.current) {
+        contentManagerRef.current.bind(engineRef.current);
         engineRef.current.updateBackground([new Color('gray'), new Color('white')]);
         applyEnableClipping(enableClipping);
 
         // update selection setting
         applyEnableSelection(enableFlatSelection);
-        flatsManagerRef.current.isMultipleSelection = enableMultiFlatsSelection;
+        contentManagerRef.current.flats.isMultipleSelection = enableMultiFlatsSelection;
 
         // initialize after set engine.
         const promises: Promise<void>[] = [];
@@ -292,8 +289,7 @@ export default function MainLayout(): JSX.Element {
 
         await Promise.all(promises);
 
-        // TODO: update the selected flats.
-        flatsManagerRef.current.restore();
+        contentManagerRef.current.flats.restore();
       }
     }
   };
