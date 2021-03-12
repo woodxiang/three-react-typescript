@@ -92,6 +92,10 @@ interface IHitTestResult {
   pos: Vector3;
 }
 
+interface IHitTestHandler {
+  onHit(res: IHitTestResult): boolean;
+}
+
 interface IObjectRotation {
   rotationMatrix: Matrix4;
 }
@@ -105,4 +109,13 @@ interface IFlat {
 const renderingModelName = '#models#';
 
 export { STATE, CURSORTYPE, Direction, renderingModelName };
-export type { IActionCallback, IActionHandler, IRenderHandler, IObjectRotation, IHitTestResult, IFlat, ITransformed };
+export type {
+  IActionCallback,
+  IActionHandler,
+  IRenderHandler,
+  IObjectRotation,
+  IHitTestResult,
+  IHitTestHandler,
+  IFlat,
+  ITransformed,
+};

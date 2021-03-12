@@ -41,7 +41,7 @@ import TextureFactory from './TextureFactory';
 /**
  * Rendering Engine
  */
-export default class RenderingEngine implements IActionCallback, IObjectRotation, IHitTest {
+export default class RenderingEngine implements IActionCallback, IObjectRotation {
   /**
    * Current State: moving or rotation or picking.
    */
@@ -103,8 +103,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private capturedPointerId = -1;
 
-  public hitTestHandler: IHitTestHandler | undefined = undefined;
-
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
 
@@ -147,7 +145,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedScene.add(this.wrappedRoot);
 
-    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera));
+    this.wrappedActionHandlers.push(new RotationHandler(this.camera));
 
     if (this.debugMode) {
       this.stats = Stats();
