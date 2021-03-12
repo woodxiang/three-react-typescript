@@ -27,16 +27,13 @@ import {
   STATE,
   CURSORTYPE,
   IActionHandler,
-  IHitTest,
   IHitTestResult,
   IObjectRotation,
-  IHitTestHandler,
   IFlat,
   renderingModelName,
   IRenderHandler,
 } from './interfaces';
 import RotationHandler from './RotationHandler';
-import ClickHandler from './ClickHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
 import TextureFactory from './TextureFactory';
@@ -44,7 +41,7 @@ import TextureFactory from './TextureFactory';
 /**
  * Rendering Engine
  */
-export default class RenderingEngine implements IActionCallback, IObjectRotation, IHitTest {
+export default class RenderingEngine implements IActionCallback, IObjectRotation {
   /**
    * Current State: moving or rotation or picking.
    */
@@ -106,8 +103,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private capturedPointerId = -1;
 
-  public hitTestHandler: IHitTestHandler | undefined = undefined;
-
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
 
@@ -150,7 +145,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedScene.add(this.wrappedRoot);
 
-    this.wrappedActionHandlers.push(new ClickHandler(), new RotationHandler(this.camera));
+    this.wrappedActionHandlers.push(new RotationHandler(this.camera));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -485,19 +480,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   /**
-   * handle hit test
-   * @param xPos x hit position
-   * @param yPos y hit position
-   */
-  public hit(xPos: number, yPos: number): boolean {
-    const hitTestReuslt = this.hitTest(xPos, yPos);
-    if (this.hitTestHandler && hitTestReuslt) {
-      return this.hitTestHandler.onHit(hitTestReuslt);
-    }
-    return false;
-  }
-
-  /**
    * Get the matrix of rotation.
    */
   public get rotationMatrix(): Matrix4 {
@@ -736,7 +718,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param xPos hit position x
    * @param yPos hit position y
    */
-  private hitTest(xPos: number, yPos: number): IHitTestResult | null {
+  public hitTest(xPos: number, yPos: number): IHitTestResult | null {
     const rayCaster = new Raycaster();
     rayCaster.layers.set(2);
     rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);

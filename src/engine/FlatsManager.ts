@@ -1,7 +1,8 @@
-import { IHitTestHandler, IHitTestResult } from './interfaces';
+import ActionHandlerBase from './ActionHandlerBase';
+import { IActionCallback, IHitTestResult, STATE } from './interfaces';
 import RenderingEngine from './RenderingEngine';
 
-export default class FlatManager implements IHitTestHandler {
+export default class FlatManager extends ActionHandlerBase {
   private wrappedIsMultipleSelection = false;
 
   private selectedFlats: { name: string; indexes: number[]; normal: number[] }[] = [];
@@ -11,11 +12,12 @@ export default class FlatManager implements IHitTestHandler {
   public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
-      this.engine.hitTestHandler = undefined;
+      this.engine.removeActionHandler(this);
+      this.engine = undefined;
     }
     this.engine = engine;
     if (this.engine !== undefined) {
-      this.engine.hitTestHandler = <IHitTestHandler>this;
+      this.engine.addActionHandler(this);
     }
   }
 
@@ -86,6 +88,24 @@ export default class FlatManager implements IHitTestHandler {
 
   public set isMultipleSelection(newValue: boolean) {
     this.wrappedIsMultipleSelection = newValue;
+  }
+
+  handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
+    if (this.isEnabled) {
+      const callbacker = callback;
+      if (callbacker.state === STATE.NONE) {
+        const hitTestReuslt = callbacker.hitTest(
+          (event.offsetX / callbacker.viewPortSize.x) * 2 - 1,
+          -(event.offsetY / callbacker.viewPortSize.y) * 2 + 1
+        );
+
+        if (hitTestReuslt) {
+          return this.onHit(hitTestReuslt);
+        }
+      }
+    }
+
+    return false;
   }
 
   private updateFlats(name: string): void {
