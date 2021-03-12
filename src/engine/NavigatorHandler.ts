@@ -18,9 +18,11 @@ import ActionHandlerBase from './ActionHandlerBase';
 import LiteEvent from './event';
 import { generateArrow } from './Geometry/boxConstants';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
-import { IActionCallback, IRenderHandler, STATE } from './interfaces';
+import { IActionCallback, IActionHandler, IRenderHandler, STATE } from './interfaces';
 
 interface INavigatorSource {
+  addActionHandler(handler: IActionHandler): void;
+  removeActionHandler(handler: IActionHandler): void;
   addRenderHandler(handler: IRenderHandler): void;
   removeRenderHandler(handler: IRenderHandler): void;
   readonly rotationMatrix: Matrix4;
@@ -129,6 +131,7 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
 
     if (this.engine) {
       // unbind old engine;
+      this.engine.removeActionHandler(this);
       this.engine.removeRenderHandler(this);
       this.engine.objectTransformChangedEvent.remove(this.onTransformChanged);
       this.engine = undefined;
@@ -141,6 +144,7 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
       this.navigatorGroup.matrix = this.engine.rotationMatrix;
       this.navigatorGroup.matrixAutoUpdate = false;
       this.engine.objectTransformChangedEvent.add(this.onTransformChanged);
+      this.engine.addActionHandler(this);
       this.engine.addRenderHandler(this);
     }
   }
