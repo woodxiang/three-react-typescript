@@ -41,6 +41,7 @@ interface IActionCallback {
   rotationMatrix: Matrix4;
   readonly matrix: Matrix4;
   readonly viewPortSize: Vector2;
+  hitTest(xPos: number, yPos: number): IHitTestResult | null;
   capturePointer(pointerId: number): void;
   releasePointer(): void;
   exportImage(
@@ -90,13 +91,6 @@ interface IHitTestResult {
   index: number;
   pos: Vector3;
 }
-interface IHitTest {
-  hit(xPos: number, yPos: number): boolean;
-}
-
-interface IPositionObjectDetect {
-  hit(position: Vector3, objectName: string): boolean;
-}
 
 interface IHitTestHandler {
   onHit(res: IHitTestResult): boolean;
@@ -120,10 +114,8 @@ export type {
   IActionHandler,
   IRenderHandler,
   IObjectRotation,
-  IHitTest,
   IHitTestResult,
   IHitTestHandler,
   IFlat,
   ITransformed,
-  IPositionObjectDetect,
 };
