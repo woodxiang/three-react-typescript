@@ -88,10 +88,10 @@ export default class MeshFactory {
   ): ColorMapPhongMaterial {
     let volatileLut = lut;
     if (!volatileLut) {
-      volatileLut = new LutEx('rainbow', 64);
+      volatileLut = new Lut('rainbow', 64);
     }
     if (typeof volatileLut === 'string') {
-      volatileLut = new LutEx(<string>volatileLut, 64);
+      volatileLut = new Lut(<string>volatileLut, 64);
     }
     if (!(volatileLut instanceof Lut) && !(volatileLut instanceof LutEx)) {
       throw Error('Invalid lut');
