@@ -30,13 +30,15 @@ export default class LegendManager implements IRenderHandler {
 
   private engine: ILegendSource | undefined;
 
-  private lut: LutEx | undefined;
+  public readonly lut: LutEx = new LutEx();
 
   private canvas = document.createElement('canvas');
 
   private sprite: Sprite = new Sprite();
 
   private size = new Vector2();
+
+  private range: { min: number; max: number } | undefined;
 
   constructor() {
     this.camera.position.set(0, 0, 1);
@@ -72,11 +74,9 @@ export default class LegendManager implements IRenderHandler {
     }
   }
 
-  public updateLut(lut: LutEx): void {
-    this.lut = lut;
-    if (this.lut) {
-      this.update();
-    }
+  public setRange(range: { min: number; max: number }): void {
+    this.range = range;
+    this.update();
   }
 
   private update(): void {
@@ -101,6 +101,7 @@ export default class LegendManager implements IRenderHandler {
     this.canvas.height = clientHeight;
     const ctx = this.canvas.getContext('2d');
     if (ctx) {
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       ctx.font = `Normal ${96}px Arial`;
       ctx.fillStyle = 'rgba(200, 0, 0, 1)';
       // ctx.fillText('this is a test', 0, textShift);
