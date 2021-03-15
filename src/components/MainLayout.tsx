@@ -2,7 +2,6 @@ import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Button, createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
-import { Points } from 'three/src/objects/Points';
 import { Color } from 'three/src/math/Color';
 import ContentManager from '../engine/ContentManager';
 import { Direction } from '../engine/interfaces';
@@ -123,25 +122,11 @@ export default function MainLayout(): JSX.Element {
   };
 
   const applyEnableSelection = (newValue: boolean) => {
-    const engine = engineRef.current;
-    if (engine) {
-      if (newValue) {
-        contentManagerRef.current.flats.bind(engine);
-      } else {
-        contentManagerRef.current.flats.bind(undefined);
-      }
-    }
+    contentManagerRef.current.enableFlats = newValue;
   };
 
   const applyEnableSensorSelection = (newValue: boolean) => {
-    const engine = engineRef.current;
-    if (engine) {
-      if (newValue) {
-        contentManagerRef.current.sensors.bind(engine);
-      } else {
-        contentManagerRef.current.sensors.bind(undefined);
-      }
-    }
+    contentManagerRef.current.enableSensors = newValue;
   };
 
   const onToggleEnableSensorSelection = () => {
@@ -155,14 +140,7 @@ export default function MainLayout(): JSX.Element {
   };
 
   const applyEnableClipping = (newValue: boolean) => {
-    const engine = engineRef.current;
-    if (engine) {
-      if (newValue) {
-        contentManagerRef.current.clipping.bind(engine);
-      } else {
-        contentManagerRef.current.clipping.bind(undefined);
-      }
-    }
+    contentManagerRef.current.enableClipping = newValue;
   };
   const onToggleEnableSelection = () => {
     const newValue = !enableFlatSelection;
@@ -245,19 +223,19 @@ export default function MainLayout(): JSX.Element {
     if (engineRef.current !== eg) {
       if (engineRef.current) {
         // unintialize old engine.
-        contentManagerRef.current.bind(undefined);
+        contentManager.bind(undefined);
       }
 
       engineRef.current = eg;
 
       if (engineRef.current) {
-        contentManagerRef.current.bind(engineRef.current);
+        contentManager.bind(engineRef.current);
         engineRef.current.updateBackground([new Color('gray'), new Color('white')]);
         contentManager.enableClipping = enableClipping;
 
         // update selection setting
-        applyEnableSelection(enableFlatSelection);
-        contentManagerRef.current.flats.isMultipleSelection = enableMultiFlatsSelection;
+        contentManager.enableFlats = enableFlatSelection;
+        contentManager.isMultipleSelection = enableMultiFlatsSelection;
 
         // initialize after set engine.
         const promises: Promise<void>[] = [];
