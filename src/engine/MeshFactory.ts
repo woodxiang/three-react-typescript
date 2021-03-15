@@ -17,7 +17,8 @@ import LutEx from './LutEx';
 export enum GeometryDataType {
   STLMesh = 1,
   DracoMesh,
-  DracoMeshEx,
+  DracoExMesh,
+  DracoExPoints,
 }
 
 export default class MeshFactory {
@@ -27,7 +28,8 @@ export default class MeshFactory {
         return MeshFactory.loadStlAsync(url);
       case GeometryDataType.DracoMesh:
         return MeshFactory.loadDracoAsync(url);
-      case GeometryDataType.DracoMeshEx:
+      case GeometryDataType.DracoExMesh:
+      case GeometryDataType.DracoExPoints:
         return MeshFactory.loadDracoExAsync(url);
       default:
         throw Error('unexpected type.');
@@ -168,7 +170,7 @@ export default class MeshFactory {
     return geo as BufferGeometry;
   }
 
-  private static calculateValueRange(
+  public static calculateValueRange(
     geo: BufferGeometry,
     attributeName: string
   ): { min: number; max: number } | undefined {

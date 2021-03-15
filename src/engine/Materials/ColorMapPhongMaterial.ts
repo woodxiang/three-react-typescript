@@ -52,6 +52,13 @@ export default class ColorMapPhongMaterial extends ShaderMaterial {
     this.clipping = true;
   }
 
+  public updateRange(min: number, max: number): void {
+    const colorMapOffset = -min;
+    const colorMapRatio = 1 / (max - min);
+    this.uniforms.colorMapOffset = { value: colorMapOffset };
+    this.uniforms.colorMapRatio = { value: colorMapRatio };
+  }
+
   public copy(source: Material): this {
     super.copy(source);
 
