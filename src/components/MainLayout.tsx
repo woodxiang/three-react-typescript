@@ -1,16 +1,14 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Button, createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
-import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
-import { Points } from 'three/src/objects/Points';
 import { Color } from 'three/src/math/Color';
 import ContentManager from '../engine/ContentManager';
 import { Direction } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
 import RenderingView from '../engine/RenderingView';
-import MeshFactory, { GeometryDataType } from '../engine/MeshFactory';
+import { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
 import DracoFilesView from './DracoFilesView';
 import ClippingSelector from './ClippingSelector';
@@ -62,80 +60,58 @@ export default function MainLayout(): JSX.Element {
   };
 
   const loadStl = async (item: string) => {
-    const engine = engineRef.current;
-    if (!engine) {
-      throw Error('invalid engine.');
-    }
-    const newMesh = await MeshFactory.createSolidMesh(
-      stlPrefix + item,
-      GeometryDataType.STLMesh,
-      preDefinedColors[stlFiles.indexOf(item)]
-    );
-    if (newMesh) engine.addMesh(newMesh);
+    contentManagerRef.current.LoadStl(stlPrefix + item, preDefinedColors[stlFiles.indexOf(item)]);
   };
 
   const loadDraco = async (item: string) => {
-    const engine = engineRef.current;
-    if (!engine) {
-      throw Error('invalid engine');
+    let dracoType = GeometryDataType.DracoMesh;
+    if (item.endsWith('.sd')) {
+      dracoType = GeometryDataType.DracoExMesh;
+    } else if (item.endsWith('.sp')) {
+      dracoType = GeometryDataType.DracoExPoints;
     }
 
-    const dracoType = item.endsWith('.drc') ? GeometryDataType.DracoMesh : GeometryDataType.DracoMeshEx;
-
-    let newMesh: Mesh | Points | undefined;
     switch (dracoType) {
       case GeometryDataType.DracoMesh:
-        newMesh = await MeshFactory.createSolidMesh(
-          dracoPrefix + item,
-          GeometryDataType.DracoMesh,
-          preDefinedColors[dracoFiles.indexOf(item)]
-        );
+        contentManagerRef.current.LoadDracoMesh(dracoPrefix + item, preDefinedColors[dracoFiles.indexOf(item)]);
         break;
-      case GeometryDataType.DracoMeshEx:
-        newMesh = await MeshFactory.createColorMapMesh(dracoPrefix + item, dracoType);
+      case GeometryDataType.DracoExMesh:
+        contentManagerRef.current.LoadDracoExMesh(dracoPrefix + item);
+        break;
+      case GeometryDataType.DracoExPoints:
+        contentManagerRef.current.LoadDracoExPoints(dracoPrefix + item, 'red');
         break;
       default:
         throw Error('Invalid Geometry type.');
     }
-    if (newMesh) engine.addMesh(newMesh);
   };
 
   // handle the event when selected stl changed.
   const handleSelectedStlChanged = async (item: string) => {
-    const engine = engineRef.current;
     const index = selectedStls.indexOf(item);
     const newSelectedStls = [...selectedStls];
     if (index !== -1) {
       // remove mesh
       newSelectedStls.splice(index, 1);
-      if (engine) {
-        engine.removeMesh(stlPrefix + item);
-      }
+      contentManagerRef.current.remove(stlPrefix + item);
     } else {
       // add mesh
       newSelectedStls.push(item);
-      if (engine) {
-        await loadStl(item);
-      }
+      await loadStl(item);
     }
 
     setSelectedStls(newSelectedStls);
   };
 
   const handleSelectedDracoChanged = async (item: string) => {
-    const engine = engineRef.current;
-    const index = selectedDracoFiles.indexOf(item);
-    const newSelectedDracos = [...selectedDracoFiles];
+    const index = selectedDracos.indexOf(item);
+    const newSelectedDracos = [...selectedDracos];
     if (index !== -1) {
       newSelectedDracos.splice(index, 1);
-      if (engine) {
-        engine.removeMesh(dracoPrefix + item);
-      }
+      contentManagerRef.current.remove(dracoPrefix + item);
     } else {
       newSelectedDracos.push(item);
-      if (engine) {
-        await loadDraco(item);
-      }
+      await loadDraco(item);
     }
 
     setSelectedDracoFiles(newSelectedDracos);
@@ -146,25 +122,11 @@ export default function MainLayout(): JSX.Element {
   };
 
   const applyEnableSelection = (newValue: boolean) => {
-    const engine = engineRef.current;
-    if (engine) {
-      if (newValue) {
-        contentManagerRef.current.flats.bind(engine);
-      } else {
-        contentManagerRef.current.flats.bind(undefined);
-      }
-    }
+    contentManagerRef.current.enableFlats = newValue;
   };
 
   const applyEnableSensorSelection = (newValue: boolean) => {
-    const engine = engineRef.current;
-    if (engine) {
-      if (newValue) {
-        contentManagerRef.current.sensors.bind(engine);
-      } else {
-        contentManagerRef.current.sensors.bind(undefined);
-      }
-    }
+    contentManagerRef.current.enableSensors = newValue;
   };
 
   const onToggleEnableSensorSelection = () => {
@@ -178,14 +140,7 @@ export default function MainLayout(): JSX.Element {
   };
 
   const applyEnableClipping = (newValue: boolean) => {
-    const engine = engineRef.current;
-    if (engine) {
-      if (newValue) {
-        contentManagerRef.current.clipping.bind(engine);
-      } else {
-        contentManagerRef.current.clipping.bind(undefined);
-      }
-    }
+    contentManagerRef.current.enableClipping = newValue;
   };
   const onToggleEnableSelection = () => {
     const newValue = !enableFlatSelection;
@@ -264,22 +219,23 @@ export default function MainLayout(): JSX.Element {
   const classes = useStyles();
 
   const setupEngine = async (eg: RenderingEngine | undefined) => {
+    const contentManager = contentManagerRef.current;
     if (engineRef.current !== eg) {
       if (engineRef.current) {
         // uninitialized old engine.
-        contentManagerRef.current.bind(undefined);
+        contentManager.bind(undefined);
       }
 
       engineRef.current = eg;
 
       if (engineRef.current) {
-        contentManagerRef.current.bind(engineRef.current);
+        contentManager.bind(engineRef.current);
         engineRef.current.updateBackground([new Color('gray'), new Color('white')]);
-        applyEnableClipping(enableClipping);
+        contentManager.enableClipping = enableClipping;
 
         // update selection setting
-        applyEnableSelection(enableFlatSelection);
-        contentManagerRef.current.flats.isMultipleSelection = enableMultiFlatsSelection;
+        contentManager.enableFlats = enableFlatSelection;
+        contentManager.isMultipleSelection = enableMultiFlatsSelection;
 
         // initialize after set engine.
         const promises: Promise<void>[] = [];
