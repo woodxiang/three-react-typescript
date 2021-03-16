@@ -1,11 +1,8 @@
 {
-  "typescript.tsdk": "node_modules\\typescript\\lib",
-  "files.eol": "\n",
-  "cSpell.words": [
-    "Phong",
-    "Raycaster",
-    "Stls",
-    "dracos",
-    "wasm"
-]
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "files.eol": "\n",
+    "cSpell.words": [
+        "Phong",
+        "Raycaster"
+    ]
 }

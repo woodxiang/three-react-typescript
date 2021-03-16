@@ -22,8 +22,8 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
-      if (localCallback.state === STATE.NONE) {
+      const callbackLocal = callback;
+      if (callbackLocal.state === STATE.NONE) {
         this.previousPosition = new Vector2(event.offsetX, event.offsetY);
         return false;
       }
@@ -33,11 +33,11 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
-      if (localCallback.state === STATE.ROTATE) {
-        localCallback.cursorType = CURSOR_TYPE.NONE;
-        localCallback.releasePointer();
-        localCallback.state = STATE.NONE;
+      const callbackLocal = callback;
+      if (callbackLocal.state === STATE.ROTATE) {
+        callbackLocal.cursorType = CURSOR_TYPE.NONE;
+        callbackLocal.releasePointer();
+        callbackLocal.state = STATE.NONE;
         return true;
       }
     }
@@ -46,17 +46,17 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
+      const callbackLocal = callback;
       const newPosition = new Vector2(event.offsetX, event.offsetY);
-      if (localCallback.state === STATE.NONE) {
+      if (callbackLocal.state === STATE.NONE) {
         if (event.buttons === 1) {
-          localCallback.capturePointer(event.pointerId);
-          localCallback.state = STATE.ROTATE;
-          localCallback.cursorType = CURSOR_TYPE.HAND;
+          callbackLocal.capturePointer(event.pointerId);
+          callbackLocal.state = STATE.ROTATE;
+          callbackLocal.cursorType = CURSOR_TYPE.HAND;
         }
       }
-      if (localCallback.state === STATE.ROTATE) {
-        this.rotate(newPosition.x - this.previousPosition.x, newPosition.y - this.previousPosition.y, localCallback);
+      if (callbackLocal.state === STATE.ROTATE) {
+        this.rotate(newPosition.x - this.previousPosition.x, newPosition.y - this.previousPosition.y, callbackLocal);
         this.previousPosition = newPosition;
         return true;
       }
@@ -66,8 +66,8 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleMouseWheel(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
-      if (localCallback.state === STATE.NONE) {
+      const callbackLocal = callback;
+      if (callbackLocal.state === STATE.NONE) {
         return true;
       }
     }
@@ -76,8 +76,8 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleKeyDown(event: KeyboardEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
-      if (localCallback.state === STATE.NONE) {
+      const callbackLocal = callback;
+      if (callbackLocal.state === STATE.NONE) {
         return true;
       }
     }
@@ -86,8 +86,8 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleKeyUp(event: KeyboardEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
-      if (localCallback.state === STATE.NONE) {
+      const callbackLocal = callback;
+      if (callbackLocal.state === STATE.NONE) {
         return true;
       }
     }
@@ -96,8 +96,8 @@ export default class RotationHandler extends ActionHandlerBase {
 
   handleWheel(event: WheelEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const localCallback = callback;
-      if (localCallback.state === STATE.NONE) {
+      const callbackLocal = callback;
+      if (callbackLocal.state === STATE.NONE) {
         this.zoom(event.deltaY);
         return true;
       }
@@ -111,8 +111,8 @@ export default class RotationHandler extends ActionHandlerBase {
   }
 
   private rotate(x: number, y: number, callback: IActionCallback): void {
-    const localCallback = callback;
-    const size = localCallback.viewPortSize;
+    const callbackLocal = callback;
+    const size = callbackLocal.viewPortSize;
     const ratio = size.x / size.y;
     const scale = ratio > 1 ? size.y / 2 : size.x / 2;
 
@@ -136,6 +136,6 @@ export default class RotationHandler extends ActionHandlerBase {
       }
     }
 
-    localCallback.rotationMatrix = matrix.multiply(localCallback.rotationMatrix);
+    callbackLocal.rotationMatrix = matrix.multiply(callbackLocal.rotationMatrix);
   }
 }

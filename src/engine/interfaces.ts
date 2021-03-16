@@ -104,5 +104,5 @@ interface IFlat {
 
 const renderingModelName = '#models#';
 
-export { STATE, CURSORTYPE, Direction, renderingModelName };
+export { STATE, CURSOR_TYPE, Direction, renderingModelName };
 export type { IActionCallback, IActionHandler, IRenderHandler, IObjectRotation, IHitTestResult, IFlat, ITransformed };
