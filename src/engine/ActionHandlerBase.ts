@@ -52,7 +52,7 @@ export default class ActionHandlerBase implements IActionHandler {
     return false;
   }
 
-  handleWhell(event: WheelEvent, callback: IActionCallback): boolean {
+  handleWheel(event: WheelEvent, callback: IActionCallback): boolean {
     return false;
   }
 }
