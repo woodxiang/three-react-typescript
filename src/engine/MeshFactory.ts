@@ -145,6 +145,8 @@ export default class MeshFactory {
 
     geo.computeVertexNormals();
 
+    loader.dispose();
+
     return geo as BufferGeometry;
   }
 
@@ -157,6 +159,8 @@ export default class MeshFactory {
     const geo = await loader.loadAsync(url, onProgress);
 
     geo.computeVertexNormals();
+
+    loader.dispose();
 
     return geo as BufferGeometry;
   }

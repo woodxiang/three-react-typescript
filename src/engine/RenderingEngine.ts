@@ -332,7 +332,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     const index = this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === name);
     if (index >= 0) {
+      const itemToRemove = this.targetObject3D.children[index] as Mesh;
       this.targetObject3D.children.splice(index, 1);
+      itemToRemove.geometry.dispose();
+
+      if (itemToRemove.material instanceof Array) {
+        itemToRemove.material.forEach((v) => v.dispose());
+      } else {
+        itemToRemove.material.dispose();
+      }
+
       this.updateScales();
       this.meshRemovedEvent.trigger(name);
       return true;
