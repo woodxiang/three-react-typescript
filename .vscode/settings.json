@@ -3,6 +3,8 @@
     "files.eol": "\n",
     "cSpell.words": [
         "Phong",
-        "Raycaster"
+        "Raycaster",
+        "lerp",
+        "luts"
     ]
 }

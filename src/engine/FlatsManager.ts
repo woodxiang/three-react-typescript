@@ -92,15 +92,15 @@ export default class FlatManager extends ActionHandlerBase {
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
-      if (callbacker.state === STATE.NONE) {
-        const hitTestReuslt = callbacker.hitTest(
-          (event.offsetX / callbacker.viewPortSize.x) * 2 - 1,
-          -(event.offsetY / callbacker.viewPortSize.y) * 2 + 1
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
+        const hitTestResult = localCallback.hitTest(
+          (event.offsetX / localCallback.viewPortSize.x) * 2 - 1,
+          -(event.offsetY / localCallback.viewPortSize.y) * 2 + 1
         );
 
-        if (hitTestReuslt) {
-          return this.onHit(hitTestReuslt);
+        if (hitTestResult) {
+          return this.onHit(hitTestResult);
         }
       }
     }
