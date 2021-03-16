@@ -1,4 +1,5 @@
 import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
+import { InterpolateDiscrete } from 'three/src/constants';
 import { SpriteMaterial } from 'three/src/materials/SpriteMaterial';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Mesh } from 'three/src/objects/Mesh';
@@ -84,6 +85,8 @@ export default class LegendManager implements IRenderHandler {
       return;
     }
 
+    const itemNumber = this.lut.method === InterpolateDiscrete ? this.lut.map.length : 20;
+
     const clientWidth = 1024 * 2;
     const clientHeight = 1024 * 2;
 
@@ -106,13 +109,12 @@ export default class LegendManager implements IRenderHandler {
       ctx.fillStyle = 'rgba(200, 0, 0, 1)';
       // ctx.fillText('this is a test', 0, textShift);
       ctx.strokeStyle = 'black';
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 5;
       ctx.strokeRect(0, 0, clientWidth - 1, clientHeight - 1);
 
       // Draw title
       const titleFontSize = Math.round(titleHeight * 0.8);
-      const titleFontShift = Math.round(titleFontSize * 0.43);
-      ctx.font = `Normal ${titleFontSize}px Arial`;
+      ctx.font = `Normal ${titleFontSize}px {textFont}`;
       ctx.fillStyle = textColor;
       const testString = 'test title';
       const textSize = ctx.measureText(testString);

@@ -1,14 +1,10 @@
+import { InterpolateLinear, InterpolationModes } from 'three/src/constants';
 import { Color } from 'three/src/math/Color';
-
-enum LutExEntryType {
-  Linner,
-  Step,
-}
 
 interface ILutExEntry {
   color: Color;
   value: number;
-  type: LutExEntryType;
+  method?: InterpolationModes;
 }
 
 const luts = new Map<string, ILutExEntry[]>([
@@ -18,27 +14,22 @@ const luts = new Map<string, ILutExEntry[]>([
       {
         color: new Color(0x0000ff),
         value: 0,
-        type: LutExEntryType.Linner,
       },
       {
         color: new Color(0x00ffff),
         value: 0.2,
-        type: LutExEntryType.Linner,
       },
       {
         color: new Color(0x00ff00),
         value: 0.5,
-        type: LutExEntryType.Linner,
       },
       {
         color: new Color(0xffff00),
         value: 0.8,
-        type: LutExEntryType.Linner,
       },
       {
         color: new Color(0xff0000),
         value: 1,
-        type: LutExEntryType.Linner,
       },
     ],
   ],
@@ -51,8 +42,15 @@ class LutEx {
 
   public map: ILutExEntry[];
 
-  constructor(colorMap: string | ILutExEntry[] | undefined = undefined, numberofColors = 32, type?: LutExEntryType) {
+  public method?: InterpolationModes;
+
+  constructor(
+    colorMap: string | ILutExEntry[] | undefined = undefined,
+    numberofColors = 32,
+    method?: InterpolationModes
+  ) {
     this.n = numberofColors;
+    this.method = method;
     let map: ILutExEntry[] | undefined;
     if (typeof colorMap === 'string') {
       map = luts.get(colorMap);
@@ -69,9 +67,17 @@ class LutEx {
 
     this.map = map;
 
-    const step = 1.0 / this.n;
+    const { lut } = this;
 
-    this.lut.length = 0;
+    this.generateLookupTable(this.n, lut);
+  }
+
+  public generateLookupTable(n: number, output: Color[] | undefined = undefined): [Color[], number[]] {
+    const lut: Color[] = output || [];
+    const values: number[] = [];
+    const step = 1.0 / n;
+
+    lut.length = 0;
 
     const colors = this.map.map((v) => new Color(v.color));
     for (let i = 0; i <= 1; i += step) {
@@ -84,19 +90,21 @@ class LutEx {
           const maxColor = colors[j + 1];
 
           const color =
-            type || this.map[j].type === LutExEntryType.Linner
+            (this.method || this.map[j].method || InterpolateLinear) === InterpolateLinear
               ? minColor.clone().lerp(maxColor, (i - min) / (max - min))
               : minColor;
 
-          this.lut.push(color);
+          lut.push(color);
+          values.push(i);
           break;
         }
       }
     }
+
+    return [lut, values];
   }
 }
 
-export { LutExEntryType };
 export type { ILutExEntry };
 export { luts };
 export default LutEx;
