@@ -54,9 +54,9 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
   handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbackLocal = callback;
-      if (callbackLocal.state === STATE.NONE) {
-        this.activeDir = this.TestReaction(event.offsetX, event.offsetY, callbackLocal);
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
+        this.activeDir = this.TestReaction(event.offsetX, event.offsetY, localCallback);
         if (this.activeDir === Direction.Undefined) {
           return false;
         }
@@ -70,11 +70,11 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbackLocal = callback;
-      if (callbackLocal.state === CLIPPING) {
-        callbackLocal.state = STATE.NONE;
-        callbackLocal.releasePointer();
-        callbackLocal.cursorType = CURSOR_TYPE.NONE;
+      const localCallback = callback;
+      if (localCallback.state === CLIPPING) {
+        localCallback.state = STATE.NONE;
+        localCallback.releasePointer();
+        localCallback.cursorType = CURSOR_TYPE.NONE;
         this.activeDir = Direction.Undefined;
         return true;
       }
@@ -84,21 +84,21 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbackLocal = callback;
+      const localCallback = callback;
       const newPosition = new Vector2(event.offsetX, event.offsetY);
-      if (callbackLocal.state === STATE.NONE) {
+      if (localCallback.state === STATE.NONE) {
         if (this.activeDir === Direction.Undefined) {
           return false;
         }
 
         if (event.buttons === 1) {
-          callbackLocal.capturePointer(event.pointerId);
-          callbackLocal.state = CLIPPING;
-          callbackLocal.cursorType = CURSOR_TYPE.HAND;
+          localCallback.capturePointer(event.pointerId);
+          localCallback.state = CLIPPING;
+          localCallback.cursorType = CURSOR_TYPE.HAND;
         }
       }
 
-      if (callbackLocal.state === CLIPPING) {
+      if (localCallback.state === CLIPPING) {
         const delta = newPosition.clone().sub(this.previousPosition);
         this.dragClipSurface(delta, callback);
         this.previousPosition = newPosition;

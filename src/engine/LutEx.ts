@@ -46,10 +46,10 @@ class LutEx {
 
   constructor(
     colorMap: string | ILutExEntry[] | undefined = undefined,
-    numberofColors = 32,
+    numberOfColors = 32,
     method?: InterpolationModes
   ) {
-    this.n = numberofColors;
+    this.n = numberOfColors;
     this.method = method;
     let map: ILutExEntry[] | undefined;
     if (typeof colorMap === 'string') {

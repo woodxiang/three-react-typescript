@@ -160,17 +160,17 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
-      if (callbacker.state === STATE.NONE) {
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
         if (
           event.offsetX >= this.viewPort.x &&
           event.offsetX <= this.viewPort.x + this.viewPort.z &&
-          callbacker.viewPortSize.y - event.offsetY >= this.viewPort.y &&
-          callbacker.viewPortSize.y - event.offsetY <= this.viewPort.y + this.viewPort.w
+          localCallback.viewPortSize.y - event.offsetY >= this.viewPort.y &&
+          localCallback.viewPortSize.y - event.offsetY <= this.viewPort.y + this.viewPort.w
         ) {
           // detect clicked direction
           //
-          const result = callbacker.renderTargetAndReadFloat(
+          const result = localCallback.renderTargetAndReadFloat(
             this.detectScene,
             event.offsetX,
             event.offsetY,
@@ -185,15 +185,15 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
             return false;
           }
 
-          const r = callbacker.rotationMatrix.clone();
-          // trun selected direction to Z direction.
+          const r = localCallback.rotationMatrix.clone();
+          // turn selected direction to Z direction.
           //
           let matrix = this.turnSelectedDir2Z(dir, r);
 
           // rotate around z axis to align other axes
           matrix = this.alignSelectedDir(dir, matrix);
 
-          callbacker.rotationMatrix = matrix;
+          localCallback.rotationMatrix = matrix;
 
           return true;
         }
@@ -242,7 +242,7 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
     if (rotateAxis.length() < 0.00001) {
       rotateAxis = new Vector3(0, 1, 0);
       if (v2.z + vz.z < 1) {
-        // trun back around Y axis
+        // turn back around Y axis
         rotateAngle = Math.PI;
       }
     } else {

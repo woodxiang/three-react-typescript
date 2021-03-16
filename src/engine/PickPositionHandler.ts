@@ -12,8 +12,8 @@ export default class PickPositionHandler extends ActionHandlerBase {
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
-      if (callbacker.state === STATE.NONE) {
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
         const detectScene = PositionDetectHelper.createDetectScene(callback.scene);
         const ret = callback.renderTargetAndReadFloat(
           detectScene.scene,

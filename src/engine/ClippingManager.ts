@@ -30,11 +30,11 @@ export default class ClippingManager implements IClippingManager {
   // the position cut on all directions.
   private wrappedClipPositions = [0, 0, 0, 0, 0, 0];
 
-  // clip position of negitive direction are negitive to limit position.
+  // clip position of negative direction are negative to limit position.
   private static clipPositionMapRatio = [1, 1, 1, -1, -1, -1];
 
   // to indicate if the objects clipped on specified direction.
-  private cliped = [false, false, false, false, false, false];
+  private clipped = [false, false, false, false, false, false];
 
   // the group for meshes rendering the clipping surface.
   private clipGroup = new Group();
@@ -51,7 +51,7 @@ export default class ClippingManager implements IClippingManager {
   private transformedPlanes: Plane[] = [];
 
   // the identity plane for rendering clipping surface. they are shared for all clipped object.
-  private planeGeoms: IdentityPlaneBufferGeometry[] = [];
+  private planeGeometries: IdentityPlaneBufferGeometry[] = [];
 
   private engine: RenderingEngine | undefined;
 
@@ -103,7 +103,7 @@ export default class ClippingManager implements IClippingManager {
       this.engine.root.children.splice(index, 1);
       this.clipGroup.clear();
       this.transformedPlanes.splice(0, this.transformedPlanes.length);
-      this.planeGeoms.splice(0, this.planeGeoms.length);
+      this.planeGeometries.splice(0, this.planeGeometries.length);
 
       this.boundaryHelper.bind(undefined);
       this.engine.removeActionHandler(this.clippingActionHandler);
@@ -131,10 +131,10 @@ export default class ClippingManager implements IClippingManager {
       }
 
       for (let dir = 0; dir < 6; dir += 1) {
-        this.planeGeoms.push(new IdentityPlaneBufferGeometry(dir));
+        this.planeGeometries.push(new IdentityPlaneBufferGeometry(dir));
       }
 
-      // there is an clipping manager binded.
+      // there is an clipping manager bound.
       if (root.children.findIndex((v) => v.name === ClippingManager.clippingGroupName) >= 0) {
         throw Error('clipping group already. exists.');
       }
@@ -225,7 +225,7 @@ export default class ClippingManager implements IClippingManager {
         // too large;
         this.wrappedClipPositions[dir] = this.limitBox[dir];
       } else if (newValue < this.wrappedClipPositions[otherDir] + this.minFragment) {
-        // smaller than nagitive clip position. move other side at the same time.
+        // smaller than negative clip position. move other side at the same time.
         let newOtherClippingPosition = newValue - this.minFragment;
         let newThisClippingPosition = newValue;
         if (newOtherClippingPosition < this.limitBox[otherDir]) {
@@ -236,14 +236,14 @@ export default class ClippingManager implements IClippingManager {
         this.wrappedClipPositions[otherDir] = newOtherClippingPosition;
         this.wrappedClipPositions[dir] = newThisClippingPosition;
 
-        this.cliped[otherDir] = this.wrappedClipPositions[otherDir] !== this.limitBox[otherDir];
+        this.clipped[otherDir] = this.wrappedClipPositions[otherDir] !== this.limitBox[otherDir];
       } else {
         // just in range
         this.wrappedClipPositions[dir] = newValue;
       }
-      this.cliped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
+      this.clipped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
     } else {
-      // nagitive direction
+      // negative direction
       if (newValue === this.wrappedClipPositions[dir]) {
         // No change.
         return;
@@ -266,13 +266,13 @@ export default class ClippingManager implements IClippingManager {
         this.wrappedClipPositions[otherDir] = newOtherClippingPosition;
         this.wrappedClipPositions[dir] = newThisClippingPosition;
 
-        this.cliped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
+        this.clipped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
       } else {
         // just in range
         this.wrappedClipPositions[dir] = newValue;
       }
 
-      this.cliped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
+      this.clipped[dir] = this.wrappedClipPositions[dir] !== this.limitBox[dir];
     }
 
     this.updateAllPlaneMesh();
@@ -282,7 +282,7 @@ export default class ClippingManager implements IClippingManager {
 
   /**
    * apply clipping to specified object.
-   * @param mesh the specifed object to clip
+   * @param mesh the specified object to clip
    */
   private applyClip = (mesh: Mesh | Points | undefined): void => {
     if (mesh !== undefined) {
@@ -366,7 +366,7 @@ export default class ClippingManager implements IClippingManager {
 
       // the constant is the distance to origin
       for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
-        if (!this.cliped[i]) {
+        if (!this.clipped[i]) {
           this.wrappedClipPositions[i] = this.wrappedLimitBox[i];
         }
       }
@@ -427,7 +427,7 @@ export default class ClippingManager implements IClippingManager {
 
       const planeMat = mat.clone();
 
-      const planeGeom = this.planeGeoms[i];
+      const planeGeom = this.planeGeometries[i];
 
       planeMat.clippingPlanes = this.transformedPlanes.filter((p) => p !== plane);
       planeMat.stencilWrite = true;
