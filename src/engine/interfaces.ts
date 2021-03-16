@@ -13,10 +13,10 @@ enum STATE {
   PAN,
 }
 
-enum CURSORTYPE {
+enum CURSOR_TYPE {
   NONE,
   HAND,
-  ARRAW,
+  ARROW,
   CROSS,
 }
 
@@ -32,11 +32,11 @@ enum Direction {
 
 interface IActionCallback {
   state: STATE;
-  cursorType: CURSORTYPE;
+  cursorType: CURSOR_TYPE;
   readonly scene: Scene;
   readonly cameraFov: number;
   readonly cameraEye: Vector3;
-  readonly camaerAt: Vector3;
+  readonly cameraAt: Vector3;
   readonly maxDim: number;
   rotationMatrix: Matrix4;
   readonly matrix: Matrix4;
@@ -77,7 +77,7 @@ interface IActionHandler {
   handleMiddleButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
   handleRightButtonDown(event: PointerEvent, callback: IActionCallback): boolean;
   handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean;
-  handleWhell(event: WheelEvent, callback: IActionCallback): boolean;
+  handleWheel(event: WheelEvent, callback: IActionCallback): boolean;
 }
 
 interface IRenderHandler {
@@ -114,7 +114,7 @@ interface IFlat {
 
 const renderingModelName = '#models#';
 
-export { STATE, CURSORTYPE, Direction, renderingModelName };
+export { STATE, CURSOR_TYPE, Direction, renderingModelName };
 export type {
   IActionCallback,
   IActionHandler,

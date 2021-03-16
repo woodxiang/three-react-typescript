@@ -9,7 +9,7 @@ import { Mesh } from 'three/src/objects/Mesh';
 import { Scene } from 'three/src/scenes/Scene';
 import ActionHandlerBase from './ActionHandlerBase';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
-import { CURSORTYPE, Direction, IActionCallback, STATE } from './interfaces';
+import { CURSOR_TYPE, Direction, IActionCallback, STATE } from './interfaces';
 
 export interface IClippingManager {
   clipPositions: number[];
@@ -54,9 +54,9 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
   handleLeftButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
-      if (callbacker.state === STATE.NONE) {
-        this.activeDir = this.TestReaction(event.offsetX, event.offsetY, callbacker);
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
+        this.activeDir = this.TestReaction(event.offsetX, event.offsetY, localCallback);
         if (this.activeDir === Direction.Undefined) {
           return false;
         }
@@ -70,11 +70,11 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
-      if (callbacker.state === CLIPPING) {
-        callbacker.state = STATE.NONE;
-        callbacker.releasePointer();
-        callbacker.cursorType = CURSORTYPE.NONE;
+      const localCallback = callback;
+      if (localCallback.state === CLIPPING) {
+        localCallback.state = STATE.NONE;
+        localCallback.releasePointer();
+        localCallback.cursorType = CURSOR_TYPE.NONE;
         this.activeDir = Direction.Undefined;
         return true;
       }
@@ -84,21 +84,21 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
+      const localCallback = callback;
       const newPosition = new Vector2(event.offsetX, event.offsetY);
-      if (callbacker.state === STATE.NONE) {
+      if (localCallback.state === STATE.NONE) {
         if (this.activeDir === Direction.Undefined) {
           return false;
         }
 
         if (event.buttons === 1) {
-          callbacker.capturePointer(event.pointerId);
-          callbacker.state = CLIPPING;
-          callbacker.cursorType = CURSORTYPE.HAND;
+          localCallback.capturePointer(event.pointerId);
+          localCallback.state = CLIPPING;
+          localCallback.cursorType = CURSOR_TYPE.HAND;
         }
       }
 
-      if (callbacker.state === CLIPPING) {
+      if (localCallback.state === CLIPPING) {
         const delta = newPosition.clone().sub(this.previousPosition);
         this.dragClipSurface(delta, callback);
         this.previousPosition = newPosition;
@@ -152,7 +152,7 @@ export default class ClippingActionHandler extends ActionHandlerBase {
     const screenScale = ratio > 1 ? viewSize.height / 2.0 : viewSize.width / 2.0;
 
     const ratio2 =
-      (Math.tan(((callback.cameraFov / 180) * Math.PI) / 2.0) * (callback.camaerAt.z - callback.cameraEye.z)) /
+      (Math.tan(((callback.cameraFov / 180) * Math.PI) / 2.0) * (callback.cameraAt.z - callback.cameraEye.z)) /
       screenScale;
     const delta = pd.z === 1 ? 0 : (dotMultiple * ratio2) / (1 - pd.z * pd.z) / (2.0 / callback.maxDim);
 

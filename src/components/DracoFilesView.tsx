@@ -14,7 +14,7 @@ interface IDracoFilesViewProps {
   dracoLoaded: boolean;
   dracoFiles: string[];
   selectedDracos: string[];
-  onSelctedDracoChanged: (newSelections: string) => void;
+  onSelectedDracoChanged: (newSelections: string) => void;
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -28,7 +28,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 export default function DracoFilesView(props: IDracoFilesViewProps): JSX.Element {
-  const { dracoLoaded, dracoFiles, selectedDracos, onSelctedDracoChanged } = props;
+  const { dracoLoaded, dracoFiles, selectedDracos, onSelectedDracoChanged: onSelctedDracoChanged } = props;
   const classes = useStyles();
   if (!dracoLoaded) {
     return <div>Draco Loading</div>;

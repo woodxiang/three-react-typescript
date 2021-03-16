@@ -25,7 +25,7 @@ import { encode } from './utils/encoder';
 import {
   IActionCallback,
   STATE,
-  CURSORTYPE,
+  CURSOR_TYPE,
   IActionHandler,
   IHitTest,
   IHitTestResult,
@@ -77,7 +77,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private inactiveFlatMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
-  private activedFlatMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+  private activeFlatMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
 
   private inactivePointMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
 
@@ -103,7 +103,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedRenderHandlers: IRenderHandler[] = [];
 
-  private wrappedCursorType: CURSORTYPE = CURSORTYPE.ARRAW;
+  private wrappedCursorType: CURSOR_TYPE = CURSOR_TYPE.ARROW;
 
   private capturedPointerId = -1;
 
@@ -134,7 +134,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    */
   public init(div: HTMLDivElement, width: number, height: number): void {
     if (this.parentDiv) {
-      throw Error('already initialzied.');
+      throw Error('already initialized.');
     }
     this.parentDiv = div;
     this.camera.position.set(0, 0, 10);
@@ -199,20 +199,20 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return this.wrappedScene;
   }
 
-  get cursorType(): CURSORTYPE {
+  get cursorType(): CURSOR_TYPE {
     return this.wrappedCursorType;
   }
 
-  set cursorType(newType: CURSORTYPE) {
+  set cursorType(newType: CURSOR_TYPE) {
     this.wrappedCursorType = newType;
     switch (newType) {
-      case CURSORTYPE.CROSS:
+      case CURSOR_TYPE.CROSS:
         this.renderer.domElement.style.cursor = 'crosshair';
         break;
-      case CURSORTYPE.HAND:
+      case CURSOR_TYPE.HAND:
         this.renderer.domElement.style.cursor = 'move';
         break;
-      case CURSORTYPE.ARRAW:
+      case CURSOR_TYPE.ARROW:
         this.renderer.domElement.style.cursor = 'pointer';
         break;
       default:
@@ -258,7 +258,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   // eslint-disable-next-line class-methods-use-this
-  get camaerAt(): Vector3 {
+  get cameraAt(): Vector3 {
     return new Vector3(0, 0, 0);
   }
 
@@ -452,11 +452,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.renderer.setRenderTarget(null);
 
-    const jpgdata = encode({ data, width, height }, 100);
+    const jpgData = encode({ data, width, height }, 100);
 
     target.dispose();
 
-    return jpgdata.data;
+    return jpgData.data;
   }
 
   public renderTargetAndReadFloat(
@@ -503,9 +503,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param yPos y hit position
    */
   public hit(xPos: number, yPos: number): boolean {
-    const hitTestReuslt = this.hitTest(xPos, yPos);
-    if (this.hitTestHandler && hitTestReuslt) {
-      return this.hitTestHandler.onHit(hitTestReuslt);
+    const hitTestResult = this.hitTest(xPos, yPos);
+    if (this.hitTestHandler && hitTestResult) {
+      return this.hitTestHandler.onHit(hitTestResult);
     }
     return false;
   }
@@ -519,7 +519,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   /**
    * update rotation matrix and apply it.
-   * @param mat new matrix for rotaion.
+   * @param mat new matrix for rotation.
    */
   public set rotationMatrix(mat: Matrix4) {
     this.wrappedRotateMatrix = mat;
@@ -560,9 +560,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       if (!Array.isArray(mesh.material)) {
         const inactiveFlatMaterial = this.inactiveFlatMaterial.clone();
         inactiveFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
-        const activedFlatMaterial = this.activedFlatMaterial.clone();
-        activedFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
-        mesh.material = [mesh.material, inactiveFlatMaterial, activedFlatMaterial];
+        const activeFlatMaterial = this.activeFlatMaterial.clone();
+        activeFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+        mesh.material = [mesh.material, inactiveFlatMaterial, activeFlatMaterial];
       }
       const geo = mesh.geometry as BufferGeometry;
       if (!geo) {
@@ -728,7 +728,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.renderer.domElement.addEventListener('wheel', (event: WheelEvent) => {
       for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
         const handler = this.wrappedActionHandlers[i];
-        if (handler.isEnabled && handler.handleWhell(event, this)) break;
+        if (handler.isEnabled && handler.handleWheel(event, this)) break;
       }
       event?.preventDefault();
     });
@@ -826,7 +826,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.wrappedBoundingBox = boundingBox;
 
     if (boundingBox) {
-      // calculate the matrix to adapte object position and scale to the
+      // calculate the matrix to adapted object position and scale to the
       // center of the clip space.
 
       const adapt = RenderingEngine.calculateAdaptMatrix(boundingBox);
@@ -837,7 +837,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
       this.domainRangeChangedEvent.trigger(boundingBox);
 
-      // apply the adapte scale.
+      // apply the adapt scale.
       this.updateRootObjectMatrix();
       this.selectionHelper.setMaxSize(this.wrappedMaxDim);
     } else {

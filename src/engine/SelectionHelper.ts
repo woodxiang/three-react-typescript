@@ -9,7 +9,7 @@ import { Mesh } from 'three/src/objects/Mesh';
 
 /**
  * This helper class is use to help calculate connected flats
- * Tips the attributes can not update inplace because when it compare
+ * Tips the attributes can not update in place because when it compare
  * with cache it only compare the object reference.
  * REMARK: all this functions assume the geometry is not indexed.
  */
@@ -56,7 +56,7 @@ export default class SelectionHelper {
 
   /**
    * Select a connected flat from a geometry.
-   * @param geo input BufferGeomety
+   * @param geo input BufferGeometry
    * @param selectedTriangleIndex index of the selected triangle
    */
   public findFlatByFace(
@@ -69,7 +69,7 @@ export default class SelectionHelper {
   } {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
-      throw Error('no postion.');
+      throw Error('no position.');
     }
     const normals = <BufferAttribute>geo.getAttribute('normal');
     if (!normals) {
@@ -139,7 +139,7 @@ export default class SelectionHelper {
     const tmpList: number[] = [];
 
     tmpList.push(selectedTriangleIndex);
-    const adjencedTriangles: number[] = [];
+    const adjacentTriangles: number[] = [];
 
     while (tmpList.length > 0) {
       const current = tmpList.pop();
@@ -149,7 +149,7 @@ export default class SelectionHelper {
         const toRemove: number[] = [];
         zFilteredTrianglesIndex.forEach((index) => {
           const itFace = SelectionHelper.getFace(positions, index);
-          if (this.areTrianglesAdjencent(currentFace, itFace)) {
+          if (this.areTrianglesAdjacent(currentFace, itFace)) {
             toRemove.push(index);
             tmpList.push(index);
           }
@@ -158,19 +158,19 @@ export default class SelectionHelper {
         zFilteredTrianglesIndex = zFilteredTrianglesIndex.filter((index) => {
           return toRemove.indexOf(index) < 0;
         });
-        adjencedTriangles.push(current);
+        adjacentTriangles.push(current);
       }
     }
 
-    adjencedTriangles.sort((v1, v2) => v1 - v2);
+    adjacentTriangles.sort((v1, v2) => v1 - v2);
 
     let area = 0.0;
-    adjencedTriangles.forEach((index) => {
+    adjacentTriangles.forEach((index) => {
       const itFace = SelectionHelper.getFace(positions, index);
       area += itFace.getArea();
     });
 
-    return { faceIndexes: adjencedTriangles, normal: selectedTriangleNormal, area };
+    return { faceIndexes: adjacentTriangles, normal: selectedTriangleNormal, area };
   }
 
   public static updateGroups(
@@ -181,7 +181,7 @@ export default class SelectionHelper {
   ): void {
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
-      throw Error('no postion.');
+      throw Error('no position.');
     }
 
     if (positions.count < (inactiveFaces.faces.length + activeFaces.faces.length) * 3) {
@@ -246,7 +246,7 @@ export default class SelectionHelper {
     geo.clearGroups();
     const positions = <BufferAttribute>geo.getAttribute('position');
     if (!positions) {
-      throw Error('no postion.');
+      throw Error('no position.');
     }
     geo.addGroup(0, positions.count, 0);
   }
@@ -295,7 +295,7 @@ export default class SelectionHelper {
     }
   }
 
-  private areTrianglesAdjencent(face1: Triangle, face2: Triangle): boolean {
+  private areTrianglesAdjacent(face1: Triangle, face2: Triangle): boolean {
     const dirsInTriangle1 = SelectionHelper.getTriangleEdgeDirs(face1);
     const dirsInTriangle2 = SelectionHelper.getTriangleEdgeDirs(face2);
     for (let i = 0; i < 3; i += 1) {

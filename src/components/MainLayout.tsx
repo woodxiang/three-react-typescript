@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Mesh } from 'three/src/objects/Mesh';
 import { saveAs } from 'file-saver';
 import { Points } from 'three/src/objects/Points';
-import PositionDetectHelper from '../engine/PositionDetectHelper';
+import { Color } from 'three/src/math/Color';
 import { Direction } from '../engine/interfaces';
 import RenderingEngine from '../engine/RenderingEngine';
 import StlFilesView from './StlFilesView';
@@ -16,7 +16,6 @@ import SensorManager from '../engine/SensorManager';
 import ClippingManager from '../engine/ClippingManager';
 import DracoFilesView from './DracoFilesView';
 import ClippingSelector from './ClippingSelector';
-import { Color } from 'three';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -40,10 +39,10 @@ const useStyles = makeStyles((theme: Theme) =>
 export default function MainLayout(): JSX.Element {
   const [stlLoaded, setStlLoaded] = useState(false); // state to indicate all stl loaded.
   const [dracoLoaded, setDracoLoaded] = useState(false);
-  const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
+  const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stl Files.
   const [dracoFiles, setDracoFiles] = useState<string[]>([]);
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
-  const [selectedDracos, setSelectedDracos] = useState<string[]>([]);
+  const [selectedDracoFiles, setSelectedDracoFiles] = useState<string[]>([]);
   const [display3dView, setDisplay3dView] = useState<boolean>(true);
   const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(false);
   const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(false);
@@ -128,8 +127,8 @@ export default function MainLayout(): JSX.Element {
 
   const handleSelectedDracoChanged = async (item: string) => {
     const engine = engineRef.current;
-    const index = selectedDracos.indexOf(item);
-    const newSelectedDracos = [...selectedDracos];
+    const index = selectedDracoFiles.indexOf(item);
+    const newSelectedDracos = [...selectedDracoFiles];
     if (index !== -1) {
       newSelectedDracos.splice(index, 1);
       if (engine) {
@@ -142,7 +141,7 @@ export default function MainLayout(): JSX.Element {
       }
     }
 
-    setSelectedDracos(newSelectedDracos);
+    setSelectedDracoFiles(newSelectedDracos);
   };
 
   const onToggleDisplay3dView = () => {
@@ -226,9 +225,9 @@ export default function MainLayout(): JSX.Element {
       throw Error('invalid engine.');
     }
 
-    const jpegdata = engineRef.current.exportImage(3840, 2160);
+    const jpegData = engineRef.current.exportImage(3840, 2160);
 
-    saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
+    saveAs(new Blob([jpegData], { type: 'image/jpeg' }), 'test.jpeg');
   };
 
   const onTest = () => {
@@ -270,7 +269,7 @@ export default function MainLayout(): JSX.Element {
   const setupEngine = async (eg: RenderingEngine | undefined) => {
     if (engineRef.current !== eg) {
       if (engineRef.current) {
-        // unintialize old engine.
+        // uninitialized old engine.
         flatsManagerRef.current.bind(undefined);
         clippingManagerRef.current.bind(undefined);
       }
@@ -305,14 +304,14 @@ export default function MainLayout(): JSX.Element {
         stlLoaded={stlLoaded}
         stlFiles={stlFiles}
         selectedStls={selectedStls}
-        onSelctedStlChanged={handleSelectedStlChanged}
+        onSelectedStlChanged={handleSelectedStlChanged}
       />
     ) : (
       <DracoFilesView
         dracoLoaded={dracoLoaded}
         dracoFiles={dracoFiles}
-        selectedDracos={selectedDracos}
-        onSelctedDracoChanged={handleSelectedDracoChanged}
+        selectedDracos={selectedDracoFiles}
+        onSelectedDracoChanged={handleSelectedDracoChanged}
       />
     );
 

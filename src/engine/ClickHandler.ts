@@ -13,13 +13,13 @@ export default class ClickHandler extends ActionHandlerBase {
 
   handleLeftButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
-      const callbacker = callback;
-      if (callbacker.state === STATE.NONE) {
-        const hitTester = <IHitTest>(<unknown>callbacker);
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
+        const hitTester = <IHitTest>(<unknown>localCallback);
         if (hitTester) {
           return hitTester.hit(
-            (event.offsetX / callbacker.viewPortSize.x) * 2 - 1,
-            -(event.offsetY / callbacker.viewPortSize.y) * 2 + 1
+            (event.offsetX / localCallback.viewPortSize.x) * 2 - 1,
+            -(event.offsetY / localCallback.viewPortSize.y) * 2 + 1
           );
         }
       }
