@@ -1,7 +1,6 @@
 import { FrontSide } from 'three/src/constants';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Material } from 'three/src/materials/Material';
-import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
@@ -13,6 +12,7 @@ import DracoExLoader from './loaders/DracoExLoader';
 import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
 import TextureFactory from './TextureFactory';
 import LutEx from './LutEx';
+import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -47,11 +47,14 @@ export default class MeshFactory {
     const materialColor = new Color();
     materialColor.set(color);
 
-    const material = new MeshPhongMaterial({
-      color: materialColor,
+    const material = new MeshPhongExMaterial({
+      diffuse: materialColor,
+      reflectivity: 0.0,
       side: FrontSide,
       opacity,
       transparent: opacity < 1,
+      clipping: true,
+      lights: true,
     });
     material.specular.set(0.9);
 
@@ -100,21 +103,25 @@ export default class MeshFactory {
     }
     const material = new ColorMapPhongMaterial(range.min, range.max, TextureFactory.fromLut(volatileLut), {
       opacity,
+      clipping: true,
+      lights: true,
       transparent: opacity < 1,
     });
     material.specular.set(0.9);
     return material;
   }
 
-  public static createSolidMaterial(color: string, opacity = 1): MeshPhongMaterial {
+  public static createSolidMaterial(color: string, opacity = 1): MeshPhongExMaterial {
     const materialColor = new Color();
     materialColor.set(color);
 
-    return new MeshPhongMaterial({
-      color: materialColor,
+    return new MeshPhongExMaterial({
+      diffuse: materialColor,
       side: FrontSide,
       opacity,
       transparent: opacity < 1,
+      clipping: true,
+      lights: true,
     });
   }
 

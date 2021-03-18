@@ -1,9 +1,10 @@
-import { LineBasicMaterial } from 'three/src/materials/LineBasicMaterial';
+import { Color } from 'three/src/math/Color';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { LineSegments } from 'three/src/objects/LineSegments';
 import IdentityBoxBoundaryBufferGeometry from './Geometry/IdentityBoxBoundaryBufferGeometry';
+import LineBasicExMaterial from './Materials/LineBasicExMaterial';
 import RenderingEngine from './RenderingEngine';
 
 /**
@@ -50,7 +51,10 @@ export default class ClippingBoundaryHelper {
 
       root.add(this.clippingBoundary);
       const boundaryGeo = new IdentityBoxBoundaryBufferGeometry();
-      const line = new LineSegments(boundaryGeo, new LineBasicMaterial({ color: 'white' }));
+      const line = new LineSegments(
+        boundaryGeo,
+        new LineBasicExMaterial({ diffuse: new Color('white'), afterProjectMatrix: this.engine.afterProjectMatrix })
+      );
 
       this.clippingBoundary.add(line);
     }

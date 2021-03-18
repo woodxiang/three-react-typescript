@@ -98,7 +98,16 @@ export default class RotationHandler extends ActionHandlerBase {
     if (this.isEnabled) {
       const localCallback = callback;
       if (localCallback.state === STATE.NONE) {
-        this.zoom(event.deltaY);
+        if (event.ctrlKey) {
+          this.zoom3d(event.deltaY);
+        } else {
+          this.zoom2d(
+            (event.offsetX / callback.viewPortSize.x) * 2 - 1,
+            1 - (event.offsetY / callback.viewPortSize.y) * 2,
+            event.deltaY,
+            callback
+          );
+        }
         return true;
       }
     }
@@ -106,7 +115,18 @@ export default class RotationHandler extends ActionHandlerBase {
     return false;
   }
 
-  private zoom(delta: number): void {
+  // eslint-disable-next-line class-methods-use-this
+  private zoom2d(x: number, y: number, deltaY: number, callback: IActionCallback): void {
+    const ratio = 1.0 - deltaY / 120 / 10;
+    const m = new Matrix4();
+    m.makeTranslation(x, y, 0);
+    m.scale(new Vector3(ratio, ratio, 1));
+    m.multiply(new Matrix4().makeTranslation(-x, -y, 0));
+    m.multiply(callback.afterProjectMatrix);
+    callback.afterProjectMatrix.copy(m);
+  }
+
+  private zoom3d(delta: number): void {
     this.camera.position.z *= 1.0 + delta / 120 / 10;
   }
 

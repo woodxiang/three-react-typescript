@@ -13,7 +13,7 @@ import SensorManager from './SensorManager';
 export default class ContentManager {
   private engine: RenderingEngine | undefined;
 
-  private wrappedEnableLegend = true;
+  private wrappedEnableLegend = false;
 
   private readonly legend: LegendManager = new LegendManager();
 

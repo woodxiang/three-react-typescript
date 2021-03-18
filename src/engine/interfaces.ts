@@ -39,6 +39,7 @@ interface IActionCallback {
   readonly cameraAt: Vector3;
   readonly maxDim: number;
   rotationMatrix: Matrix4;
+  afterProjectMatrix: Matrix4;
   readonly matrix: Matrix4;
   readonly viewPortSize: Vector2;
   hitTest(xPos: number, yPos: number): IHitTestResult | null;

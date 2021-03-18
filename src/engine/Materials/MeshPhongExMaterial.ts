@@ -3,46 +3,43 @@ import { ShaderLib } from 'three/src/renderers/shaders/ShaderLib';
 import { UniformsUtils } from 'three/src/renderers/shaders/UniformsUtils';
 import { Color } from 'three/src/math/Color';
 import { Material } from 'three/src/materials/Material';
-import { Texture } from 'three/src/textures/Texture';
 import { Matrix4 } from 'three/src/math/Matrix4';
-import vert from '../shaders/colormap.vert.glsl';
-import frag from '../shaders/colormap.frag.glsl';
+import vert from '../shaders/meshphongex.vert.glsl';
+import frag from '../shaders/meshphongex.frag.glsl';
 import IAfterProject from './IAfterProject';
-import ISealable from './ISealable';
 
-export interface ColorMapPhongMaterialParameters extends ShaderMaterialParameters {
+export interface MeshPhongExMaterialParameters extends ShaderMaterialParameters {
   specular?: Color;
+
   shininess?: number;
+
+  diffuse?: Color;
+
+  reflectivity?: number;
+
+  afterProjectMatrix?: Matrix4;
 }
 
-export default class ColorMapPhongMaterial extends ShaderMaterial implements IAfterProject, ISealable {
+export default class MeshPhongExMaterial extends ShaderMaterial implements IAfterProject {
   public specular: Color;
 
   public shininess: number;
 
-  public colorMapTexture: Texture;
+  public reflectivity: number;
 
-  public colorMapOffset: number;
-
-  public colorMapRatio: number;
+  public diffuse: Color;
 
   public afterProjectMatrix: Matrix4;
 
-  public readonly isSealable: boolean = false;
-
-  constructor(min: number, max: number, texture: Texture, parameters: ShaderMaterialParameters | undefined) {
+  constructor(parameters: MeshPhongExMaterialParameters | undefined) {
     super();
 
     this.specular = new Color(0x111111);
     this.shininess = 30;
-    this.colorMapTexture = texture;
-
-    const colorMapOffset = -min;
-    const colorMapRatio = 1 / (max - min);
-    this.colorMapOffset = colorMapOffset;
-    this.colorMapRatio = colorMapRatio;
-
+    this.diffuse = new Color(0xffffff);
+    this.reflectivity = 1;
     this.afterProjectMatrix = new Matrix4();
+
     if (parameters) this.setValues(parameters);
 
     this.updateUniforms();
@@ -53,39 +50,31 @@ export default class ColorMapPhongMaterial extends ShaderMaterial implements IAf
     this.uniforms.afterProjectMatrix.value = mat;
   }
 
-  public updateRange(min: number, max: number): void {
-    const colorMapOffset = -min;
-    const colorMapRatio = 1 / (max - min);
-    this.uniforms.colorMapOffset = { value: colorMapOffset };
-    this.uniforms.colorMapRatio = { value: colorMapRatio };
-  }
-
   public copy(source: Material): this {
     super.copy(source);
 
-    const v = <ColorMapPhongMaterial>this;
+    const v = <MeshPhongExMaterial>source;
     if (!v) {
       throw Error('invalid input');
     }
 
     this.specular = v.specular;
     this.shininess = v.shininess;
-    this.colorMapOffset = v.colorMapOffset;
-    this.colorMapRatio = v.colorMapRatio;
+    this.diffuse = v.diffuse;
     this.afterProjectMatrix = v.afterProjectMatrix;
 
     this.updateUniforms();
+
     return this;
   }
 
-  private updateUniforms(): void {
+  private updateUniforms() {
     const uniforms = UniformsUtils.clone(ShaderLib.phong.uniforms);
     uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
     uniforms.specular = { value: this.specular };
     uniforms.shininess = { value: this.shininess };
-    uniforms.colorMapTexture = { value: this.colorMapTexture };
-    uniforms.colorMapOffset = { value: this.colorMapOffset };
-    uniforms.colorMapRatio = { value: this.colorMapRatio };
+    uniforms.diffuse = { value: this.diffuse };
+    uniforms.reflectivity = { value: this.reflectivity };
 
     this.uniforms = uniforms;
     this.vertexShader = vert;

@@ -222,7 +222,7 @@ export default function MainLayout(): JSX.Element {
     const contentManager = contentManagerRef.current;
     if (engineRef.current !== eg) {
       if (engineRef.current) {
-        // unintialize old engine.
+        // uninitialized old engine.
         contentManager.bind(undefined);
       }
 
