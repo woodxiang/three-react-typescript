@@ -1,3 +1,4 @@
+import { Color } from 'three';
 import {
   AlwaysStencilFunc,
   BackSide,
@@ -9,7 +10,6 @@ import {
 } from 'three/src/constants';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Material } from 'three/src/materials/Material';
-import { MeshBasicMaterial } from 'three/src/materials/MeshBasicMaterial';
 import { Box3 } from 'three/src/math/Box3';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Plane } from 'three/src/math/Plane';
@@ -22,6 +22,9 @@ import ClippingBoundaryHelper from './ClippingBoundaryHelper';
 import { normals } from './Geometry/boxConstants';
 import IdentityPlaneBufferGeometry from './Geometry/IdentityPlaneBufferGeometry';
 import { Direction, ITransformed, renderingModelName } from './interfaces';
+import ISealable from './Materials/ISealable';
+import MeshBasicExMaterial from './Materials/MeshBasicExMaterial';
+import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
 import RenderingEngine from './RenderingEngine';
 
 export default class ClippingManager implements IClippingManager {
@@ -421,11 +424,21 @@ export default class ClippingManager implements IClippingManager {
 
     for (let i = 0; i < this.wrappedClipPositions.length; i += 1) {
       const plane = this.transformedPlanes[i];
-      const stencilPlaneGroup = ClippingManager.createPlaneStencilGroup(mesh.geometry, plane, iMesh * 6 + i + 1);
+      const stencilPlaneGroup = this.createPlaneStencilGroup(mesh.geometry, plane, iMesh * 6 + i + 1);
 
       const mat = mesh.material instanceof Array ? mesh.material[0] : mesh.material;
 
-      const planeMat = mat.clone();
+      const v = (mat as unknown) as ISealable;
+
+      const planeMat =
+        v.isSealable === undefined || v.isSealable
+          ? mat.clone()
+          : new MeshPhongExMaterial({
+              diffuse: new Color('blue'),
+              clipping: true,
+              lights: true,
+              afterProjectMatrix: this.engine?.afterProjectMatrix,
+            });
 
       const planeGeom = this.planeGeometries[i];
 
@@ -511,9 +524,12 @@ export default class ClippingManager implements IClippingManager {
     return planeMatrix;
   }
 
-  private static createPlaneStencilGroup(geometry: BufferGeometry, plane: Plane, renderOrder: number): Group {
+  private createPlaneStencilGroup(geometry: BufferGeometry, plane: Plane, renderOrder: number): Group {
+    if (!this.engine) {
+      throw Error('none engine.');
+    }
     const group = new Group();
-    const baseMat = new MeshBasicMaterial();
+    const baseMat = new MeshBasicExMaterial({ afterProjectMatrix: this.engine.afterProjectMatrix, clipping: true });
     baseMat.depthWrite = false;
     baseMat.depthTest = false;
     baseMat.colorWrite = false;

@@ -1,5 +1,4 @@
 import { Float32BufferAttribute } from 'three/src/core/BufferAttribute';
-import { MeshBasicMaterial } from 'three/src/materials/MeshBasicMaterial';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Vector3 } from 'three/src/math/Vector3';
@@ -10,6 +9,8 @@ import { Scene } from 'three/src/scenes/Scene';
 import ActionHandlerBase from './ActionHandlerBase';
 import IdentityBoxBufferGeometry from './Geometry/IdentityBoxBufferGeometry';
 import { CURSOR_TYPE, Direction, IActionCallback, STATE } from './interfaces';
+import IAfterProject from './Materials/IAfterProject';
+import MeshBasicExMaterial from './Materials/MeshBasicExMaterial';
 
 export interface IClippingManager {
   clipPositions: number[];
@@ -48,7 +49,7 @@ export default class ClippingActionHandler extends ActionHandlerBase {
     }
 
     testGeo.setAttribute('color', new Float32BufferAttribute(colors, 3));
-    this.clipperMesh = new Mesh(testGeo, new MeshBasicMaterial({ vertexColors: true }));
+    this.clipperMesh = new Mesh(testGeo, new MeshBasicExMaterial({ vertexColors: true }));
     this.root.add(this.clipperMesh);
   }
 
@@ -119,6 +120,9 @@ export default class ClippingActionHandler extends ActionHandlerBase {
 
     this.root.matrix = callback.matrix;
     this.root.matrixAutoUpdate = false;
+
+    const material = (this.clipperMesh.material as unknown) as IAfterProject;
+    material.ReplaceAfterProjectMatrix(callback.afterProjectMatrix);
 
     const ret = callback.renderTargetAndReadFloat(this.scene, offsetX, offsetY, undefined, undefined);
     return Math.round(ret[0]) - 1;

@@ -3,6 +3,7 @@ import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Scene } from 'three/src/scenes/Scene';
 import { ITransformed } from './interfaces';
+import IAfterProject from './Materials/IAfterProject';
 import PositionDetectMaterial from './Materials/PositionDetectMaterial';
 
 export default class PositionDetectHelper {
@@ -19,7 +20,9 @@ export default class PositionDetectHelper {
   }
 
   public static createPositionDetectMaterial(srcMaterial: Material, id: number): PositionDetectMaterial {
-    const ret = new PositionDetectMaterial(id);
+    const ap = <IAfterProject>(<unknown>srcMaterial);
+
+    const ret = new PositionDetectMaterial(id, { afterProjectMatrix: ap.afterProjectMatrix, clipping: true });
     ret.clippingPlanes = srcMaterial.clippingPlanes;
     ret.stencilWrite = srcMaterial.stencilWrite;
     ret.stencilRef = srcMaterial.stencilRef;

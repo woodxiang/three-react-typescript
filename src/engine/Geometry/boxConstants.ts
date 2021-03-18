@@ -149,7 +149,7 @@ function concatInt16Attribute(input: number[][], itemSize: number): Uint16Buffer
   return new Uint16BufferAttribute(ret, itemSize);
 }
 
-function getVerticeOfSurface(dir: Direction): Float32BufferAttribute {
+function getVerticesOfSurface(dir: Direction): Float32BufferAttribute {
   let indexes: number[] = [];
   if (dir >= 0) {
     indexes = [...triangles[dir * 2], ...triangles[dir * 2 + 1]];
@@ -320,7 +320,7 @@ export {
   edgesOnSurface,
   concatFloatAttribute,
   concatInt16Attribute,
-  getVerticeOfSurface,
+  getVerticesOfSurface,
   getNormalOfSurface,
   getUVOfSurface,
   generateArrow,

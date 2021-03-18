@@ -13,7 +13,6 @@ import { Vector2 } from 'three/src/math/Vector2';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
-import { MeshPhongMaterial } from 'three/src/materials/MeshPhongMaterial';
 import { FloatType, FrontSide, LinearFilter, UnsignedByteType } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
@@ -37,6 +36,8 @@ import RotationHandler from './RotationHandler';
 import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
 import TextureFactory from './TextureFactory';
+import IAfterProject from './Materials/IAfterProject';
+import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
 
 /**
  * Rendering Engine
@@ -63,19 +64,41 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedRotateMatrix: Matrix4 = new Matrix4();
 
+  private wrappedAfterProjectMatrix: Matrix4 = new Matrix4();
+
   private wrappedMaxDim = 1;
 
   private wrappedBoundingBox: Box3 | undefined;
 
   private selectionHelper = new SelectionHelper();
 
-  private inactiveFlatMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
+  private inactiveFlatMaterial = new MeshPhongExMaterial({
+    diffuse: new Color('#00FF00'),
+    side: FrontSide,
+    clipping: true,
+    lights: true,
+  });
 
-  private activeFlatMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+  private activeFlatMaterial = new MeshPhongExMaterial({
+    diffuse: new Color('#FF0000'),
+    side: FrontSide,
+    clipping: true,
+    lights: true,
+  });
 
-  private inactivePointMaterial = new MeshPhongMaterial({ color: '#00FF00', side: FrontSide });
+  private inactivePointMaterial = new MeshPhongExMaterial({
+    diffuse: new Color('#00FF00'),
+    side: FrontSide,
+    clipping: true,
+    lights: true,
+  });
 
-  private activePointMaterial = new MeshPhongMaterial({ color: '#FF0000', side: FrontSide });
+  private activePointMaterial = new MeshPhongExMaterial({
+    diffuse: new Color('#FF0000'),
+    side: FrontSide,
+    clipping: true,
+    lights: true,
+  });
 
   public wrappedAdaptRange: Box3 | undefined;
 
@@ -102,6 +125,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private wrappedCursorType: CURSOR_TYPE = CURSOR_TYPE.ARROW;
 
   private capturedPointerId = -1;
+
+  constructor() {
+    this.activeFlatMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
+    this.inactiveFlatMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
+    this.activePointMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
+    this.inactivePointMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
+  }
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -303,6 +333,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('invalid target object group');
     }
 
+    this.updateMeshAfterProjectMatrix(newMesh);
     this.targetObject3D.add(newMesh);
 
     this.updateScales();
@@ -355,10 +386,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     if (mesh) {
       const material = Array.isArray(mesh.material)
-        ? (mesh.material[0] as MeshPhongMaterial)
-        : (mesh.material as MeshPhongMaterial);
+        ? (mesh.material[0] as MeshPhongExMaterial)
+        : (mesh.material as MeshPhongExMaterial);
       if (material) {
-        material.color.set(color);
+        material.diffuse.set(color);
 
         return true;
       }
@@ -504,11 +535,24 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.updateRootObjectMatrix();
   }
 
+  public get afterProjectMatrix(): Matrix4 {
+    return this.wrappedAfterProjectMatrix;
+  }
+
+  public set afterProjectMatrix(mat: Matrix4) {
+    this.wrappedAfterProjectMatrix.copy(mat);
+  }
+
   public get matrix(): Matrix4 {
     const matrix = this.wrappedRotateMatrix.clone();
     matrix.multiply(this.adaptMatrix);
 
     return matrix;
+  }
+
+  public resetView(): void {
+    this.afterProjectMatrix = new Matrix4();
+    this.rotationMatrix = new Matrix4();
   }
 
   /**
@@ -627,6 +671,22 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
   }
 
+  private updateMeshAfterProjectMatrix(mesh: Mesh | Points) {
+    if (mesh.material instanceof Array) {
+      mesh.material.forEach((v) => {
+        const m = (v as unknown) as IAfterProject;
+        if (m.ReplaceAfterProjectMatrix) {
+          m.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
+        }
+      });
+    } else {
+      const m = (mesh.material as unknown) as IAfterProject;
+      if (m.ReplaceAfterProjectMatrix) {
+        m.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
+      }
+    }
+  }
+
   private initEvents() {
     this.renderer.domElement.addEventListener('pointerdown', (event: PointerEvent) => {
       for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
@@ -728,9 +788,12 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param yPos hit position y
    */
   public hitTest(xPos: number, yPos: number): IHitTestResult | null {
+    const p = new Vector3(xPos, yPos, 0);
+    p.applyMatrix4(this.afterProjectMatrix.clone().invert());
+
     const rayCaster = new Raycaster();
     rayCaster.layers.set(2);
-    rayCaster.setFromCamera({ x: xPos, y: yPos }, this.camera);
+    rayCaster.setFromCamera({ x: p.x, y: p.y }, this.camera);
     this.targetObject3D.children.forEach((element) => {
       if (element.visible) {
         element.layers.enable(2);

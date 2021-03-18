@@ -27,6 +27,7 @@ attribute float generic;
 uniform sampler2D colorMapTexture;
 uniform float colorMapOffset;
 uniform float colorMapRatio;
+uniform mat4 afterProjectMatrix;
 
 varying vec4 vColor;
 
@@ -53,6 +54,9 @@ void main() {
 #include <skinning_vertex>
 #include <displacementmap_vertex>
 #include <project_vertex>
+
+  gl_Position = afterProjectMatrix*gl_Position;
+
 #include <logdepthbuf_vertex>
 #include <clipping_planes_vertex>
 
