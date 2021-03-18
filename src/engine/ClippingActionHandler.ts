@@ -129,6 +129,9 @@ export default class ClippingActionHandler extends ActionHandlerBase {
   }
 
   private dragClipSurface(deltaPos: Vector2, callback: IActionCallback) {
+    const v3 = new Vector3(deltaPos.x, deltaPos.y, 0);
+    v3.applyMatrix4(callback.afterProjectMatrix.clone().invert());
+
     const dirNormalMap = [
       new Vector4(1, 0, 0, 1),
       new Vector4(0, 1, 0, 1),
@@ -148,7 +151,7 @@ export default class ClippingActionHandler extends ActionHandlerBase {
     matrixShift.elements[15] = 1;
 
     pd.applyMatrix4(matrixShift);
-    const p1 = new Vector3(deltaPos.x, -deltaPos.y, 0);
+    const p1 = new Vector3(v3.x, -v3.y, 0);
     const p2 = new Vector3(pd.x, pd.y, pd.z);
     const dotMultiple = p1.clone().dot(p2);
 
