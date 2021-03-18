@@ -1,10 +1,10 @@
-import { PointsMaterial } from 'three/src/materials/PointsMaterial';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
 import ClippingManager from './ClippingManager';
 import FlatManager from './FlatsManager';
 import LegendManager from './LegendManager';
+import PointsExMaterial from './Materials/PointsExMaterial';
 import MeshFactory, { GeometryDataType } from './MeshFactory';
 import NavigatorHandler from './NavigatorHandler';
 import RenderingEngine from './RenderingEngine';
@@ -142,7 +142,7 @@ export default class ContentManager {
     this.dracoExPoints.set(url, { color, opacity: 1, visible: true });
     if (this.engine) {
       const geometry = await MeshFactory.loadAsync(url, GeometryDataType.DracoExPoints);
-      const material = new PointsMaterial({ color: new Color(color), size: 0.05 });
+      const material = new PointsExMaterial({ diffuse: new Color(color), size: 0.05 });
       const points = new Points(geometry, material);
       points.name = url;
       this.engine.addMesh(points);

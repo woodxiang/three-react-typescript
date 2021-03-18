@@ -6,13 +6,13 @@ import { Mesh } from 'three/src/objects/Mesh';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
-import { PointsMaterial } from 'three/src/materials/PointsMaterial';
 import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './loaders/DracoExLoader';
 import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
 import TextureFactory from './TextureFactory';
 import LutEx from './LutEx';
 import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
+import PointsExMaterial from './Materials/PointsExMaterial';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -74,7 +74,7 @@ export default class MeshFactory {
     const range = MeshFactory.calculateValueRange(geometry, 'generic');
     let material: Material;
     if (!range) {
-      material = new PointsMaterial({ color: new Color('cyan'), size: 0.05 });
+      material = new PointsExMaterial({ diffuse: new Color('cyan'), size: 0.05 });
       const points = new Points(geometry, material);
       points.name = url;
       return points;
