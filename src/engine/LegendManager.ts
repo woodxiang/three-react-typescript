@@ -31,7 +31,7 @@ export default class LegendManager implements IRenderHandler {
 
   private engine: ILegendSource | undefined;
 
-  public readonly lut: LutEx = new LutEx();
+  private lut: LutEx | undefined = undefined;
 
   private canvas = document.createElement('canvas');
 
@@ -88,6 +88,11 @@ export default class LegendManager implements IRenderHandler {
 
   public setTitle(newTitle: string): void {
     this.title = newTitle;
+    this.update();
+  }
+
+  public updateLut(lut: LutEx | undefined): void {
+    this.lut = lut;
     this.update();
   }
 
@@ -196,7 +201,9 @@ export default class LegendManager implements IRenderHandler {
   public render(renderer: WebGLRenderer): void {
     if (this.enabled) {
       renderer.clearDepth();
-      renderer.render(this.scene, this.camera);
+      if (this.lut) {
+        renderer.render(this.scene, this.camera);
+      }
     }
   }
 
