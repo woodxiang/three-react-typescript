@@ -56,8 +56,8 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
     }
     return () => {
       // dispose engine when unmount.
-      engine.dispose();
       if (engineCallback) engineCallback(undefined);
+      engine.dispose();
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps

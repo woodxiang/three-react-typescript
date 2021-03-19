@@ -34,9 +34,7 @@ interface IActionCallback {
   state: STATE;
   cursorType: CURSOR_TYPE;
   readonly scene: Scene;
-  readonly cameraFov: number;
-  readonly cameraEye: Vector3;
-  readonly cameraAt: Vector3;
+  readonly camera: Camera;
   readonly maxDim: number;
   rotationMatrix: Matrix4;
   afterProjectMatrix: Matrix4;
