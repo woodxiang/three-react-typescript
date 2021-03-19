@@ -443,6 +443,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     camera: Camera | undefined = undefined,
     viewPort: Vector4 | undefined = undefined
   ): Uint8Array {
+    const oldSize = new Vector2();
+    this.renderer.getSize(oldSize);
+
+    this.resize(width, height);
+
     const target = new WebGLRenderTarget(width, height, { type: UnsignedByteType, stencilBuffer: true });
 
     this.renderer.setRenderTarget(target);
@@ -464,6 +469,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (oldViewPort) {
       this.renderer.setViewport(oldViewPort);
     }
+
+    this.resize(oldSize.width, oldSize.height);
 
     const data = new Uint8Array(width * height * 4);
 
@@ -560,11 +567,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param width new width
    * @param height new height
    */
-  public resize(width: number, height: number): void {
+  public resize(width: number, height: number, resizeRenderer = true): void {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize(width, height);
+    if (resizeRenderer) {
+      // do not resize renderer when export image
+      //
+      this.renderer.setSize(width, height);
+    }
     this.sizeChangedEvent?.trigger({ width, height });
   }
 

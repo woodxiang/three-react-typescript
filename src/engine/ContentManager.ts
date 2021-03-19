@@ -13,7 +13,7 @@ import SensorManager from './SensorManager';
 export default class ContentManager {
   private engine: RenderingEngine | undefined;
 
-  private wrappedEnableLegend = false;
+  private wrappedEnableLegend = true;
 
   private readonly legend: LegendManager = new LegendManager();
 
@@ -33,7 +33,7 @@ export default class ContentManager {
 
   private readonly sensors: SensorManager = new SensorManager();
 
-  private dracoExMeshs = new Map<
+  private dracoExMeshes = new Map<
     string,
     {
       min: number;
@@ -43,9 +43,9 @@ export default class ContentManager {
     }
   >();
 
-  private stlMeshs = new Map<string, { color: string; opacity: number; visible: boolean }>();
+  private stlMeshes = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
-  private dracoMeshs = new Map<string, { color: string; opacity: number; visible: boolean }>();
+  private dracoMeshes = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
   private dracoExPoints = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
@@ -75,11 +75,11 @@ export default class ContentManager {
   }
 
   public async LoadStl(url: string, color: string, opacity?: number): Promise<void> {
-    if (this.stlMeshs.has(url)) {
+    if (this.stlMeshes.has(url)) {
       throw Error('exists url');
     }
 
-    this.stlMeshs.set(url, { color, opacity: opacity || 1, visible: true });
+    this.stlMeshes.set(url, { color, opacity: opacity || 1, visible: true });
 
     if (!this.engine) {
       return;
@@ -92,11 +92,11 @@ export default class ContentManager {
   }
 
   public async LoadDracoMesh(url: string, color: string, opacity?: number): Promise<void> {
-    if (this.dracoMeshs.has(url)) {
+    if (this.dracoMeshes.has(url)) {
       throw Error('exits url');
     }
 
-    this.dracoMeshs.set(url, { color, opacity: opacity || 1, visible: true });
+    this.dracoMeshes.set(url, { color, opacity: opacity || 1, visible: true });
 
     if (this.engine) {
       const mesh = await MeshFactory.createSolidMesh(url, GeometryDataType.DracoMesh, color, opacity);
@@ -107,17 +107,17 @@ export default class ContentManager {
   }
 
   public async LoadDracoExMesh(url: string, opacity?: number): Promise<void> {
-    if (this.dracoExMeshs.has(url)) {
+    if (this.dracoExMeshes.has(url)) {
       throw Error('exits url');
     }
 
     const geometry = await MeshFactory.loadAsync(url, GeometryDataType.DracoExMesh);
     const range = MeshFactory.calculateValueRange(geometry, 'generic');
     if (!range) {
-      throw Error('inalid file.');
+      throw Error('invalid file.');
     }
 
-    this.dracoExMeshs.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
+    this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
 
     if (this.engine) {
       // add color mapped mesh.
@@ -150,23 +150,23 @@ export default class ContentManager {
   }
 
   public remove(url: string): void {
-    const dracoExMesh = this.dracoExMeshs.get(url);
+    const dracoExMesh = this.dracoExMeshes.get(url);
     if (dracoExMesh) {
-      this.dracoExMeshs.delete(url);
+      this.dracoExMeshes.delete(url);
       this.engine?.removeMesh(url);
       const totalRange = this.calculateRange();
       this.legend.setRange(totalRange);
       return;
     }
 
-    if (this.stlMeshs.get(url)) {
-      this.stlMeshs.delete(url);
+    if (this.stlMeshes.get(url)) {
+      this.stlMeshes.delete(url);
       this.engine?.removeMesh(url);
       return;
     }
 
-    if (this.dracoMeshs.get(url)) {
-      this.dracoMeshs.delete(url);
+    if (this.dracoMeshes.get(url)) {
+      this.dracoMeshes.delete(url);
       this.engine?.removeMesh(url);
       return;
     }
@@ -248,7 +248,7 @@ export default class ContentManager {
     let min = Number.MAX_VALUE;
     let max = Number.MIN_VALUE;
 
-    this.dracoExMeshs.forEach((v) => {
+    this.dracoExMeshes.forEach((v) => {
       if (v.min < min) min = v.min;
       if (v.max > max) max = v.max;
     });
