@@ -2,7 +2,7 @@ import MeshFactory, { GeometryDataType } from '../MeshFactory';
 import PositionDetectHelper from '../PositionDetectHelper';
 import RenderingEngine from '../RenderingEngine';
 
-test.skip('clone scen for position detect', async () => {
+test.skip('clone scene for position detect', async () => {
   const engine = new RenderingEngine();
   expect(engine).not.toBeNull();
   engine.init(new HTMLDivElement(), 1920, 1080);
