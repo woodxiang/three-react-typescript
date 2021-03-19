@@ -28,7 +28,6 @@ import {
   IActionHandler,
   IHitTestResult,
   IObjectRotation,
-  IFlat,
   renderingModelName,
   IRenderHandler,
 } from './interfaces';
@@ -69,22 +68,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private wrappedMaxDim = 1;
 
   private wrappedBoundingBox: Box3 | undefined;
-
-  private selectionHelper = new SelectionHelper();
-
-  private inactiveFlatMaterial = new MeshLambertExMaterial({
-    diffuse: new Color('#00FF00'),
-    side: FrontSide,
-    clipping: true,
-    lights: true,
-  });
-
-  private activeFlatMaterial = new MeshLambertExMaterial({
-    diffuse: new Color('#FF0000'),
-    side: FrontSide,
-    clipping: true,
-    lights: true,
-  });
 
   private inactivePointMaterial = new MeshLambertExMaterial({
     diffuse: new Color('#00FF00'),
@@ -127,8 +110,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private capturedPointerId = -1;
 
   constructor() {
-    this.activeFlatMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
-    this.inactiveFlatMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
     this.activePointMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
     this.inactivePointMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
   }
@@ -580,61 +561,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   /**
-   * update selected flats on specified object.
-   * @param name the name of the object.
-   * @param inactiveFaces inactiveFaces
-   * @param activeFaces active faces.(last selected)
-   */
-  public updateFlats(name: string, inactiveFaces: number[], activeFaces: number[]): void {
-    const mesh = this.findMesh(name);
-    if (mesh) {
-      if (!mesh.material) {
-        throw Error('no default material.');
-      }
-      if (!Array.isArray(mesh.material)) {
-        const inactiveFlatMaterial = this.inactiveFlatMaterial.clone();
-        inactiveFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
-        const activeFlatMaterial = this.activeFlatMaterial.clone();
-        activeFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
-        mesh.material = [mesh.material, inactiveFlatMaterial, activeFlatMaterial];
-      }
-      const geo = mesh.geometry as BufferGeometry;
-      if (!geo) {
-        throw Error('invalid geometry.');
-      }
-
-      SelectionHelper.updateGroups(
-        geo,
-        0,
-        { faces: inactiveFaces, materialIndex: 1 },
-        { faces: activeFaces, materialIndex: 2 }
-      );
-    }
-  }
-
-  /**
-   * Remove all flats.
-   */
-  public clearAllFlats(): void {
-    if (this.targetObject3D) {
-      SelectionHelper.clearIndexes(this.targetObject3D);
-    }
-  }
-
-  /**
-   * find all connected faces with same normal with specified face.
-   * @param name the name of the target object.
-   * @param index the index of the source face.
-   */
-  public findFlat(name: string, index: number): IFlat | undefined {
-    const geometry = this.findGeometry(name);
-    if (geometry) {
-      return this.selectionHelper.findFlatByFace(geometry, index);
-    }
-    return undefined;
-  }
-
-  /**
    * add a new point and set it as active.
    * @param name name of the point
    * @param pos position of the point
@@ -828,7 +754,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return null;
   }
 
-  private findMesh(name: string): Mesh | undefined {
+  public findMesh(name: string): Mesh | undefined {
     if (!this.targetObject3D) {
       throw Error('no root');
     }
@@ -837,7 +763,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return collection.find((mesh: Object3D) => mesh.name === name) as Mesh;
   }
 
-  private findGeometry(name: string): BufferGeometry | undefined {
+  public findGeometry(name: string): BufferGeometry | undefined {
     const mesh = this.findMesh(name);
     if (mesh) return mesh.geometry as BufferGeometry;
     return undefined;
@@ -892,7 +818,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
       // apply the adapt scale.
       this.updateRootObjectMatrix();
-      this.selectionHelper.setMaxSize(this.wrappedMaxDim);
     } else {
       this.adaptMatrix = new Matrix4();
       this.domainRangeChangedEvent.trigger(undefined);

@@ -1,6 +1,11 @@
+import { FrontSide } from 'three/src/constants';
+import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { Color } from 'three/src/math/Color';
 import ActionHandlerBase from './ActionHandlerBase';
-import { IActionCallback, IHitTestResult, STATE } from './interfaces';
+import { IActionCallback, IFlat, IHitTestResult, STATE } from './interfaces';
+import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import RenderingEngine from './RenderingEngine';
+import SelectionHelper from './SelectionHelper';
 
 export default class FlatManager extends ActionHandlerBase {
   private wrappedIsMultipleSelection = false;
@@ -9,15 +14,36 @@ export default class FlatManager extends ActionHandlerBase {
 
   private engine: RenderingEngine | undefined;
 
+  private selectionHelper = new SelectionHelper();
+
+  private inactiveFlatMaterial = new MeshLambertExMaterial({
+    diffuse: new Color('#00FF00'),
+    side: FrontSide,
+    clipping: true,
+    lights: true,
+  });
+
+  private activeFlatMaterial = new MeshLambertExMaterial({
+    diffuse: new Color('#FF0000'),
+    side: FrontSide,
+    clipping: true,
+    lights: true,
+  });
+
   public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
+      this.engine.domainRangeChangedEvent.remove(this.onDomainRangeChanged);
       this.engine.removeActionHandler(this);
       this.engine = undefined;
     }
     this.engine = engine;
     if (this.engine !== undefined) {
       this.engine.addActionHandler(this);
+      this.engine.domainRangeChangedEvent.add(this.onDomainRangeChanged);
+
+      this.activeFlatMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
+      this.inactiveFlatMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
     }
   }
 
@@ -46,7 +72,7 @@ export default class FlatManager extends ActionHandlerBase {
       return true;
     }
 
-    const flat = this.engine.findFlat(res.name, res.index);
+    const flat = this.findFlat(res.name, res.index);
     if (!flat) return false;
 
     if (this.wrappedIsMultipleSelection) {
@@ -60,13 +86,12 @@ export default class FlatManager extends ActionHandlerBase {
       }
       this.updateFlats(res.name);
     } else {
+      this.clearAllFlats();
+
       this.selectedFlats = [
         { name: res.name, indexes: flat.faceIndexes, normal: [flat.normal.x, flat.normal.y, flat.normal.z] },
       ];
-      if (this.engine) {
-        this.engine.clearAllFlats();
-        this.updateFlats(res.name);
-      }
+      this.updateFlats(res.name);
     }
     return true;
   }
@@ -108,6 +133,23 @@ export default class FlatManager extends ActionHandlerBase {
     return false;
   }
 
+  /**
+   * find all connected faces with same normal with specified face.
+   * @param name the name of the target object.
+   * @param index the index of the source face.
+   */
+  private findFlat(name: string, index: number): IFlat | undefined {
+    if (!this.engine) {
+      throw Error('invalid engine.');
+    }
+
+    const geometry = this.engine.findGeometry(name);
+    if (geometry) {
+      return this.selectionHelper.findFlatByFace(geometry, index);
+    }
+    return undefined;
+  }
+
   private updateFlats(name: string): void {
     let inactiveFaces: number[] = [];
     let activeFaces: number[] = [];
@@ -121,6 +163,62 @@ export default class FlatManager extends ActionHandlerBase {
       }
     }
 
-    this.engine?.updateFlats(name, inactiveFaces, activeFaces);
+    this.updateFlatsImpl(name, inactiveFaces, activeFaces);
+  }
+
+  /**
+   * Remove all flats.
+   */
+  public clearAllFlats(): void {
+    const { engine } = this;
+    if (engine) {
+      this.selectedFlats.forEach((v) => {
+        const geometry = engine.findGeometry(v.name);
+        if (geometry) {
+          SelectionHelper.resetGeometryGroups(geometry);
+        }
+      });
+    }
+  }
+
+  private onDomainRangeChanged = (): void => {
+    if (this.engine) {
+      this.selectionHelper.setMaxSize(this.engine.maxDim);
+    }
+  };
+
+  /**
+   * update selected flats on specified object.
+   * @param name the name of the object.
+   * @param inactiveFaces inactiveFaces
+   * @param activeFaces active faces.(last selected)
+   */
+  private updateFlatsImpl(name: string, inactiveFaces: number[], activeFaces: number[]): void {
+    if (this.engine) {
+      const mesh = this.engine.findMesh(name);
+      if (mesh) {
+        if (!mesh.material) {
+          throw Error('no default material.');
+        }
+        if (!Array.isArray(mesh.material)) {
+          const inactiveFlatMaterial = this.inactiveFlatMaterial.clone();
+          inactiveFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+          const activeFlatMaterial = this.activeFlatMaterial.clone();
+          activeFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+          mesh.material = [mesh.material, inactiveFlatMaterial, activeFlatMaterial];
+        }
+        const geo = mesh.geometry as BufferGeometry;
+        if (!geo) {
+          throw Error('invalid geometry.');
+        }
+
+        SelectionHelper.updateGroups(
+          geo,
+          0,
+          { faces: inactiveFaces, materialIndex: 1 },
+          { faces: activeFaces, materialIndex: 2 }
+        );
+      }
+    }
   }
 }

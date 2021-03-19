@@ -190,7 +190,7 @@ export default class SelectionHelper {
 
     if (inactiveFaces.faces.length + activeFaces.faces.length === 0) {
       // if no inactive and active faces, clear the index and group.
-      SelectionHelper.resetGroups(geo);
+      SelectionHelper.resetGeometryGroups(geo);
       return;
     }
 
@@ -241,7 +241,7 @@ export default class SelectionHelper {
     }
   }
 
-  private static resetGroups(geo: BufferGeometry) {
+  public static resetGeometryGroups(geo: BufferGeometry): void {
     geo.setIndex(null);
     geo.clearGroups();
     const positions = <BufferAttribute>geo.getAttribute('position');
@@ -260,7 +260,7 @@ export default class SelectionHelper {
 
         const geo = mesh.geometry as BufferGeometry;
         if (geo) {
-          this.resetGroups(geo);
+          this.resetGeometryGroups(geo);
         }
       }
     });
