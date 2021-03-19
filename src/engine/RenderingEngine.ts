@@ -37,7 +37,7 @@ import SelectionHelper from './SelectionHelper';
 import LiteEvent from './event';
 import TextureFactory from './TextureFactory';
 import IAfterProject from './Materials/IAfterProject';
-import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
+import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 
 /**
  * Rendering Engine
@@ -72,28 +72,28 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private selectionHelper = new SelectionHelper();
 
-  private inactiveFlatMaterial = new MeshPhongExMaterial({
+  private inactiveFlatMaterial = new MeshLambertExMaterial({
     diffuse: new Color('#00FF00'),
     side: FrontSide,
     clipping: true,
     lights: true,
   });
 
-  private activeFlatMaterial = new MeshPhongExMaterial({
+  private activeFlatMaterial = new MeshLambertExMaterial({
     diffuse: new Color('#FF0000'),
     side: FrontSide,
     clipping: true,
     lights: true,
   });
 
-  private inactivePointMaterial = new MeshPhongExMaterial({
+  private inactivePointMaterial = new MeshLambertExMaterial({
     diffuse: new Color('#00FF00'),
     side: FrontSide,
     clipping: true,
     lights: true,
   });
 
-  private activePointMaterial = new MeshPhongExMaterial({
+  private activePointMaterial = new MeshLambertExMaterial({
     diffuse: new Color('#FF0000'),
     side: FrontSide,
     clipping: true,
@@ -386,8 +386,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     if (mesh) {
       const material = Array.isArray(mesh.material)
-        ? (mesh.material[0] as MeshPhongExMaterial)
-        : (mesh.material as MeshPhongExMaterial);
+        ? (mesh.material[0] as MeshLambertExMaterial)
+        : (mesh.material as MeshLambertExMaterial);
       if (material) {
         material.diffuse.set(color);
 

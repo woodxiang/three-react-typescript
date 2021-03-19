@@ -1,4 +1,3 @@
-import { Color } from 'three';
 import {
   AlwaysStencilFunc,
   BackSide,
@@ -11,6 +10,7 @@ import {
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Material } from 'three/src/materials/Material';
 import { Box3 } from 'three/src/math/Box3';
+import { Color } from 'three/src/math/Color';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Plane } from 'three/src/math/Plane';
 import { Vector3 } from 'three/src/math/Vector3';
@@ -24,7 +24,7 @@ import IdentityPlaneBufferGeometry from './Geometry/IdentityPlaneBufferGeometry'
 import { Direction, ITransformed, renderingModelName } from './interfaces';
 import ISealable from './Materials/ISealable';
 import MeshBasicExMaterial from './Materials/MeshBasicExMaterial';
-import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
+import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import RenderingEngine from './RenderingEngine';
 
 export default class ClippingManager implements IClippingManager {
@@ -433,7 +433,7 @@ export default class ClippingManager implements IClippingManager {
       const planeMat =
         v.isSealable === undefined || v.isSealable
           ? mat.clone()
-          : new MeshPhongExMaterial({
+          : new MeshLambertExMaterial({
               diffuse: new Color('blue'),
               clipping: true,
               lights: true,

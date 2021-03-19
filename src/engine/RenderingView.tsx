@@ -68,7 +68,7 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   }, [engineCallback]);
 
   if (!WEBGL.isWebGL2Available()) {
-    return <div>WebGL Required.</div>;
+    return <div>WebGL2 Required.</div>;
   }
 
   return <div ref={renderDiv} className={classes.root} />;

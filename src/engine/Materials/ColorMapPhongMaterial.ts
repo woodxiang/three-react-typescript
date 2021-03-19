@@ -5,8 +5,8 @@ import { Color } from 'three/src/math/Color';
 import { Material } from 'three/src/materials/Material';
 import { Texture } from 'three/src/textures/Texture';
 import { Matrix4 } from 'three/src/math/Matrix4';
-import vert from '../shaders/colormap.vert.glsl';
-import frag from '../shaders/colormap.frag.glsl';
+import vert from '../shaders/colormapphong.vert.glsl';
+import frag from '../shaders/colormapphong.frag.glsl';
 import IAfterProject from './IAfterProject';
 import ISealable from './ISealable';
 
@@ -30,7 +30,7 @@ export default class ColorMapPhongMaterial extends ShaderMaterial implements IAf
 
   public readonly isSealable: boolean = false;
 
-  constructor(min: number, max: number, texture: Texture, parameters: ShaderMaterialParameters | undefined) {
+  constructor(min: number, max: number, texture: Texture, parameters: ColorMapPhongMaterialParameters | undefined) {
     super();
 
     this.specular = new Color(0x111111);

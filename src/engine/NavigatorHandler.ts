@@ -203,27 +203,25 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
   }
 
   private alignSelectedDir(dir: number, r: Matrix4): Matrix4 {
-    const nextDir = (dir + 2) % 6;
-    const v = dirs[nextDir].clone();
-    const v2 = v.applyMatrix4(r);
+    const nextDir = (dir + 1) % 6;
+    const v2 = dirs[nextDir].clone().applyMatrix4(r);
 
     // find the closest axis
     //
-    let maxAngle = -1000;
-    let maxIndex = 0;
+    let maxAngle = 0;
+    let alignDir = 0;
     for (let i = 0; i < dirs.length; i += 1) {
-      if (i !== nextDir) {
-        const x = v2.clone().dot(dirs[i]);
-        if (x > maxAngle) {
+      if (i !== 2 && i !== 5) {
+        const x = v2.dot(dirs[i]);
+        if (x >= 0 && x > maxAngle) {
           maxAngle = x;
-          maxIndex = i;
+          alignDir = i;
         }
       }
     }
 
-    const vz = dirs[maxIndex].clone();
-    const rotateAxis = v2.clone().cross(vz);
-    const rotateAngle = Math.asin(rotateAxis.length());
+    const rotateAxis = dirs[2].clone();
+    const rotateAngle = Math.asin(v2.clone().cross(dirs[alignDir]).z);
     rotateAxis.normalize();
     const matrix = new Matrix4().makeRotationAxis(rotateAxis, rotateAngle);
     matrix.multiply(r);

@@ -8,10 +8,10 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
 import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './loaders/DracoExLoader';
-import ColorMapPhongMaterial from './Materials/ColorMapPhongMaterial';
+import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import TextureFactory from './TextureFactory';
 import LutEx from './LutEx';
-import MeshPhongExMaterial from './Materials/MeshPhongExMaterial';
+import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import PointsExMaterial from './Materials/PointsExMaterial';
 
 export enum GeometryDataType {
@@ -47,7 +47,7 @@ export default class MeshFactory {
     const materialColor = new Color();
     materialColor.set(color);
 
-    const material = new MeshPhongExMaterial({
+    const material = new MeshLambertExMaterial({
       diffuse: materialColor,
       reflectivity: 0.0,
       side: FrontSide,
@@ -56,7 +56,6 @@ export default class MeshFactory {
       clipping: true,
       lights: true,
     });
-    material.specular.set(0.9);
 
     const mesh = new Mesh(geometry, material);
     mesh.name = url;
@@ -90,7 +89,7 @@ export default class MeshFactory {
     range: { min: number; max: number },
     lut: string | Lut | LutEx | undefined,
     opacity = 1
-  ): ColorMapPhongMaterial {
+  ): ColorMapLambertMaterial {
     let volatileLut = lut;
     if (!volatileLut) {
       volatileLut = new Lut('rainbow', 64);
@@ -101,21 +100,20 @@ export default class MeshFactory {
     if (!(volatileLut instanceof Lut) && !(volatileLut instanceof LutEx)) {
       throw Error('Invalid lut');
     }
-    const material = new ColorMapPhongMaterial(range.min, range.max, TextureFactory.fromLut(volatileLut), {
+    const material = new ColorMapLambertMaterial(range.min, range.max, TextureFactory.fromLut(volatileLut), {
       opacity,
       clipping: true,
       lights: true,
       transparent: opacity < 1,
     });
-    material.specular.set(0.9);
     return material;
   }
 
-  public static createSolidMaterial(color: string, opacity = 1): MeshPhongExMaterial {
+  public static createSolidMaterial(color: string, opacity = 1): MeshLambertExMaterial {
     const materialColor = new Color();
     materialColor.set(color);
 
-    return new MeshPhongExMaterial({
+    return new MeshLambertExMaterial({
       diffuse: materialColor,
       side: FrontSide,
       opacity,
