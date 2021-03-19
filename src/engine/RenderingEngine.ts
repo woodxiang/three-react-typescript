@@ -13,8 +13,7 @@ import { Vector2 } from 'three/src/math/Vector2';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Group } from 'three/src/objects/Group';
 import { Object3D } from 'three/src/core/Object3D';
-import { FloatType, FrontSide, LinearFilter, UnsignedByteType } from 'three/src/constants';
-import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
+import { FloatType, LinearFilter, UnsignedByteType } from 'three/src/constants';
 import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget';
 import { PointLight } from 'three/src/lights/PointLight';
 import { Points } from 'three/src/objects/Points';
@@ -69,20 +68,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedBoundingBox: Box3 | undefined;
 
-  private inactivePointMaterial = new MeshLambertExMaterial({
-    diffuse: new Color('#00FF00'),
-    side: FrontSide,
-    clipping: true,
-    lights: true,
-  });
-
-  private activePointMaterial = new MeshLambertExMaterial({
-    diffuse: new Color('#FF0000'),
-    side: FrontSide,
-    clipping: true,
-    lights: true,
-  });
-
   public wrappedAdaptRange: Box3 | undefined;
 
   public meshAddedEvent = new LiteEvent<Mesh | Points>();
@@ -108,11 +93,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private wrappedCursorType: CURSOR_TYPE = CURSOR_TYPE.ARROW;
 
   private capturedPointerId = -1;
-
-  constructor() {
-    this.activePointMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
-    this.inactivePointMaterial.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
-  }
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -558,42 +538,6 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.renderer.setSize(width, height);
     }
     this.sizeChangedEvent?.trigger({ width, height });
-  }
-
-  /**
-   * add a new point and set it as active.
-   * @param name name of the point
-   * @param pos position of the point
-   */
-  public addPoint(name: string, pos: number[]): void {
-    if (!this.targetObject3D) {
-      throw Error('no container.');
-    }
-
-    const ball = new SphereGeometry(this.wrappedMaxDim / 300, 4, 4);
-    const mesh = new Mesh(ball, this.activePointMaterial);
-    mesh.translateX(pos[0]);
-    mesh.translateY(pos[1]);
-    mesh.translateZ(pos[2]);
-    mesh.name = name;
-    ball.name = name;
-    this.targetObject3D.add(mesh);
-  }
-
-  /**
-   * set target sensor activity
-   * @param name the target sensor to active/inactive
-   * @param enable active/inactive
-   */
-  public activePoint(name: string, enable: boolean): void {
-    if (!this.targetObject3D) {
-      throw Error('no container.');
-    }
-
-    const toUpdate = <Mesh>this.targetObject3D.children.find((v) => v.name === name);
-    if (toUpdate) {
-      toUpdate.material = enable ? this.activePointMaterial : this.inactivePointMaterial;
-    }
   }
 
   public updateBackground(newBackground: Color | Color[] | null): void {
