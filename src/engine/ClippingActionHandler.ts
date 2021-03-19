@@ -1,3 +1,4 @@
+import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { Float32BufferAttribute } from 'three/src/core/BufferAttribute';
 import { Matrix4 } from 'three/src/math/Matrix4';
 import { Vector2 } from 'three/src/math/Vector2';
@@ -154,14 +155,18 @@ export default class ClippingActionHandler extends ActionHandlerBase {
     const p1 = new Vector3(v3.x, -v3.y, 0);
     const p2 = new Vector3(pd.x, pd.y, pd.z);
     const dotMultiple = p1.clone().dot(p2);
+    let delta = 0;
 
-    const ratio = viewSize.width / viewSize.height;
-    const screenScale = ratio > 1 ? viewSize.height / 2.0 : viewSize.width / 2.0;
+    if (callback.camera instanceof PerspectiveCamera) {
+      const ratio = viewSize.width / viewSize.height;
+      const screenScale = ratio > 1 ? viewSize.height / 2.0 : viewSize.width / 2.0;
 
-    const ratio2 =
-      (Math.tan(((callback.cameraFov / 180) * Math.PI) / 2.0) * (callback.cameraAt.z - callback.cameraEye.z)) /
-      screenScale;
-    const delta = pd.z === 1 ? 0 : (dotMultiple * ratio2) / (1 - pd.z * pd.z) / (2.0 / callback.maxDim);
+      const ratio2 =
+        (Math.tan(((callback.camera.fov / 180) * Math.PI) / 2.0) * (0 - callback.camera.position.z)) / screenScale;
+      delta = pd.z === 1 ? 0 : (dotMultiple * ratio2) / (1 - pd.z * pd.z) / (2.0 / callback.maxDim);
+    } else {
+      throw Error('not implemented.');
+    }
 
     if (delta !== 0) {
       this.drag(delta);

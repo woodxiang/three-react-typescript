@@ -19,6 +19,7 @@ import { PointLight } from 'three/src/lights/PointLight';
 import { Points } from 'three/src/objects/Points';
 import { Vector4 } from 'three/src/math/Vector4';
 import { Camera } from 'three/src/cameras/Camera';
+import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
 import { encode } from './utils/encoder';
 import {
   IActionCallback,
@@ -43,40 +44,41 @@ import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 export default class RenderingEngine implements IActionCallback, IObjectRotation {
   /**
    * Current State: moving or rotation or picking.
+   * plugins can defined its own state.
    */
   public state: STATE = STATE.NONE;
 
   private parentDiv: HTMLDivElement | undefined;
 
-  private wrappedScene: Scene = new Scene();
+  private wrappedScene: Scene | undefined;
 
-  private renderer = new WebGLRenderer({ antialias: true, alpha: true });
+  private renderer: WebGLRenderer | undefined;
 
-  private camera = new PerspectiveCamera(15, 1, 0.01, 100);
+  private wrappedCamera: PerspectiveCamera | OrthographicCamera | undefined;
 
-  private wrappedRoot: Group = new Group(); // This is the root for all objects.
+  private wrappedRoot: Group | undefined; // This is the root for all objects.
 
-  private targetObject3D = new Group(); // this is the root for all target models.
+  private targetObject3D: Group | undefined; // this is the root for all target models.
 
-  private adaptMatrix: Matrix4 = new Matrix4();
+  private adaptMatrix: Matrix4 = new Matrix4(); // use this matrix to make objects adapt to range of -1 to 1. and the cent of the adapt range.
 
-  private wrappedRotateMatrix: Matrix4 = new Matrix4();
+  private wrappedRotateMatrix: Matrix4 = new Matrix4(); // rotation matrix.
 
-  private wrappedAfterProjectMatrix: Matrix4 = new Matrix4();
+  private wrappedAfterProjectMatrix: Matrix4 = new Matrix4(); // 2d scale and move matrix.
 
-  private wrappedMaxDim = 1;
+  private wrappedMaxDim = 1; // maximum original dimension size.
 
-  private wrappedBoundingBox: Box3 | undefined;
+  private wrappedBoundingBox: Box3 | undefined; // bounding box of all the objects.
 
-  public wrappedAdaptRange: Box3 | undefined;
+  public wrappedAdaptRange: Box3 | undefined; // user defined adapt range. if it is undefined use bounding box of all the objects.
 
-  public meshAddedEvent = new LiteEvent<Mesh | Points>();
+  public meshAddedEvent = new LiteEvent<Mesh | Points>(); // raised when a mesh or points added.
 
-  public meshRemovedEvent = new LiteEvent<string>();
+  public meshRemovedEvent = new LiteEvent<string>(); // raise when a mesh of points removed.
 
-  public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>();
+  public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>(); // mesh or objects visibility changed.
 
-  public domainRangeChangedEvent = new LiteEvent<Box3>();
+  public domainRangeChangedEvent = new LiteEvent<Box3>(); // raise when bounding box of all objects changed.
 
   public objectTransformChangedEvent = new LiteEvent<Matrix4>();
 
@@ -119,8 +121,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (this.parentDiv) {
       throw Error('already initialized.');
     }
+
     this.parentDiv = div;
-    this.camera.position.set(0, 0, 10);
+    this.wrappedScene = new Scene();
+    this.renderer = new WebGLRenderer({ antialias: true, alpha: true });
+    this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 100);
+    this.wrappedCamera.position.set(0, 0, 10);
+
+    this.wrappedRoot = new Group();
+    this.targetObject3D = new Group();
 
     this.resize(width, height);
 
@@ -136,7 +145,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedScene.add(this.wrappedRoot);
 
-    this.wrappedActionHandlers.push(new RotationHandler(this.camera));
+    this.wrappedActionHandlers.push(new RotationHandler(this.wrappedCamera));
 
     if (this.debugMode) {
       this.stats = Stats();
@@ -148,9 +157,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   public dispose(): void {
-    this.targetObject3D.clear();
-    this.wrappedScene.clear();
-    this.camera.clear();
+    if (this.targetObject3D) this.targetObject3D.clear();
+    if (this.wrappedScene) this.wrappedScene.clear();
+    if (this.wrappedCamera) this.wrappedCamera.clear();
   }
 
   get adaptRange(): Box3 | undefined {
@@ -167,16 +176,25 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   get viewPortSize(): Vector2 {
+    if (!this.renderer) {
+      throw Error('not initialized.');
+    }
     const size = new Vector2();
     this.renderer.getSize(size);
     return size;
   }
 
   get root(): Group {
+    if (!this.wrappedRoot) {
+      throw Error('not initialized.');
+    }
     return this.wrappedRoot;
   }
 
   get scene(): Scene {
+    if (!this.wrappedScene) {
+      throw Error('not initialized.');
+    }
     return this.wrappedScene;
   }
 
@@ -185,6 +203,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   set cursorType(newType: CURSOR_TYPE) {
+    if (!this.renderer) {
+      throw Error('not initialized.');
+    }
     this.wrappedCursorType = newType;
     switch (newType) {
       case CURSOR_TYPE.CROSS:
@@ -230,17 +251,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return this.wrappedBoundingBox;
   }
 
-  get cameraFov(): number {
-    return this.camera.fov;
-  }
-
-  get cameraEye(): Vector3 {
-    return this.camera.position;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  get cameraAt(): Vector3 {
-    return new Vector3(0, 0, 0);
+  get camera(): Camera {
+    if (!this.wrappedCamera) {
+      throw Error('not initialized.');
+    }
+    return this.wrappedCamera;
   }
 
   get maxDim(): number {
@@ -252,6 +267,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param pointerId the device captured.
    */
   public capturePointer(pointerId: number): void {
+    if (!this.renderer) {
+      throw new Error('not initialized.');
+    }
+
     if (this.capturedPointerId >= 0) {
       return;
     }
@@ -263,24 +282,29 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * release captured pointer.
    */
   public releasePointer(): void {
+    if (!this.renderer) {
+      throw new Error('not initialized.');
+    }
+
     if (this.capturedPointerId >= 0) {
       this.renderer.domElement.releasePointerCapture(this.capturedPointerId);
       this.capturedPointerId = -1;
     }
   }
 
-  /**
-   * get the name of objects.
-   */
-  public getObjects(): string[] {
-    return this.targetObject3D.children.map((v: { name: string }) => v.name);
-  }
-
   public set enableClipping(enableClipping: boolean) {
+    if (!this.renderer) {
+      throw new Error('not initialized.');
+    }
+
     this.renderer.localClippingEnabled = enableClipping;
   }
 
   public get enableClipping(): boolean {
+    if (!this.renderer) {
+      throw new Error('not initialized.');
+    }
+
     return this.renderer.localClippingEnabled;
   }
 
@@ -389,9 +413,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * start animation.
    */
   public startAnimate(): void {
+    if (!this.wrappedCamera) {
+      throw new Error('not initialized.');
+    }
+
+    const camera = this.wrappedCamera;
     const animate = () => {
       requestAnimationFrame(animate);
-      this.render(this.camera);
+      this.render(camera);
       this.stats?.update();
     };
     animate();
@@ -404,6 +433,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     camera: Camera | undefined = undefined,
     viewPort: Vector4 | undefined = undefined
   ): Uint8Array {
+    if (!this.renderer || !this.wrappedCamera || !this.wrappedScene) {
+      throw new Error('not initialized.');
+    }
+
     const oldSize = new Vector2();
     this.renderer.getSize(oldSize);
 
@@ -419,11 +452,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.renderer.setViewport(viewPort);
     }
     if (scene === undefined) {
-      this.render(this.camera);
+      this.render(this.wrappedCamera);
     } else {
       this.renderer.render(
         scene === undefined ? this.wrappedScene : scene,
-        camera === undefined ? this.camera : camera
+        camera === undefined ? this.wrappedCamera : camera
       );
     }
 
@@ -455,6 +488,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     camera: Camera | undefined = undefined,
     viewPort: Vector4 | undefined = undefined
   ): Float32Array {
+    if (!this.renderer || !this.wrappedCamera) {
+      throw new Error('not initialized.');
+    }
+
     const size = new Vector2();
     this.renderer.getSize(size);
     const target = new WebGLRenderTarget(size.x, size.y, { type: FloatType, stencilBuffer: true });
@@ -465,7 +502,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       this.renderer.getViewport(oldViewPort);
       this.renderer.setViewport(viewPort);
     }
-    this.renderer.render(scene, camera === undefined ? this.camera : camera);
+    this.renderer.render(scene, camera === undefined ? this.wrappedCamera : camera);
     if (oldViewPort) {
       this.renderer.setViewport(oldViewPort);
     }
@@ -529,8 +566,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param height new height
    */
   public resize(width: number, height: number, resizeRenderer = true): void {
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    if (!this.wrappedCamera || !this.renderer) {
+      throw Error('Not initialized.');
+    }
+    if (this.wrappedCamera instanceof PerspectiveCamera) {
+      this.wrappedCamera.aspect = width / height;
+    } else {
+      this.wrappedCamera.left = -width / height;
+      this.wrappedCamera.right = width / height;
+    }
+    this.wrappedCamera.updateProjectionMatrix();
 
     if (resizeRenderer) {
       // do not resize renderer when export image
@@ -541,6 +586,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   public updateBackground(newBackground: Color | Color[] | null): void {
+    if (!this.wrappedScene) {
+      throw new Error('not initialized.');
+    }
+
     if (newBackground instanceof Array) {
       const colors = <Color[]>newBackground;
       const texture = TextureFactory.vertical1DFromColors(colors);
@@ -569,6 +618,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private initEvents() {
+    if (!this.renderer) {
+      throw new Error('not initialized.');
+    }
     this.renderer.domElement.addEventListener('pointerdown', (event: PointerEvent) => {
       for (let i = 0; i < this.wrappedActionHandlers.length; i += 1) {
         const handler = this.wrappedActionHandlers[i];
@@ -655,10 +707,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private render = (camera: Camera) => {
+    if (!this.renderer || !this.wrappedScene) {
+      throw new Error('not initialized.');
+    }
+    const { renderer } = this;
     this.renderer.render(this.wrappedScene, camera);
     this.renderer.autoClear = false;
     this.wrappedRenderHandlers.forEach((v) => {
-      v.render(this.renderer);
+      v.render(renderer);
     });
     this.renderer.autoClear = true;
   };
@@ -669,12 +725,15 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param yPos hit position y
    */
   public hitTest(xPos: number, yPos: number): IHitTestResult | null {
+    if (!this.wrappedCamera || !this.targetObject3D) {
+      throw new Error('not initialized.');
+    }
     const p = new Vector3(xPos, yPos, 0);
     p.applyMatrix4(this.afterProjectMatrix.clone().invert());
 
     const rayCaster = new Raycaster();
     rayCaster.layers.set(2);
-    rayCaster.setFromCamera({ x: p.x, y: p.y }, this.camera);
+    rayCaster.setFromCamera({ x: p.x, y: p.y }, this.wrappedCamera);
     this.targetObject3D.children.forEach((element) => {
       if (element.visible) {
         element.layers.enable(2);
@@ -714,6 +773,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   }
 
   private prepareEnvironment(): void {
+    if (!this.wrappedScene) {
+      throw new Error('not initialized.');
+    }
+
     const ambientLight = new AmbientLight(0x4d4d4d);
     const light1 = new PointLight(0xffffff, 0.7);
     light1.position.set(3.0, 3.0, 3.0);
