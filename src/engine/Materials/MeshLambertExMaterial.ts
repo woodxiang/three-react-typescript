@@ -9,6 +9,7 @@ import { Combine, MultiplyOperation } from 'three/src/constants';
 import vert from '../shaders/meshlambertex.vert.glsl';
 import frag from '../shaders/meshlambertex.frag.glsl';
 import IAfterProject from './IAfterProject';
+import toUniform from '../utils/uniformsUtilitiesExt';
 
 export interface MeshLambertExMaterialParameters extends ShaderMaterialParameters {
   diffuse?: Color | string | number;
@@ -125,25 +126,7 @@ export default class MeshLambertExMaterial extends ShaderMaterial implements IAf
   }
 
   private updateUniforms() {
-    const uniforms = UniformsUtils.clone(ShaderLib.phong.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.diffuse = { value: this.diffuse };
-    uniforms.map = { value: this.map };
-    uniforms.lightMap = { value: this.lightMap };
-    uniforms.lightMapIntensity = { value: this.lightMapIntensity };
-    uniforms.aoMap = { value: this.aoMap };
-    uniforms.aoMapIntensity = { value: this.aoMapIntensity };
-    uniforms.emissive = { value: this.emissive };
-    uniforms.emissiveIntensity = { value: this.emissiveIntensity };
-    uniforms.emissiveMap = { value: this.emissiveMap };
-    uniforms.specularMap = { value: this.specularMap };
-    uniforms.alphaMap = { value: this.alphaMap };
-    uniforms.envMap = { value: this.envMap };
-    uniforms.combine = { value: this.combine };
-    uniforms.reflectivity = { value: this.reflectivity };
-    uniforms.refractionRatio = { value: this.refractionRatio };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }

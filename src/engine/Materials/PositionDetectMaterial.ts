@@ -7,6 +7,7 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import vert from '../shaders/positiondetect.vert.glsl';
 import frag from '../shaders/positiondetect.frag.glsl';
 import IAfterProject from './IAfterProject';
+import toUniform from '../utils/uniformsUtilitiesExt';
 
 export interface PositionDetectMaterialParameters extends ShaderMaterialParameters {
   afterProjectMatrix?: Matrix4;
@@ -72,12 +73,7 @@ export default class PositionDetectMaterial extends ShaderMaterial implements IA
   }
 
   private updateUniforms() {
-    const uniforms = UniformsUtils.clone(ShaderLib.basic.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.objectId = { value: this.objectId };
-    uniforms.objectTransform = { value: this.objectTransform };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }

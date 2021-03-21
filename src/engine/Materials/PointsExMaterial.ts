@@ -5,6 +5,7 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import { ShaderLib } from 'three/src/renderers/shaders/ShaderLib';
 import { UniformsUtils } from 'three/src/renderers/shaders/UniformsUtils';
 import { Texture } from 'three/src/textures/Texture';
+import toUniform from '../utils/uniformsUtilitiesExt';
 import frag from '../shaders/pointsex.frag.glsl';
 import vert from '../shaders/pointsex.vert.glsl';
 import IAfterProject from './IAfterProject';
@@ -70,15 +71,7 @@ export default class PointsExMaterial extends ShaderMaterial implements IAfterPr
   }
 
   private updateUniforms() {
-    const uniforms = UniformsUtils.clone(ShaderLib.phong.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.diffuse = { value: this.diffuse };
-    uniforms.map = { value: this.map };
-    uniforms.alphaMap = { value: this.alphaMap };
-    uniforms.size = { value: this.size };
-    uniforms.sizeAttenuation = { value: this.sizeAttenuation };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }

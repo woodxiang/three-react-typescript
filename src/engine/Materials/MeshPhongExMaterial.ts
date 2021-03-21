@@ -7,6 +7,7 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import vert from '../shaders/meshphongex.vert.glsl';
 import frag from '../shaders/meshphongex.frag.glsl';
 import IAfterProject from './IAfterProject';
+import toUniform from '../utils/uniformsUtilitiesExt';
 
 export interface MeshPhongExMaterialParameters extends ShaderMaterialParameters {
   specular?: Color;
@@ -69,14 +70,7 @@ export default class MeshPhongExMaterial extends ShaderMaterial implements IAfte
   }
 
   private updateUniforms() {
-    const uniforms = UniformsUtils.clone(ShaderLib.phong.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.specular = { value: this.specular };
-    uniforms.shininess = { value: this.shininess };
-    uniforms.diffuse = { value: this.diffuse };
-    uniforms.reflectivity = { value: this.reflectivity };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }

@@ -25,17 +25,17 @@ export default class LegendManager implements IRenderHandler {
 
   public enabled = true;
 
-  private scene = new Scene();
+  private scene: Scene | undefined;
 
-  private camera = new OrthographicCamera(-1, 1, 1, -1, 1, 2);
+  private camera: OrthographicCamera | undefined;
 
   private engine: ILegendSource | undefined;
 
-  private lut: LutEx | undefined = undefined;
+  private wrappedLut: LutEx | undefined = undefined;
 
-  private canvas = document.createElement('canvas');
+  private canvas: HTMLCanvasElement | undefined;
 
-  private sprite: Sprite = new Sprite();
+  private sprite: Sprite | undefined;
 
   private size = new Vector2();
 
@@ -47,17 +47,8 @@ export default class LegendManager implements IRenderHandler {
 
   private title = '';
 
-  constructor() {
-    this.camera.position.set(0, 0, 1);
-    const texture = new CanvasTexture(this.canvas);
-    this.sprite.material = new SpriteMaterial({
-      map: texture,
-    });
-
-    this.sprite.scale.set(0.8, 0.8, 0.8);
-    this.sprite.position.set(-0.5, 0.5, 0);
-
-    this.scene.add(this.sprite);
+  get lut(): LutEx | undefined {
+    return this.wrappedLut;
   }
 
   public bind(engine: ILegendSource | undefined): void {
@@ -66,6 +57,8 @@ export default class LegendManager implements IRenderHandler {
     }
 
     if (this.engine) {
+      // clear all
+      //
       this.engine.sizeChangedEvent.remove(this.onSizeChanged);
       this.engine.removeRenderHandler(this);
       this.engine = undefined;
@@ -74,8 +67,27 @@ export default class LegendManager implements IRenderHandler {
     this.engine = engine;
 
     if (this.engine) {
+      // initialize all
+
+      this.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 2);
+      this.camera.position.set(0, 0, 1);
+
+      this.canvas = document.createElement('canvas');
+      const texture = new CanvasTexture(this.canvas);
+
+      this.sprite = new Sprite();
+      this.sprite.material = new SpriteMaterial({
+        map: texture,
+      });
+
+      this.sprite.scale.set(0.8, 0.8, 0.8);
+      this.sprite.position.set(-0.5, 0.5, 0);
+
+      this.scene = new Scene();
+      this.scene.add(this.sprite);
       this.engine.addRenderHandler(this);
       this.engine.sizeChangedEvent.add(this.onSizeChanged);
+
       const sz = this.engine.viewPortSize;
       this.onSizeChanged({ width: sz.x, height: sz.y });
     }
@@ -92,18 +104,21 @@ export default class LegendManager implements IRenderHandler {
   }
 
   public updateLut(lut: LutEx | undefined): void {
-    this.lut = lut;
+    this.wrappedLut = lut;
     this.update();
   }
 
   private update(): void {
-    if (!this.lut) {
+    if (!this.canvas || !this.scene) {
+      throw Error('not initialized.');
+    }
+    if (!this.wrappedLut) {
       return;
     }
 
-    const table = this.lut.generateLookupTable(21);
+    const table = this.wrappedLut.generateLookupTable(21);
 
-    const itemNumber = this.lut.method === InterpolateDiscrete ? this.lut.map.length : 20;
+    const itemNumber = this.wrappedLut.method === InterpolateDiscrete ? this.wrappedLut.map.length : 20;
 
     const clientWidth = 1024 * 2;
     const clientHeight = 1024 * 2;
@@ -129,11 +144,11 @@ export default class LegendManager implements IRenderHandler {
 
       // draw color box
       ctx.strokeRect(colorBarLeft, colorBarTop, colorBarWidth, colorBarHeight);
-      const nGrid = this.lut.map.length - 1;
+      const nGrid = this.wrappedLut.map.length - 1;
       const step = colorBarHeight / nGrid;
 
       for (let i = 0; i < nGrid; i += 1) {
-        const { color } = this.lut.map[i];
+        const { color } = this.wrappedLut.map[i];
 
         ctx.fillStyle = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(
           color.b * 255
@@ -169,7 +184,7 @@ export default class LegendManager implements IRenderHandler {
       ctx.font = `Normal ${labelFontSize}px ${this.textFont}`;
       ctx.fillStyle = this.textColor;
       for (let i = 0; i <= nGrid; i += 1) {
-        const label = this.lut.map[i].value.toFixed(5);
+        const label = this.wrappedLut.map[i].value.toFixed(5);
         const textSize = ctx.measureText(label);
         if (maxTextSize < textSize.width) {
           maxTextSize = textSize.width;
@@ -199,15 +214,22 @@ export default class LegendManager implements IRenderHandler {
   }
 
   public render(renderer: WebGLRenderer): void {
+    if (!this.scene || !this.camera) {
+      throw new Error('not initialized.');
+    }
+
     if (this.enabled) {
       renderer.clearDepth();
-      if (this.lut) {
+      if (this.wrappedLut) {
         renderer.render(this.scene, this.camera);
       }
     }
   }
 
   private onSizeChanged = (newSize: { width: number; height: number } | undefined) => {
+    if (!this.camera || !this.sprite) {
+      throw new Error('not initialized.');
+    }
     if (newSize) {
       this.size.set(newSize.width, newSize.height);
       const ratio = newSize.width / newSize.height;
