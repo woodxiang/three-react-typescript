@@ -7,6 +7,7 @@ import { Matrix4 } from 'three/src/math/Matrix4';
 import vert from '../shaders/meshbasicex.vert.glsl';
 import frag from '../shaders/meshbasicex.frag.glsl';
 import IAfterProject from './IAfterProject';
+import toUniform from '../utils/uniformsUtilitiesExt';
 
 export interface MeshBasicExMaterialParameters extends ShaderMaterialParameters {
   diffuse?: Color;
@@ -51,11 +52,7 @@ export default class MeshBasicExMaterial extends ShaderMaterial implements IAfte
   }
 
   private updateUniforms() {
-    const uniforms = UniformsUtils.clone(ShaderLib.basic.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.diffuse = { value: this.diffuse };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }

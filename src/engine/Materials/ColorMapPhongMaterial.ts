@@ -5,6 +5,7 @@ import { Color } from 'three/src/math/Color';
 import { Material } from 'three/src/materials/Material';
 import { Texture } from 'three/src/textures/Texture';
 import { Matrix4 } from 'three/src/math/Matrix4';
+import toUniform from '../utils/uniformsUtilitiesExt';
 import vert from '../shaders/colormapphong.vert.glsl';
 import frag from '../shaders/colormapphong.frag.glsl';
 import IAfterProject from './IAfterProject';
@@ -79,15 +80,7 @@ export default class ColorMapPhongMaterial extends ShaderMaterial implements IAf
   }
 
   private updateUniforms(): void {
-    const uniforms = UniformsUtils.clone(ShaderLib.phong.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.specular = { value: this.specular };
-    uniforms.shininess = { value: this.shininess };
-    uniforms.colorMapTexture = { value: this.colorMapTexture };
-    uniforms.colorMapOffset = { value: this.colorMapOffset };
-    uniforms.colorMapRatio = { value: this.colorMapRatio };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }

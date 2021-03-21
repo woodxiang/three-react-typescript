@@ -10,6 +10,7 @@ import vert from '../shaders/colormaplambert.vert.glsl';
 import frag from '../shaders/colormaplambert.frag.glsl';
 import IAfterProject from './IAfterProject';
 import ISealable from './ISealable';
+import toUniform from '../utils/uniformsUtilitiesExt';
 
 export interface ColorMapLambertMaterialParameters extends ShaderMaterialParameters {
   diffuse?: Color | string | number;
@@ -147,27 +148,7 @@ export default class ColorMapLambertMaterial extends ShaderMaterial implements I
   }
 
   private updateUniforms(): void {
-    const uniforms = UniformsUtils.clone(ShaderLib.phong.uniforms);
-    uniforms.afterProjectMatrix = { value: this.afterProjectMatrix };
-    uniforms.map = { value: this.map };
-    uniforms.lightMap = { value: this.lightMap };
-    uniforms.lightMapIntensity = { value: this.lightMapIntensity };
-    uniforms.aoMap = { value: this.aoMap };
-    uniforms.aoMapIntensity = { value: this.aoMapIntensity };
-    uniforms.emissive = { value: this.emissive };
-    uniforms.emissiveIntensity = { value: this.emissiveIntensity };
-    uniforms.emissiveMap = { value: this.emissiveMap };
-    uniforms.specularMap = { value: this.specularMap };
-    uniforms.alphaMap = { value: this.alphaMap };
-    uniforms.envMap = { value: this.envMap };
-    uniforms.combine = { value: this.combine };
-    uniforms.reflectivity = { value: this.reflectivity };
-    uniforms.refractionRatio = { value: this.refractionRatio };
-    uniforms.colorMapTexture = { value: this.colorMapTexture };
-    uniforms.colorMapOffset = { value: this.colorMapOffset };
-    uniforms.colorMapRatio = { value: this.colorMapRatio };
-
-    this.uniforms = uniforms;
+    this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
   }
