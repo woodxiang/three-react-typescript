@@ -13,7 +13,12 @@ export default function toUniform(shaderMaterial: ShaderMaterial): unknown {
   Object.entries(shaderMaterial).forEach((v) => {
     const [key, value] = v;
     if (!skip.has(key)) {
-      ret[key] = { value };
+      if (key.startsWith('wrapped')) {
+        const key1 = key[7].toLowerCase() + key.substring(8);
+        ret[key1] = { value };
+      } else {
+        ret[key] = { value };
+      }
     }
   });
 
