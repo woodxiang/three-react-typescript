@@ -4,6 +4,7 @@ import { Points } from 'three/src/objects/Points';
 import ClippingManager from './ClippingManager';
 import FlatManager from './FlatsManager';
 import LegendManager from './LegendManager';
+import LutEx from './LutEx';
 import PointsExMaterial from './Materials/PointsExMaterial';
 import MeshFactory, { GeometryDataType } from './MeshFactory';
 import NavigatorHandler from './NavigatorHandler';
@@ -118,12 +119,12 @@ export default class ContentManager {
     }
 
     this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
+    // add color mapped mesh.
+    this.legend.updateLut(new LutEx());
+    const totalRange = this.calculateRange();
+    this.legend.setRange(totalRange);
 
     if (this.engine) {
-      // add color mapped mesh.
-      const totalRange = this.calculateRange();
-      this.legend.setRange(totalRange);
-
       const material = MeshFactory.createColorMapMaterial(totalRange, this.legend.lut);
       const mesh = new Mesh(geometry, material);
       mesh.name = url;
