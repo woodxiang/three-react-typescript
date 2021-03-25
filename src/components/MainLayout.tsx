@@ -189,7 +189,8 @@ export default function MainLayout(): JSX.Element {
 
     const engine = engineRef.current;
 
-    engine.updateBackground([new Color(), new Color('gray')]);
+    // engine.updateBackground([new Color(), new Color('gray')]);
+    engine.clearMeshes();
   };
 
   // init effect when mount.
