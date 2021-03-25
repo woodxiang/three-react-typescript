@@ -332,12 +332,21 @@ export default class ClippingManager implements IClippingManager {
    * invoke when mesh was removed.
    * @param name the name of the mesh to remove
    */
-  private remove = (name: string | undefined): void => {
+  private remove = (name: string | string[] | undefined): void => {
     if (name !== undefined) {
-      const index = this.clipGroup.children.findIndex((v) => v.name === name);
-      if (index >= 0) {
-        this.clipGroup.children.splice(index, 1);
+      const nameList: string[] = [];
+      if (name instanceof Array) {
+        nameList.push(...name);
+      } else {
+        nameList.push(name);
       }
+
+      nameList.forEach((objectName) => {
+        const index = this.clipGroup.children.findIndex((v) => v.name === objectName);
+        if (index >= 0) {
+          this.clipGroup.children.splice(index, 1);
+        }
+      });
     }
   };
 

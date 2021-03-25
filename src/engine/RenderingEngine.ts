@@ -74,7 +74,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public meshAddedEvent = new LiteEvent<Mesh | Points>(); // raised when a mesh or points added.
 
-  public meshRemovedEvent = new LiteEvent<string>(); // raise when a mesh of points removed.
+  public meshRemovedEvent = new LiteEvent<string | string[]>(); // raise when a mesh of points removed.
 
   public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>(); // mesh or objects visibility changed.
 
@@ -340,13 +340,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (index >= 0) {
       const itemToRemove = this.targetObject3D.children[index] as Mesh;
       this.targetObject3D.children.splice(index, 1);
-      itemToRemove.geometry.dispose();
-
-      if (itemToRemove.material instanceof Array) {
-        itemToRemove.material.forEach((v) => v.dispose());
-      } else {
-        itemToRemove.material.dispose();
-      }
+      RenderingEngine.disposeMesh(itemToRemove);
 
       this.updateScales();
       this.meshRemovedEvent.trigger(name);
@@ -391,7 +385,11 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('no root.');
     }
 
-    this.targetObject3D.clear();
+    const removed = RenderingEngine.disposeGroup(this.targetObject3D);
+
+    this.updateScales();
+
+    this.meshRemovedEvent.trigger(removed);
   }
 
   public calculateMeshVolume(name: string): number {
@@ -855,5 +853,34 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
 
     this.objectTransformChangedEvent.trigger(matrix);
+  }
+
+  private static disposeGroup(group: Group): string[] {
+    const ret: string[] = [];
+    group.children.forEach((v) => {
+      if (v instanceof Group) {
+        const r = this.disposeGroup(<Group>v);
+        ret.push(...r);
+      } else if (v instanceof Mesh) {
+        ret.push(v.name);
+        RenderingEngine.disposeMesh(<Mesh>v);
+      } else if (v instanceof Points) {
+        ret.push(v.name);
+        RenderingEngine.disposeMesh(<Points>v);
+      }
+    });
+    group.clear();
+
+    return ret;
+  }
+
+  private static disposeMesh(itemToRemove: Mesh | Points): void {
+    itemToRemove.geometry.dispose();
+
+    if (itemToRemove.material instanceof Array) {
+      itemToRemove.material.forEach((v) => v.dispose());
+    } else {
+      itemToRemove.material.dispose();
+    }
   }
 }

@@ -177,9 +177,9 @@ export default function MainLayout(): JSX.Element {
       throw Error('invalid engine.');
     }
 
-    const jpegdata = engineRef.current.exportImage(3840, 2160);
+    const jpegData = engineRef.current.exportImage(3840, 2160);
 
-    saveAs(new Blob([jpegdata], { type: 'image/jpeg' }), 'test.jpeg');
+    saveAs(new Blob([jpegData], { type: 'image/jpeg' }), 'test.jpeg');
   };
 
   const onTest = () => {
@@ -189,7 +189,8 @@ export default function MainLayout(): JSX.Element {
 
     const engine = engineRef.current;
 
-    engine.updateBackground([new Color(), new Color('gray')]);
+    // engine.updateBackground([new Color(), new Color('gray')]);
+    engine.clearMeshes();
   };
 
   // init effect when mount.
