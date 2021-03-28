@@ -318,6 +318,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('invalid target object group');
     }
 
+    if (this.targetObject3D.children.findIndex((mesh: Object3D) => mesh.name === newMesh.name) >= 0) {
+      throw Error('duplicated object.');
+    }
+
     this.updateMeshAfterProjectMatrix(newMesh);
     this.targetObject3D.add(newMesh);
 

@@ -3,6 +3,7 @@ import { FormControl, Grid, InputLabel, makeStyles, MenuItem, Select, Slider } f
 import { Direction } from '../engine/interfaces';
 
 interface IClippingSelectorProps {
+  disabled: boolean;
   positions: number[];
   range: number[];
   onClippingChanged: (newPosition: { dir: Direction; pos: number }) => void;
@@ -24,7 +25,7 @@ const useStyles = makeStyles((theme) => ({
 export default function ClippingSelector(props: IClippingSelectorProps): JSX.Element {
   const classes = useStyles();
 
-  const { positions, range, onClippingChanged } = props;
+  const { disabled, positions, range, onClippingChanged } = props;
 
   const [currentClipDirection, setCurrentClipDirection] = useState<Direction>(Direction.XPositive);
 
@@ -75,7 +76,7 @@ export default function ClippingSelector(props: IClippingSelectorProps): JSX.Ele
 
   return (
     <Grid container className={classes.root}>
-      <FormControl className={classes.formControl}>
+      <FormControl disabled={disabled} className={classes.formControl}>
         <InputLabel id="demo-simple-select-label">Clipping Direction:</InputLabel>
         <Select
           labelId="demo-simple-select-label"
@@ -94,6 +95,7 @@ export default function ClippingSelector(props: IClippingSelectorProps): JSX.Ele
       <div>
         <InputLabel id="demo-simple-select-label">Position:</InputLabel>
         <Slider
+          disabled={disabled}
           className={classes.slider}
           value={clipPosition}
           valueLabelFormat={valueText}
