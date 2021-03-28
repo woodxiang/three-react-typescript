@@ -14,7 +14,7 @@ interface IStlFilesViewProps {
   stlLoaded: boolean;
   stlFiles: string[];
   selectedStls: string[];
-  onSelctedStlChanged: (newSelections: string) => void;
+  onSelectedStlChanged: (newSelections: string) => void;
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -28,14 +28,14 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 export default function StlFilesView(props: IStlFilesViewProps): JSX.Element {
-  const { stlLoaded, stlFiles, selectedStls, onSelctedStlChanged } = props;
+  const { stlLoaded, stlFiles, selectedStls, onSelectedStlChanged } = props;
   const classes = useStyles();
   if (!stlLoaded) {
     return <div>Loading</div>;
   }
 
   const handleListItemClick = (item: string) => {
-    onSelctedStlChanged(item);
+    onSelectedStlChanged(item);
   };
 
   return (

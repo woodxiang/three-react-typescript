@@ -94,7 +94,7 @@ export default class PositionDetectHelper {
         ret.add(newMesh);
         nextSeed = objIdNumber[objIdNumber.length - 1].id + 1;
       } else {
-        console.log('invalid object type. ingore');
+        console.log('invalid object type. ignore');
       }
     });
 

@@ -1,5 +1,5 @@
 import { createStyles, makeStyles } from '@material-ui/core';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { WEBGL } from 'three/examples/jsm/WebGL';
 import RenderingEngine from './RenderingEngine';
 
@@ -38,13 +38,14 @@ interface IRenderingViewProps {
 
 export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   const renderDiv = useRef<HTMLDivElement>(null);
-  const renderEnv = useRef<RenderingEngine>(new RenderingEngine());
+  const renderEnv = useMemo<RenderingEngine>(() => new RenderingEngine(), []);
+
   const classes = useStyles();
 
   const { engineCallback } = props;
 
   useEffect(() => {
-    const engine = renderEnv.current;
+    const engine = renderEnv;
     if (renderDiv.current != null) {
       init(renderDiv.current, engine);
       renderDiv.current?.addEventListener('resize', () => {
@@ -64,8 +65,8 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    if (engineCallback) engineCallback(renderEnv.current);
-  }, [engineCallback]);
+    if (engineCallback) engineCallback(renderEnv);
+  }, [engineCallback, renderEnv]);
 
   if (!WEBGL.isWebGL2Available()) {
     return <div>WebGL2 Required.</div>;

@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, createStyles, FormControlLabel, Grid, makeStyles, Switch, Tab, Tabs, Theme } from '@material-ui/core';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
@@ -12,6 +12,9 @@ import { GeometryDataType } from '../engine/MeshFactory';
 import preDefinedColors from './preDefinedColors';
 import DracoFilesView from './DracoFilesView';
 import ClippingSelector from './ClippingSelector';
+import PreprocessViewManager from '../engine/PreprocessViewManager';
+import PostProcessViewManager from '../engine/PostProcessViewManager';
+import BackgroundSelector from './BackgroundSelector';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -33,24 +36,30 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 export default function MainLayout(): JSX.Element {
-  const [stlLoaded, setStlLoaded] = useState(false); // state to indicate all stl loaded.
-  const [dracoLoaded, setDracoLoaded] = useState(false);
-  const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stlfiles.
+  const [stlFiles, setStlFiles] = useState<string[]>([]); // state to keep all stl files.
   const [dracoFiles, setDracoFiles] = useState<string[]>([]);
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
   const [selectedDracos, setSelectedDracos] = useState<string[]>([]);
-  const [display3dView, setDisplay3dView] = useState<boolean>(true);
+  const [selectedBackground, setSelectedBackground] = useState<string>('dark');
   const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(false);
   const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(false);
   const [enableClipping, setEnableClipping] = useState<boolean>(false);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
   const [displayingTab, setDisplayingTab] = useState<number>(0);
+  const [displayingPreprocessView, setDisplayingPreprocessView] = useState<boolean>(true);
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
 
-  const contentManagerRef = useRef<ContentManager>(new ContentManager());
+  const preprocessViewManager = useMemo<PreprocessViewManager>(() => new PreprocessViewManager(), []);
 
-  const { clipPositions, limitBox } = contentManagerRef.current.clipping;
+  const postProcessViewManager = useMemo<PostProcessViewManager>(() => new PostProcessViewManager(), []);
+
+  const currentViewManager = useMemo<ContentManager>(
+    () => (displayingPreprocessView ? preprocessViewManager : postProcessViewManager),
+    [displayingPreprocessView, postProcessViewManager, preprocessViewManager]
+  );
+
+  const { clipPositions, limitBox } = currentViewManager.clipping;
 
   const stlPrefix = '/api/stls/';
   const dracoPrefix = 'api/dracos/';
@@ -60,7 +69,7 @@ export default function MainLayout(): JSX.Element {
   };
 
   const loadStl = async (item: string) => {
-    contentManagerRef.current.LoadStl(stlPrefix + item, preDefinedColors[stlFiles.indexOf(item)]);
+    currentViewManager.LoadStl(stlPrefix + item, preDefinedColors[stlFiles.indexOf(item)]);
   };
 
   const loadDraco = async (item: string) => {
@@ -73,13 +82,13 @@ export default function MainLayout(): JSX.Element {
 
     switch (dracoType) {
       case GeometryDataType.DracoMesh:
-        contentManagerRef.current.LoadDracoMesh(dracoPrefix + item, preDefinedColors[dracoFiles.indexOf(item)]);
+        postProcessViewManager.LoadDracoMesh(dracoPrefix + item, preDefinedColors[dracoFiles.indexOf(item)]);
         break;
       case GeometryDataType.DracoExMesh:
-        contentManagerRef.current.LoadDracoExMesh(dracoPrefix + item);
+        postProcessViewManager.LoadDracoExMesh(dracoPrefix + item);
         break;
       case GeometryDataType.DracoExPoints:
-        contentManagerRef.current.LoadDracoExPoints(dracoPrefix + item, 'red');
+        postProcessViewManager.LoadDracoExPoints(dracoPrefix + item, 'red');
         break;
       default:
         throw Error('Invalid Geometry type.');
@@ -93,7 +102,7 @@ export default function MainLayout(): JSX.Element {
     if (index !== -1) {
       // remove mesh
       newSelectedStls.splice(index, 1);
-      contentManagerRef.current.remove(stlPrefix + item);
+      preprocessViewManager.remove(stlPrefix + item);
     } else {
       // add mesh
       newSelectedStls.push(item);
@@ -108,7 +117,7 @@ export default function MainLayout(): JSX.Element {
     const newSelectedDracos = [...selectedDracos];
     if (index !== -1) {
       newSelectedDracos.splice(index, 1);
-      contentManagerRef.current.remove(dracoPrefix + item);
+      postProcessViewManager.remove(dracoPrefix + item);
     } else {
       newSelectedDracos.push(item);
       await loadDraco(item);
@@ -117,58 +126,95 @@ export default function MainLayout(): JSX.Element {
     setSelectedDracos(newSelectedDracos);
   };
 
-  const onToggleDisplay3dView = () => {
-    setDisplay3dView(!display3dView);
+  const onToggleDisplayPreprocessView = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setDisplayingPreprocessView(enabled);
   };
 
-  const applyEnableSelection = (newValue: boolean) => {
-    contentManagerRef.current.enableFlats = newValue;
+  const onToggleEnableSensorSelection = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setEnableSensorSelection(enabled);
   };
 
-  const applyEnableSensorSelection = (newValue: boolean) => {
-    contentManagerRef.current.enableSensors = newValue;
+  const onToggleFlatEnableSelection = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setEnableFlatSelection(enabled);
   };
 
-  const onToggleEnableSensorSelection = () => {
-    const newValue = !enableSensorSelection;
-    if (newValue) {
+  const onToggleMultiSelection = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setEnableMultiFlatsSelection(enabled);
+  };
+
+  const onToggleClipping = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setEnableClipping(enabled);
+  };
+
+  const onBackgroundChanged = (newBackground: string) => {
+    setSelectedBackground(newBackground);
+  };
+
+  useEffect(() => {
+    if (preprocessViewManager !== currentViewManager) {
+      preprocessViewManager.bind(undefined);
+    }
+    if (postProcessViewManager !== currentViewManager) {
+      postProcessViewManager.bind(undefined);
+    }
+    currentViewManager.bind(engineRef.current);
+  }, [currentViewManager, postProcessViewManager, preprocessViewManager]);
+
+  useEffect(() => {
+    let colors: Color | Color[] | undefined;
+    switch (selectedBackground) {
+      case 'dark':
+        colors = new Color('black');
+        break;
+      case 'light':
+        colors = new Color('grey');
+        break;
+      case 'gradient':
+        colors = [new Color('black'), new Color('grey')];
+        break;
+      default:
+        throw Error('Invalid background value.');
+    }
+
+    currentViewManager.background = colors;
+  }, [currentViewManager, selectedBackground]);
+
+  useEffect(() => {
+    if (enableSensorSelection) {
       setEnableFlatSelection(false);
-      applyEnableSelection(false);
     }
-    setEnableSensorSelection(newValue);
-    applyEnableSensorSelection(newValue);
-  };
 
-  const applyEnableClipping = (newValue: boolean) => {
-    contentManagerRef.current.enableClipping = newValue;
-  };
-  const onToggleEnableSelection = () => {
-    const newValue = !enableFlatSelection;
-    if (newValue) {
+    if (preprocessViewManager && preprocessViewManager.enableSensors !== enableSensorSelection) {
+      preprocessViewManager.enableSensors = enableSensorSelection;
+    }
+  }, [enableSensorSelection, preprocessViewManager]);
+
+  useEffect(() => {
+    if (enableFlatSelection) {
       setEnableSensorSelection(false);
-      applyEnableSensorSelection(false);
     }
-    setEnableFlatSelection(newValue);
-    applyEnableSelection(newValue);
-  };
+    if (preprocessViewManager && preprocessViewManager.enableFlats !== enableFlatSelection) {
+      preprocessViewManager.enableFlats = enableFlatSelection;
+    }
+  }, [enableFlatSelection, preprocessViewManager]);
 
-  const onToggleMultiSelection = () => {
-    const newValue = !enableMultiFlatsSelection;
-    setEnableMultiFlatsSelection(newValue);
-    contentManagerRef.current.flats.isMultipleSelection = newValue;
-  };
+  useEffect(() => {
+    if (preprocessViewManager) {
+      preprocessViewManager.isMultipleSelection = enableMultiFlatsSelection;
+    }
+  }, [enableMultiFlatsSelection, preprocessViewManager]);
 
-  const onToggleClipping = () => {
-    const newValue = !enableClipping;
-    setEnableClipping(newValue);
-    applyEnableClipping(newValue);
-  };
+  useEffect(() => {
+    if (preprocessViewManager) {
+      preprocessViewManager.enableClipping = enableClipping;
+    }
+  }, [enableClipping, preprocessViewManager]);
 
   const onClippingChanged = (newPosition: { dir: Direction; pos: number }) => {
-    if (!contentManagerRef.current.clipping) {
+    if (!currentViewManager.clipping) {
       return;
     }
-    const clippingManager = contentManagerRef.current.clipping;
+    const clippingManager = currentViewManager.clipping;
     clippingManager.updateClip(newPosition.dir, newPosition.pos);
   };
 
@@ -202,28 +248,28 @@ export default function MainLayout(): JSX.Element {
       const newFiles = result.data as string[];
 
       setStlFiles(newFiles);
-
-      setStlLoaded(true);
     }
 
     async function loadDracoFiles() {
       const result = await axios(dracoPrefix);
       const newFiles = result.data as string[];
       setDracoFiles(newFiles);
-      setDracoLoaded(true);
     }
 
     loadStlFiles();
     loadDracoFiles();
+
+    return () => {
+      // dispose;
+    };
   }, []);
 
   const classes = useStyles();
 
   const setupEngine = async (eg: RenderingEngine | undefined) => {
-    const contentManager = contentManagerRef.current;
+    const contentManager = currentViewManager;
     if (engineRef.current !== eg) {
       if (engineRef.current) {
-        // uninitialized old engine.
         contentManager.bind(undefined);
       }
 
@@ -231,22 +277,6 @@ export default function MainLayout(): JSX.Element {
 
       if (engineRef.current) {
         contentManager.bind(engineRef.current);
-        engineRef.current.updateBackground([new Color('gray'), new Color('white')]);
-        contentManager.enableClipping = enableClipping;
-
-        // update selection setting
-        contentManager.enableFlats = enableFlatSelection;
-        contentManager.isMultipleSelection = enableMultiFlatsSelection;
-
-        // initialize after set engine.
-        const promises: Promise<void>[] = [];
-        selectedStls.forEach(async (stl) => {
-          promises.push(loadStl(stl));
-        });
-
-        await Promise.all(promises);
-
-        contentManagerRef.current.flats.restore();
       }
     }
   };
@@ -254,17 +284,17 @@ export default function MainLayout(): JSX.Element {
   const list =
     displayingTab === 0 ? (
       <StlFilesView
-        stlLoaded={stlLoaded}
+        stlLoaded={stlFiles.length > 0}
         stlFiles={stlFiles}
         selectedStls={selectedStls}
-        onSelctedStlChanged={handleSelectedStlChanged}
+        onSelectedStlChanged={handleSelectedStlChanged}
       />
     ) : (
       <DracoFilesView
-        dracoLoaded={dracoLoaded}
+        dracoLoaded={dracoFiles.length > 0}
         dracoFiles={dracoFiles}
         selectedDracos={selectedDracos}
-        onSelctedDracoChanged={handleSelectedDracoChanged}
+        onSelectedDracoChanged={handleSelectedDracoChanged}
       />
     );
 
@@ -273,26 +303,57 @@ export default function MainLayout(): JSX.Element {
       <Grid container spacing={4} className={classes.full}>
         <Grid item md={12}>
           <FormControlLabel
-            control={<Switch checked={display3dView} onChange={onToggleDisplay3dView} />}
-            label="Display 3D View"
+            control={<Switch checked={displayingPreprocessView} onChange={onToggleDisplayPreprocessView} />}
+            label="Display Preprocess View"
           />
+
           <FormControlLabel
-            control={<Switch checked={enableSensorSelection} onChange={onToggleEnableSensorSelection} />}
+            control={
+              <Switch
+                disabled={currentViewManager !== preprocessViewManager}
+                checked={enableSensorSelection}
+                onChange={onToggleEnableSensorSelection}
+              />
+            }
             label="Enable Sensors Selection"
           />
           <FormControlLabel
-            control={<Switch checked={enableFlatSelection} onChange={onToggleEnableSelection} />}
+            control={
+              <Switch
+                disabled={currentViewManager !== preprocessViewManager}
+                checked={enableFlatSelection}
+                onChange={onToggleFlatEnableSelection}
+              />
+            }
             label="Enable Flat Selection"
           />
           <FormControlLabel
-            control={<Switch checked={enableMultiFlatsSelection} onChange={onToggleMultiSelection} />}
+            control={
+              <Switch
+                disabled={currentViewManager !== preprocessViewManager || !enableFlatSelection}
+                checked={enableMultiFlatsSelection}
+                onChange={onToggleMultiSelection}
+              />
+            }
             label="Enable Multiple Flat Selection"
           />
           <FormControlLabel
-            control={<Switch checked={enableClipping} onChange={onToggleClipping} />}
+            control={
+              <Switch
+                disabled={currentViewManager !== preprocessViewManager}
+                checked={enableClipping}
+                onChange={onToggleClipping}
+              />
+            }
             label="Enable Clipping"
           />
-          <ClippingSelector positions={clipPositions.slice(0)} range={limitBox} onClippingChanged={onClippingChanged} />
+          <BackgroundSelector selectedBackground={selectedBackground} onBackgroundChanged={onBackgroundChanged} />
+          <ClippingSelector
+            disabled={currentViewManager !== preprocessViewManager}
+            positions={clipPositions.slice(0)}
+            range={limitBox}
+            onClippingChanged={onClippingChanged}
+          />
           <Button onClick={onExportImage}>Export Image</Button>
           <Button onClick={onTest}>Test</Button>
         </Grid>
@@ -304,8 +365,7 @@ export default function MainLayout(): JSX.Element {
           {list}
         </Grid>
         <Grid item md={10} className={classes.full}>
-          {display3dView && <RenderingView engineCallback={setupEngine} />}
-          {!display3dView && <RenderingView engineCallback={setupEngine} />}
+          <RenderingView engineCallback={setupEngine} />
         </Grid>
       </Grid>
     </div>
