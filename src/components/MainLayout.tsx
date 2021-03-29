@@ -123,7 +123,7 @@ export default function MainLayout(): JSX.Element {
       await loadDraco(item);
     }
 
-    setSelectedDracoFiles(newSelectedDracos);
+    setSelectedDracos(newSelectedDracos);
   };
 
   const onToggleDisplayPreprocessView = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
