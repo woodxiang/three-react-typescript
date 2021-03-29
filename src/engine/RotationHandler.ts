@@ -44,6 +44,30 @@ export default class RotationHandler extends ActionHandlerBase {
     return false;
   }
 
+  handleRightButtonDown(event: PointerEvent, callback: IActionCallback): boolean {
+    if (this.isEnabled) {
+      const localCallback = callback;
+      if (localCallback.state === STATE.NONE) {
+        this.previousPosition = new Vector2(event.offsetX, event.offsetY);
+        return false;
+      }
+    }
+    return false;
+  }
+
+  handleRightButtonUp(event: PointerEvent, callback: IActionCallback): boolean {
+    if (this.isEnabled) {
+      const localCallback = callback;
+      if (localCallback.state === STATE.PAN) {
+        localCallback.cursorType = CURSOR_TYPE.NONE;
+        localCallback.releasePointer();
+        localCallback.state = STATE.NONE;
+        return true;
+      }
+    }
+    return false;
+  }
+
   handleMouseMove(event: PointerEvent, callback: IActionCallback): boolean {
     if (this.isEnabled) {
       const localCallback = callback;
@@ -53,10 +77,25 @@ export default class RotationHandler extends ActionHandlerBase {
           localCallback.capturePointer(event.pointerId);
           localCallback.state = STATE.ROTATE;
           localCallback.cursorType = CURSOR_TYPE.HAND;
+        } else if (event.buttons === 2) {
+          localCallback.capturePointer(event.pointerId);
+          localCallback.state = STATE.PAN;
+          localCallback.cursorType = CURSOR_TYPE.HAND;
         }
       }
       if (localCallback.state === STATE.ROTATE) {
         this.rotate(newPosition.x - this.previousPosition.x, newPosition.y - this.previousPosition.y, localCallback);
+        this.previousPosition = newPosition;
+        return true;
+      }
+
+      if (localCallback.state === STATE.PAN) {
+        this.translate2d(
+          ((newPosition.x - this.previousPosition.x) / callback.viewPortSize.x) * 2,
+          (-(newPosition.y - this.previousPosition.y) / callback.viewPortSize.y) * 2,
+          callback
+        );
+
         this.previousPosition = newPosition;
         return true;
       }
@@ -128,6 +167,15 @@ export default class RotationHandler extends ActionHandlerBase {
 
   private zoom3d(delta: number): void {
     this.camera.position.z *= 1.0 + delta / 120 / 10;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private translate2d(deltaX: number, deltaY: number, callback: IActionCallback): void {
+    const m = new Matrix4();
+    m.makeTranslation(deltaX, deltaY, 0);
+    m.multiply(callback.afterProjectMatrix);
+
+    callback.afterProjectMatrix.copy(m);
   }
 
   private rotate(x: number, y: number, callback: IActionCallback): void {
