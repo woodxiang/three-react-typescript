@@ -4,6 +4,7 @@ import { Color } from 'three/src/math/Color';
 import { FrontSide } from 'three/src/constants';
 import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { Mesh } from 'three/src/objects/Mesh';
+import { Group } from 'three/src/objects/Group';
 import RenderingEngine from './RenderingEngine';
 import PickPositionHandler from './PickPositionHandler';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
@@ -14,6 +15,8 @@ export default class SensorManager extends PickPositionHandler {
   private activeSensorName: string | undefined = undefined;
 
   private engine: RenderingEngine | undefined;
+
+  private sensorsRoot: Group | undefined;
 
   private inactivePointMaterial = new MeshLambertExMaterial({
     diffuse: new Color('#00FF00'),
@@ -37,10 +40,22 @@ export default class SensorManager extends PickPositionHandler {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
       this.engine.removeActionHandler(this);
+      if (this.sensorsRoot) {
+        RenderingEngine.disposeGroup(this.sensorsRoot);
+        this.sensorsRoot = undefined;
+      }
     }
     this.engine = engine;
     if (this.engine) {
-      this.engine?.addActionHandler(this);
+      this.engine.addActionHandler(this);
+      this.sensorsRoot = new Group();
+      this.sensorsRoot.name = '#sensors';
+      this.engine.root.add(this.sensorsRoot);
+
+      this.sensors.forEach((v) => {
+        this.addPoint(v.id.toString(), v.position);
+      });
+
       this.activePointMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
       this.inactivePointMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
     }
@@ -81,7 +96,7 @@ export default class SensorManager extends PickPositionHandler {
    * @param pos position of the point
    */
   private addPoint(name: string, pos: number[]): void {
-    if (this.engine) {
+    if (this.engine && this.sensorsRoot) {
       const ball = new SphereGeometry(this.engine.maxDim / 300, 4, 4);
       const mesh = new Mesh(ball, this.activePointMaterial);
       mesh.translateX(pos[0]);
@@ -89,7 +104,7 @@ export default class SensorManager extends PickPositionHandler {
       mesh.translateZ(pos[2]);
       mesh.name = name;
       ball.name = name;
-      this.engine.addMesh(mesh);
+      this.sensorsRoot.add(mesh);
     }
   }
 
@@ -100,8 +115,8 @@ export default class SensorManager extends PickPositionHandler {
    */
   private activePoint(name: string, enable: boolean): void {
     if (this.engine) {
-      const toUpdate = this.engine.findMesh(name);
-      if (toUpdate) {
+      const toUpdate = this.sensorsRoot?.children.find((v) => v.name === name);
+      if (toUpdate && toUpdate instanceof Mesh) {
         toUpdate.material = enable ? this.activePointMaterial : this.inactivePointMaterial;
       }
     }

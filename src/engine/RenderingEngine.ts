@@ -859,7 +859,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.objectTransformChangedEvent.trigger(matrix);
   }
 
-  private static disposeGroup(group: Group): string[] {
+  public static disposeGroup(group: Group): string[] {
     const ret: string[] = [];
     group.children.forEach((v) => {
       if (v instanceof Group) {
@@ -878,7 +878,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return ret;
   }
 
-  private static disposeMesh(itemToRemove: Mesh | Points): void {
+  public static disposeMesh(itemToRemove: Mesh | Points): void {
     itemToRemove.geometry.dispose();
 
     if (itemToRemove.material instanceof Array) {
