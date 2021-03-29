@@ -17,6 +17,8 @@ function init(newDiv: HTMLDivElement, renderEnv: RenderingEngine): void {
   const width = newDiv.clientWidth;
   const height = newDiv.clientHeight;
 
+  newDiv.addEventListener('contextmenu', (e) => e.preventDefault());
+
   renderEnv.init(newDiv, width, height);
 
   renderEnv.startAnimate();
