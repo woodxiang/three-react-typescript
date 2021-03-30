@@ -40,11 +40,12 @@ export default function MainLayout(): JSX.Element {
   const [dracoFiles, setDracoFiles] = useState<string[]>([]);
   const [selectedStls, setSelectedStls] = useState<string[]>([]); // state to keep the selected stl
   const [selectedDracos, setSelectedDracos] = useState<string[]>([]);
-  const [selectedBackground, setSelectedBackground] = useState<string>('dark');
+  const [selectedBackground, setSelectedBackground] = useState<string>('light');
   const [enableFlatSelection, setEnableFlatSelection] = useState<boolean>(false);
   const [enableMultiFlatsSelection, setEnableMultiFlatsSelection] = useState<boolean>(false);
   const [enableClipping, setEnableClipping] = useState<boolean>(false);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
+  const [enableMeasurement, setEnableMeasurement] = useState<boolean>(false);
   const [displayingTab, setDisplayingTab] = useState<number>(0);
   const [displayingPreprocessView, setDisplayingPreprocessView] = useState<boolean>(true);
 
@@ -146,6 +147,10 @@ export default function MainLayout(): JSX.Element {
     setEnableClipping(enabled);
   };
 
+  const onToggleMeasurement = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setEnableMeasurement(enabled);
+  };
+
   const onBackgroundChanged = (newBackground: string) => {
     setSelectedBackground(newBackground);
   };
@@ -182,6 +187,7 @@ export default function MainLayout(): JSX.Element {
   useEffect(() => {
     if (enableSensorSelection) {
       setEnableFlatSelection(false);
+      setEnableMeasurement(false);
     }
 
     if (preprocessViewManager && preprocessViewManager.enableSensors !== enableSensorSelection) {
@@ -192,11 +198,22 @@ export default function MainLayout(): JSX.Element {
   useEffect(() => {
     if (enableFlatSelection) {
       setEnableSensorSelection(false);
+      setEnableMeasurement(false);
     }
     if (preprocessViewManager && preprocessViewManager.enableFlats !== enableFlatSelection) {
       preprocessViewManager.enableFlats = enableFlatSelection;
     }
   }, [enableFlatSelection, preprocessViewManager]);
+
+  useEffect(() => {
+    if (enableMeasurement) {
+      setEnableSensorSelection(false);
+      setEnableFlatSelection(false);
+    }
+    if (preprocessViewManager && preprocessViewManager.enableMeasurement !== enableMeasurement) {
+      preprocessViewManager.enableMeasurement = enableMeasurement;
+    }
+  }, [enableMeasurement, preprocessViewManager]);
 
   useEffect(() => {
     if (preprocessViewManager) {
@@ -346,6 +363,16 @@ export default function MainLayout(): JSX.Element {
               />
             }
             label="Enable Clipping"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                disabled={currentViewManager !== preprocessViewManager}
+                checked={enableMeasurement}
+                onChange={onToggleMeasurement}
+              />
+            }
+            label="Enable Measurement"
           />
           <BackgroundSelector selectedBackground={selectedBackground} onBackgroundChanged={onBackgroundChanged} />
           <ClippingSelector

@@ -37,6 +37,7 @@ import LiteEvent from './event';
 import TextureFactory from './TextureFactory';
 import IAfterProject from './Materials/IAfterProject';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
+import OverlapLayer, { IOverlapDrawer } from './OverlapLayer';
 
 /**
  * Rendering Engine
@@ -84,7 +85,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public sizeChangedEvent = new LiteEvent<{ width: number; height: number }>();
 
-  private debugMode = false;
+  private overlapLayer: OverlapLayer | undefined;
+
+  private debugMode = true;
 
   private stats: Stats | undefined;
 
@@ -95,6 +98,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private wrappedCursorType: CURSOR_TYPE = CURSOR_TYPE.ARROW;
 
   private capturedPointerId = -1;
+
+  private overlayUpdateRequired = false;
 
   public setDebugMode(isDebugMode: boolean): void {
     if (this.debugMode === isDebugMode) return;
@@ -125,11 +130,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.parentDiv = div;
     this.wrappedScene = new Scene();
     this.renderer = new WebGLRenderer({ antialias: true, alpha: true });
-    this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 100);
+    this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 15);
     this.wrappedCamera.position.set(0, 0, 10);
 
     this.wrappedRoot = new Group();
     this.targetObject3D = new Group();
+    this.overlapLayer = new OverlapLayer();
+    this.overlapLayer.init();
 
     this.resize(width, height);
 
@@ -244,6 +251,23 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     const index = this.wrappedRenderHandlers.indexOf(handler);
     if (index >= 0) {
       this.wrappedRenderHandlers.splice(index, 1);
+    }
+  }
+
+  public addOverlayLayer(drawer: IOverlapDrawer): void {
+    if (!this.overlapLayer) {
+      throw Error('not initialized.');
+    }
+    this.overlapLayer.drawers.push(drawer);
+  }
+
+  public removeOverlayLayer(drawer: IOverlapDrawer): void {
+    if (!this.overlapLayer) {
+      throw Error('not initialized.');
+    }
+    const index = this.overlapLayer.drawers.indexOf(drawer);
+    if (index >= 0) {
+      this.overlapLayer.drawers.splice(index, 1);
     }
   }
 
@@ -411,6 +435,16 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     throw Error('no specified geometry.');
   }
 
+  public calculateScreenPosition(pos: Vector3): Vector2 {
+    let matrix = this.camera.matrixWorldInverse.clone().multiply(this.matrix);
+    matrix = this.camera.projectionMatrix.clone().multiply(matrix);
+    matrix = this.afterProjectMatrix.clone().multiply(matrix);
+
+    const ret = pos.clone().applyMatrix4(matrix);
+
+    return new Vector2(((ret.x + 1) / 2) * this.viewPortSize.x, ((1 - ret.y) / 2) * this.viewPortSize.y);
+  }
+
   /**
    * start animation.
    */
@@ -540,6 +574,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   public set rotationMatrix(mat: Matrix4) {
     this.wrappedRotateMatrix = mat;
     this.updateRootObjectMatrix();
+    this.invalidOverlap();
   }
 
   public get afterProjectMatrix(): Matrix4 {
@@ -548,18 +583,21 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public set afterProjectMatrix(mat: Matrix4) {
     this.wrappedAfterProjectMatrix.copy(mat);
+    this.invalidOverlap();
   }
 
   public get matrix(): Matrix4 {
-    const matrix = this.wrappedRotateMatrix.clone();
-    matrix.multiply(this.adaptMatrix);
-
-    return matrix;
+    return this.wrappedRotateMatrix.clone().multiply(this.adaptMatrix);
   }
 
   public resetView(): void {
     this.afterProjectMatrix = new Matrix4();
     this.rotationMatrix = new Matrix4();
+    this.invalidOverlap();
+  }
+
+  public invalidOverlap(): void {
+    this.overlayUpdateRequired = true;
   }
 
   /**
@@ -584,6 +622,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       //
       this.renderer.setSize(width, height);
     }
+
+    this.overlapLayer?.resize(width, height);
+
     this.sizeChangedEvent?.trigger({ width, height });
   }
 
@@ -718,6 +759,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.wrappedRenderHandlers.forEach((v) => {
       v.render(renderer);
     });
+    if (this.overlapLayer) {
+      if (this.overlayUpdateRequired) {
+        this.overlapLayer.update();
+        this.overlayUpdateRequired = false;
+      }
+      this.overlapLayer.render(this.renderer);
+    }
     this.renderer.autoClear = true;
   };
 
@@ -827,6 +875,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
       // apply the adapt scale.
       this.updateRootObjectMatrix();
+      this.invalidOverlap();
     } else {
       this.adaptMatrix = new Matrix4();
       this.domainRangeChangedEvent.trigger(undefined);

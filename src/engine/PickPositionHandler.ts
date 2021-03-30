@@ -25,7 +25,9 @@ export default class PickPositionHandler extends ActionHandlerBase {
         const position = new Vector3(ret[0], ret[1], ret[2]);
         const objId = Math.round(ret[3]);
         const objName = detectScene.map.get(objId);
-        this.onHit(position, objName);
+        if (objName) {
+          this.onHit(position, objName);
+        }
       }
     }
 
@@ -33,7 +35,7 @@ export default class PickPositionHandler extends ActionHandlerBase {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected onHit(position: Vector3, name: string | undefined): boolean {
+  protected onHit(position: Vector3, name: string): boolean {
     return false;
   }
 }

@@ -38,6 +38,7 @@ interface IActionCallback {
   readonly maxDim: number;
   rotationMatrix: Matrix4;
   afterProjectMatrix: Matrix4;
+  invalidOverlap(): void;
   readonly matrix: Matrix4;
   readonly viewPortSize: Vector2;
   hitTest(xPos: number, yPos: number): IHitTestResult | null;

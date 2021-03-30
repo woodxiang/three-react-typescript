@@ -41,6 +41,10 @@ export default class SensorManager extends PickPositionHandler {
     if (this.engine !== undefined) {
       this.engine.removeActionHandler(this);
       if (this.sensorsRoot) {
+        const index = this.engine.root.children.indexOf(this.sensorsRoot);
+        if (index >= 0) {
+          this.engine.root.children.splice(index, 1);
+        }
         RenderingEngine.disposeGroup(this.sensorsRoot);
         this.sensorsRoot = undefined;
       }
@@ -49,7 +53,7 @@ export default class SensorManager extends PickPositionHandler {
     if (this.engine) {
       this.engine.addActionHandler(this);
       this.sensorsRoot = new Group();
-      this.sensorsRoot.name = '#sensors';
+      this.sensorsRoot.name = '#sensors#';
       this.engine.root.add(this.sensorsRoot);
 
       this.sensors.forEach((v) => {
@@ -61,13 +65,9 @@ export default class SensorManager extends PickPositionHandler {
     }
   }
 
-  public onHit(pos: Vector3, name: string | undefined): boolean {
+  public onHit(pos: Vector3, name: string): boolean {
     if (!this.engine) {
       throw Error('bind engine before invoke.');
-    }
-
-    if (name === undefined) {
-      return false;
     }
 
     const pickedSensor = this.sensors.find((v) => v.id === name);

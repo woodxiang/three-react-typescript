@@ -139,6 +139,7 @@ export default class RotationHandler extends ActionHandlerBase {
       if (localCallback.state === STATE.NONE) {
         if (event.ctrlKey) {
           this.zoom3d(event.deltaY);
+          callback.invalidOverlap();
         } else {
           this.zoom2d(
             (event.offsetX / callback.viewPortSize.x) * 2 - 1,
