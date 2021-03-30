@@ -147,6 +147,8 @@ export default class RotationHandler extends ActionHandlerBase {
             event.deltaY,
             callback
           );
+
+          callback.invalidOverlap();
         }
         return true;
       }
