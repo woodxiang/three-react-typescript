@@ -4,6 +4,7 @@ import { Points } from 'three/src/objects/Points';
 import ContentManager from './ContentManager';
 import LegendManager from './LegendManager';
 import LutEx from './LutEx';
+import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import PointsExMaterial from './Materials/PointsExMaterial';
 import MeshFactory, { GeometryDataType } from './MeshFactory';
 
@@ -34,6 +35,8 @@ export default class PostProcessViewManager extends ContentManager {
     const range = await this.loadAndAddDracoExMesh(url, opacity);
 
     this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
+
+    this.updateColormap();
   }
 
   public async LoadDracoMesh(url: string, color: string, opacity?: number): Promise<void> {
@@ -61,6 +64,7 @@ export default class PostProcessViewManager extends ContentManager {
       this.engine?.removeMesh(url);
       const totalRange = this.calculateRange();
       this.legend.setRange(totalRange);
+      this.updateColormap();
       return true;
     }
 
@@ -124,6 +128,7 @@ export default class PostProcessViewManager extends ContentManager {
         this.engine?.setVisible(false, key);
       }
     });
+    this.updateColormap();
     this.dracoExPoints.forEach((value, key) => {
       this.loadAndAddDracoExPoints(key, value.color);
       if (!value.visible) {
@@ -140,12 +145,8 @@ export default class PostProcessViewManager extends ContentManager {
     }
 
     // add color mapped mesh.
-    this.legend.updateLut(new LutEx());
-    const totalRange = this.calculateRange();
-    this.legend.setRange(totalRange);
-
     if (this.engine) {
-      const material = MeshFactory.createColorMapMaterial(totalRange, this.legend.lut, opacity);
+      const material = MeshFactory.createColorMapMaterial({ min: 0, max: 1 }, this.legend.lut, opacity);
       const mesh = new Mesh(geometry, material);
       mesh.name = url;
 
@@ -187,5 +188,31 @@ export default class PostProcessViewManager extends ContentManager {
     });
 
     return { min, max };
+  }
+
+  private updateColormap() {
+    const totalRange = this.calculateRange();
+    const newLut = new LutEx();
+    this.legend.updateLut(newLut);
+    this.legend.setRange(totalRange);
+
+    if (this.engine) {
+      this.dracoExMeshes.forEach((value, key) => {
+        const mesh = this.engine?.findMesh(key);
+        if (mesh) {
+          const materials = [];
+          if (mesh.material instanceof Array) {
+            materials.push(...mesh.material);
+          } else {
+            materials.push(mesh.material);
+          }
+          materials.forEach((m) => {
+            if (m instanceof ColorMapLambertMaterial) {
+              (<ColorMapLambertMaterial>m).updateRange(totalRange.min, totalRange.max);
+            }
+          });
+        }
+      });
+    }
   }
 }
