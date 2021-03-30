@@ -151,5 +151,6 @@ export default class ColorMapLambertMaterial extends ShaderMaterial implements I
     this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
+    this.uniforms.afterProjectMatrix.value = this.afterProjectMatrix;
   }
 }

@@ -73,5 +73,6 @@ export default class MeshPhongExMaterial extends ShaderMaterial implements IAfte
     this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
+    this.uniforms.afterProjectMatrix.value = this.afterProjectMatrix;
   }
 }

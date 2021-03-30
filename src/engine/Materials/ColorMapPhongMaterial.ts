@@ -83,5 +83,6 @@ export default class ColorMapPhongMaterial extends ShaderMaterial implements IAf
     this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
+    this.uniforms.afterProjectMatrix.value = this.afterProjectMatrix;
   }
 }

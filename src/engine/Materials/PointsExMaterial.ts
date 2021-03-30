@@ -74,5 +74,6 @@ export default class PointsExMaterial extends ShaderMaterial implements IAfterPr
     this.uniforms = UniformsUtils.merge([ShaderLib.phong.uniforms, toUniform(this)]);
     this.vertexShader = vert;
     this.fragmentShader = frag;
+    this.uniforms.afterProjectMatrix.value = this.afterProjectMatrix;
   }
 }
