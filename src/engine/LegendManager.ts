@@ -9,35 +9,24 @@ import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 import { CanvasTexture } from 'three/src/textures/CanvasTexture';
 import LiteEvent from './event';
-import { IRenderHandler } from './interfaces';
 import LutEx from './LutEx';
+import { IOverlapDrawer } from './OverlapLayer';
 
 interface ILegendSource {
-  addRenderHandler(handler: IRenderHandler): void;
-  removeRenderHandler(handler: IRenderHandler): void;
+  addOverlayLayer(drawer: IOverlapDrawer): void;
+  removeOverlayLayer(drawer: IOverlapDrawer): void;
+  invalidOverlap(): void;
   meshAddedEvent: LiteEvent<Mesh | Points>;
   sizeChangedEvent: LiteEvent<{ width: number; height: number }>;
   readonly viewPortSize: Vector2;
 }
 
-export default class LegendManager implements IRenderHandler {
-  public renderOrder = 9999;
-
+export default class LegendManager implements IOverlapDrawer {
   public enabled = true;
-
-  private scene: Scene | undefined;
-
-  private camera: OrthographicCamera | undefined;
 
   private engine: ILegendSource | undefined;
 
   private wrappedLut: LutEx | undefined = undefined;
-
-  private canvas: HTMLCanvasElement | undefined;
-
-  private sprite: Sprite | undefined;
-
-  private size = new Vector2();
 
   private range: { min: number; max: number } | undefined;
 
@@ -59,8 +48,8 @@ export default class LegendManager implements IRenderHandler {
     if (this.engine) {
       // clear all
       //
-      this.engine.sizeChangedEvent.remove(this.onSizeChanged);
-      this.engine.removeRenderHandler(this);
+      this.engine.invalidOverlap();
+      this.engine.removeOverlayLayer(this);
       this.engine = undefined;
     }
 
@@ -68,79 +57,43 @@ export default class LegendManager implements IRenderHandler {
 
     if (this.engine) {
       // initialize all
-
-      this.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 2);
-      this.camera.position.set(0, 0, 1);
-
-      this.canvas = document.createElement('canvas');
-      const texture = new CanvasTexture(this.canvas);
-
-      this.sprite = new Sprite();
-      this.sprite.material = new SpriteMaterial({
-        map: texture,
-      });
-
-      this.sprite.scale.set(0.8, 0.8, 0.8);
-      this.sprite.position.set(-0.5, 0.5, 0);
-
-      this.scene = new Scene();
-      this.scene.add(this.sprite);
-      this.engine.addRenderHandler(this);
-      this.engine.sizeChangedEvent.add(this.onSizeChanged);
-
-      const sz = this.engine.viewPortSize;
-      this.onSizeChanged({ width: sz.x, height: sz.y });
+      this.engine.addOverlayLayer(this);
     }
   }
 
   public setRange(range: { min: number; max: number }): void {
     this.range = range;
-    this.update();
+    this.engine?.invalidOverlap();
   }
 
   public setTitle(newTitle: string): void {
     this.title = newTitle;
-    this.update();
+    this.engine?.invalidOverlap();
   }
 
   public updateLut(lut: LutEx | undefined): void {
     this.wrappedLut = lut;
-    this.update();
+    this.engine?.invalidOverlap();
   }
 
-  private update(): void {
-    if (!this.canvas || !this.scene) {
-      throw Error('not initialized.');
-    }
-    if (!this.wrappedLut) {
-      return;
-    }
+  public draw(ctx: CanvasRenderingContext2D): void {
+    if (this.engine && this.wrappedLut) {
+      const { y } = this.engine.viewPortSize;
+      const [clientWidth, clientHeight] = [y / 3, y / 3];
 
-    const table = this.wrappedLut.generateLookupTable(21);
+      const titleHeight = 0.1 * clientHeight;
 
-    const itemNumber = this.wrappedLut.method === InterpolateDiscrete ? this.wrappedLut.map.length : 20;
+      const colorBarTop = 0.15 * clientHeight;
+      const colorBarLeft = 0.1 * clientWidth;
+      const colorBarHeight = 0.8 * clientHeight;
+      const colorBarWidth = 0.1 * clientWidth;
 
-    const clientWidth = 1024 * 2;
-    const clientHeight = 1024 * 2;
+      const markLength = colorBarWidth * 0.1;
 
-    const titleHeight = 0.1 * clientHeight;
-
-    const colorBarTop = 0.15 * clientHeight;
-    const colorBarLeft = 0.1 * clientWidth;
-    const colorBarHeight = 0.8 * clientHeight;
-    const colorBarWidth = 0.1 * clientWidth;
-
-    const markLength = colorBarWidth * 0.1;
-
-    this.canvas.width = clientWidth;
-    this.canvas.height = clientHeight;
-    const ctx = this.canvas.getContext('2d');
-    if (ctx) {
-      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      ctx.font = `Normal ${96}px Arial`;
+      ctx.font = `Normal ${36}px Arial`;
       ctx.fillStyle = 'rgba(200, 0, 0, 1)';
       ctx.strokeStyle = 'black';
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 2;
 
       // draw color box
       ctx.strokeRect(colorBarLeft, colorBarTop, colorBarWidth, colorBarHeight);
@@ -175,8 +128,8 @@ export default class LegendManager implements IRenderHandler {
 
       // draw labels
       let labelFontSize = step * 0.5;
-      if (labelFontSize > 96) {
-        labelFontSize = 96;
+      if (labelFontSize > 36) {
+        labelFontSize = 36;
       }
 
       let maxTextSize = 0;
@@ -225,21 +178,4 @@ export default class LegendManager implements IRenderHandler {
       }
     }
   }
-
-  private onSizeChanged = (newSize: { width: number; height: number } | undefined) => {
-    if (!this.camera || !this.sprite) {
-      throw new Error('not initialized.');
-    }
-    if (newSize) {
-      this.size.set(newSize.width, newSize.height);
-      const ratio = newSize.width / newSize.height;
-      this.camera.left = -ratio;
-      this.camera.right = ratio;
-      this.camera.updateProjectionMatrix();
-
-      this.sprite.position.set(-ratio + 0.5, 0.5, 0);
-
-      this.update();
-    }
-  };
 }
