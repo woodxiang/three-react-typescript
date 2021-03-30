@@ -3,6 +3,7 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Color } from 'three/src/math/Color';
 import ActionHandlerBase from './ActionHandlerBase';
 import { IActionCallback, IFlat, IHitTestResult, STATE } from './interfaces';
+import IAfterProject from './Materials/IAfterProject';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import RenderingEngine from './RenderingEngine';
 import SelectionHelper from './SelectionHelper';
@@ -203,8 +204,20 @@ export default class FlatManager extends ActionHandlerBase {
         if (!Array.isArray(mesh.material)) {
           const inactiveFlatMaterial = this.inactiveFlatMaterial.clone();
           inactiveFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+
+          const m1 = (inactiveFlatMaterial as unknown) as IAfterProject;
+          if (m1 && m1.ReplaceAfterProjectMatrix) {
+            m1.ReplaceAfterProjectMatrix((<IAfterProject>(<unknown>mesh.material)).afterProjectMatrix);
+          }
+
           const activeFlatMaterial = this.activeFlatMaterial.clone();
           activeFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
+
+          const m2 = (activeFlatMaterial as unknown) as IAfterProject;
+          if (m2 && m2.ReplaceAfterProjectMatrix) {
+            m2.ReplaceAfterProjectMatrix((<IAfterProject>(<unknown>mesh.material)).afterProjectMatrix);
+          }
+
           mesh.material = [mesh.material, inactiveFlatMaterial, activeFlatMaterial];
         }
         const geo = mesh.geometry as BufferGeometry;

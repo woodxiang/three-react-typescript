@@ -130,7 +130,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.parentDiv = div;
     this.wrappedScene = new Scene();
     this.renderer = new WebGLRenderer({ antialias: true, alpha: true });
-    this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 15);
+    this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 100);
     this.wrappedCamera.position.set(0, 0, 10);
 
     this.wrappedRoot = new Group();
