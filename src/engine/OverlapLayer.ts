@@ -1,7 +1,8 @@
-import { Vector2, WebGLRenderer } from 'three';
 import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
 import { SpriteMaterial } from 'three/src/materials/SpriteMaterial';
+import { Vector2 } from 'three/src/math/Vector2';
 import { Sprite } from 'three/src/objects/Sprite';
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 import { CanvasTexture } from 'three/src/textures/CanvasTexture';
 
