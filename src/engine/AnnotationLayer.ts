@@ -6,11 +6,11 @@ import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 import { CanvasTexture } from 'three/src/textures/CanvasTexture';
 
-export interface IOverlapDrawer {
+export interface IAnnotationDrawer {
   draw(ctx: CanvasRenderingContext2D): void;
 }
 
-export default class OverlapLayer {
+export default class AnnotationLayer {
   private scene: Scene | undefined;
 
   private camera: OrthographicCamera | undefined;
@@ -21,7 +21,7 @@ export default class OverlapLayer {
 
   private size = new Vector2(0, 0);
 
-  public drawers: IOverlapDrawer[] = [];
+  public drawers: IAnnotationDrawer[] = [];
 
   public init(): void {
     this.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 2);

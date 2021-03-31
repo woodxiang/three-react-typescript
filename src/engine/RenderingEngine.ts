@@ -37,7 +37,7 @@ import LiteEvent from './event';
 import TextureFactory from './TextureFactory';
 import IAfterProject from './Materials/IAfterProject';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
-import OverlapLayer, { IOverlapDrawer } from './OverlapLayer';
+import AnnotationLayer, { IAnnotationDrawer } from './AnnotationLayer';
 
 /**
  * Rendering Engine
@@ -85,7 +85,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public sizeChangedEvent = new LiteEvent<{ width: number; height: number }>();
 
-  private overlapLayer: OverlapLayer | undefined;
+  private overlapLayer: AnnotationLayer | undefined;
 
   private debugMode = true;
 
@@ -135,7 +135,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedRoot = new Group();
     this.targetObject3D = new Group();
-    this.overlapLayer = new OverlapLayer();
+    this.overlapLayer = new AnnotationLayer();
     this.overlapLayer.init();
 
     this.resize(width, height);
@@ -254,14 +254,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
   }
 
-  public addOverlayLayer(drawer: IOverlapDrawer): void {
+  public addOverlayLayer(drawer: IAnnotationDrawer): void {
     if (!this.overlapLayer) {
       throw Error('not initialized.');
     }
     this.overlapLayer.drawers.push(drawer);
   }
 
-  public removeOverlayLayer(drawer: IOverlapDrawer): void {
+  public removeOverlayLayer(drawer: IAnnotationDrawer): void {
     if (!this.overlapLayer) {
       throw Error('not initialized.');
     }

@@ -10,18 +10,18 @@ import { Scene } from 'three/src/scenes/Scene';
 import { CanvasTexture } from 'three/src/textures/CanvasTexture';
 import LiteEvent from './event';
 import LutEx from './LutEx';
-import { IOverlapDrawer } from './OverlapLayer';
+import { IAnnotationDrawer } from './AnnotationLayer';
 
 interface ILegendSource {
-  addOverlayLayer(drawer: IOverlapDrawer): void;
-  removeOverlayLayer(drawer: IOverlapDrawer): void;
+  addOverlayLayer(drawer: IAnnotationDrawer): void;
+  removeOverlayLayer(drawer: IAnnotationDrawer): void;
   invalidOverlap(): void;
   meshAddedEvent: LiteEvent<Mesh | Points>;
   sizeChangedEvent: LiteEvent<{ width: number; height: number }>;
   readonly viewPortSize: Vector2;
 }
 
-export default class LegendManager implements IOverlapDrawer {
+export default class LegendManager implements IAnnotationDrawer {
   public enabled = true;
 
   private engine: ILegendSource | undefined;

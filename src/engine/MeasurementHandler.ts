@@ -5,11 +5,11 @@ import { Vector3 } from 'three/src/math/Vector3';
 import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
-import { IOverlapDrawer } from './OverlapLayer';
+import { IAnnotationDrawer } from './AnnotationLayer';
 import PickPositionHandler from './PickPositionHandler';
 import RenderingEngine from './RenderingEngine';
 
-export default class MeasurementHandler extends PickPositionHandler implements IOverlapDrawer {
+export default class MeasurementHandler extends PickPositionHandler implements IAnnotationDrawer {
   private engine: RenderingEngine | undefined;
 
   private static endpointNames = ['measurementEndpoint0', 'measurementEndpoint1'];
