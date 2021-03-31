@@ -123,19 +123,6 @@ export default class MeshFactory {
     });
   }
 
-  public static async createMeshWithMultiMaterial(
-    url: string,
-    dataType: GeometryDataType,
-    materials: Material[]
-  ): Promise<Mesh | undefined> {
-    const geometry = await MeshFactory.loadAsync(url, dataType);
-
-    const mesh = new Mesh(geometry, materials);
-    mesh.name = url;
-
-    return mesh;
-  }
-
   private static async loadStlAsync(
     url: string,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
