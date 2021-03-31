@@ -396,7 +396,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         ? (mesh.material[0] as MeshLambertExMaterial)
         : (mesh.material as MeshLambertExMaterial);
       if (material) {
-        material.diffuse.set(color);
+        material.updateColor(color);
 
         return true;
       }

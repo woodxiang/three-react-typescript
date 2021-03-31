@@ -95,6 +95,11 @@ export default class MeshLambertExMaterial extends ShaderMaterial implements IAf
     this.uniforms.afterProjectMatrix.value = mat;
   }
 
+  public updateColor(color: Color): void {
+    this.diffuse = color;
+    this.uniforms.diffuse.value = color;
+  }
+
   public copy(source: Material): this {
     super.copy(source);
 
