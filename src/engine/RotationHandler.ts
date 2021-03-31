@@ -138,8 +138,7 @@ export default class RotationHandler extends ActionHandlerBase {
       const localCallback = callback;
       if (localCallback.state === STATE.NONE) {
         if (event.ctrlKey) {
-          this.zoom3d(event.deltaY);
-          callback.invalidOverlap();
+          this.zoom3d(event.deltaY, callback);
         } else {
           this.zoom2d(
             (event.offsetX / callback.viewPortSize.x) * 2 - 1,
@@ -147,8 +146,6 @@ export default class RotationHandler extends ActionHandlerBase {
             event.deltaY,
             callback
           );
-
-          callback.invalidOverlap();
         }
         return true;
       }
@@ -159,26 +156,29 @@ export default class RotationHandler extends ActionHandlerBase {
 
   // eslint-disable-next-line class-methods-use-this
   private zoom2d(x: number, y: number, deltaY: number, callback: IActionCallback): void {
+    const localCallback = callback;
     const ratio = 1.0 - deltaY / 120 / 10;
     const m = new Matrix4();
     m.makeTranslation(x, y, 0);
     m.scale(new Vector3(ratio, ratio, 1));
     m.multiply(new Matrix4().makeTranslation(-x, -y, 0));
     m.multiply(callback.afterProjectMatrix);
-    callback.afterProjectMatrix.copy(m);
+    localCallback.afterProjectMatrix = m;
   }
 
-  private zoom3d(delta: number): void {
+  private zoom3d(delta: number, callback: IActionCallback): void {
     this.camera.position.z *= 1.0 + delta / 120 / 10;
+    callback.invalidOverlap();
   }
 
   // eslint-disable-next-line class-methods-use-this
   private translate2d(deltaX: number, deltaY: number, callback: IActionCallback): void {
+    const localCallback = callback;
     const m = new Matrix4();
     m.makeTranslation(deltaX, deltaY, 0);
     m.multiply(callback.afterProjectMatrix);
 
-    callback.afterProjectMatrix.copy(m);
+    localCallback.afterProjectMatrix = m;
   }
 
   private rotate(x: number, y: number, callback: IActionCallback): void {
