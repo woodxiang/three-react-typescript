@@ -1,13 +1,6 @@
-import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
-import { InterpolateDiscrete } from 'three/src/constants';
-import { SpriteMaterial } from 'three/src/materials/SpriteMaterial';
 import { Vector2 } from 'three/src/math/Vector2';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
-import { Sprite } from 'three/src/objects/Sprite';
-import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
-import { Scene } from 'three/src/scenes/Scene';
-import { CanvasTexture } from 'three/src/textures/CanvasTexture';
 import LiteEvent from './event';
 import LutEx from './LutEx';
 import { IAnnotationDrawer } from './AnnotationLayer';
@@ -163,19 +156,6 @@ export default class LegendManager implements IAnnotationDrawer {
         Math.max((totalSize - textSize.width) / 2, 0),
         (titleHeight - textSize.fontBoundingBoxAscent) / 2 + textSize.fontBoundingBoxAscent
       );
-    }
-  }
-
-  public render(renderer: WebGLRenderer): void {
-    if (!this.scene || !this.camera) {
-      throw new Error('not initialized.');
-    }
-
-    if (this.enabled) {
-      renderer.clearDepth();
-      if (this.wrappedLut) {
-        renderer.render(this.scene, this.camera);
-      }
     }
   }
 }
