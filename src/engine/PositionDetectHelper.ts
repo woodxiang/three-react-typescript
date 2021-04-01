@@ -93,8 +93,6 @@ export default class PositionDetectHelper {
         objIdNumber.push({ id: nextSeed, key: v.name });
         ret.add(newMesh);
         nextSeed = objIdNumber[objIdNumber.length - 1].id + 1;
-      } else {
-        console.log('invalid object type. ignore');
       }
     });
 

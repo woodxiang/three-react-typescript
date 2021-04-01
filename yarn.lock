@@ -1538,6 +1538,11 @@
   resolved "https://registry.npm.taobao.org/@types/tapable/download/@types/tapable-1.0.6.tgz#a9ca4b70a18b270ccb2bc0aaafefd1d486b7ea74"
   integrity sha1-qcpLcKGLJwzLK8Cqr+/R1Ia36nQ=
 
+"@types/three@^0.126.2":
+  version "0.126.2"
+  resolved "https://registry.npm.taobao.org/@types/three/download/@types/three-0.126.2.tgz?cache=0&sync_timestamp=1616639950355&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fthree%2Fdownload%2F%40types%2Fthree-0.126.2.tgz#68838cc92cc89c156c05be63e54efc91f58a5417"
+  integrity sha1-aIOMySzInBVsBb5j5U78kfWKVBc=
+
 "@types/uglify-js@*":
   version "3.12.0"
   resolved "https://registry.npm.taobao.org/@types/uglify-js/download/@types/uglify-js-3.12.0.tgz#2bb061c269441620d46b946350c8f16d52ef37c5"
@@ -1559,13 +1564,6 @@
     "@types/express" "*"
     "@types/http-proxy-middleware" "*"
     "@types/serve-static" "*"
-    "@types/webpack" "*"
-
-"@types/webpack-node-externals@^2.5.0":
-  version "2.5.0"
-  resolved "https://registry.npm.taobao.org/@types/webpack-node-externals/download/@types/webpack-node-externals-2.5.0.tgz#bcd161af84a4960416e5850e06931b35321c6654"
-  integrity sha1-vNFhr4SklgQW5YUOBpMbNTIcZlQ=
-  dependencies:
     "@types/webpack" "*"
 
 "@types/webpack-sources@*":
@@ -7828,10 +7826,10 @@ text-table@^0.2.0:
   resolved "https://registry.npm.taobao.org/text-table/download/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-three@^0.125.2:
-  version "0.125.2"
-  resolved "https://registry.npm.taobao.org/three/download/three-0.125.2.tgz#dcba12749a2eb41522e15212b919cd3fbf729b12"
-  integrity sha1-3LoSdJoutBUi4VISuRnNP79ymxI=
+three@^0.127.0:
+  version "0.127.0"
+  resolved "https://registry.npm.taobao.org/three/download/three-0.127.0.tgz#c463f4d41b2c735dcf8e9e51a388815e80cd3791"
+  integrity sha1-xGP01Bssc13Pjp5Ro4iBXoDNN5E=
 
 throat@^5.0.0:
   version "5.0.0"
