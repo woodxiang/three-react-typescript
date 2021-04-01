@@ -9,7 +9,7 @@ const serverConfig: webpack.Configuration = {
     server: './src/server.ts',
   },
   output: {
-    path: path.join(__dirname, 'distsvc'),
+    path: path.join(__dirname, 'distSvc'),
     publicPath: '/',
     filename: '[name].js',
   },
