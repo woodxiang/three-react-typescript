@@ -1,3 +1,4 @@
+export default `
 uniform vec3 diffuse;
 uniform float opacity;
 
@@ -30,3 +31,4 @@ void main() {
 	#include <premultiplied_alpha_fragment>
 
 }
+`;

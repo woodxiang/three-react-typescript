@@ -1,18 +1,20 @@
-#define PHONG
+export default `
+#define LAMBERT
 
-varying vec3 vViewPosition;
+varying vec3 vLightFront;
+varying vec3 vIndirectFront;
 
-#ifndef FLAT_SHADED
-
-	varying vec3 vNormal;
-
+#ifdef DOUBLE_SIDED
+	varying vec3 vLightBack;
+	varying vec3 vIndirectBack;
 #endif
 
 #include <common>
 #include <uv_pars_vertex>
 #include <uv2_pars_vertex>
-#include <displacementmap_pars_vertex>
 #include <envmap_pars_vertex>
+#include <bsdfs>
+#include <lights_pars_begin>
 #include <color_pars_vertex>
 #include <fog_pars_vertex>
 #include <morphtarget_pars_vertex>
@@ -21,7 +23,14 @@ varying vec3 vViewPosition;
 #include <logdepthbuf_pars_vertex>
 #include <clipping_planes_pars_vertex>
 
+attribute float generic;
+
+uniform sampler2D colorMapTexture;
+uniform float colorMapOffset;
+uniform float colorMapRatio;
 uniform mat4 afterProjectMatrix;
+
+varying vec4 vColor;
 
 void main() {
 
@@ -35,28 +44,23 @@ void main() {
 	#include <skinnormal_vertex>
 	#include <defaultnormal_vertex>
 
-#ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
-
-	vNormal = normalize( transformedNormal );
-
-#endif
-
 	#include <begin_vertex>
 	#include <morphtarget_vertex>
 	#include <skinning_vertex>
-	#include <displacementmap_vertex>
 	#include <project_vertex>
 
-   gl_Position = afterProjectMatrix*gl_Position;
+	 gl_Position = afterProjectMatrix*gl_Position;
 
 	#include <logdepthbuf_vertex>
 	#include <clipping_planes_vertex>
 
-	vViewPosition = - mvPosition.xyz;
-
 	#include <worldpos_vertex>
 	#include <envmap_vertex>
+	#include <lights_lambert_vertex>
 	#include <shadowmap_vertex>
 	#include <fog_vertex>
 
+	vColor = texture2D(colorMapTexture,
+                     vec2((generic + colorMapOffset) * colorMapRatio, 1.));
 }
+`;

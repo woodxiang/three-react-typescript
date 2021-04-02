@@ -1,12 +1,36 @@
+import createContext from 'gl';
+import { createCanvas } from 'canvas';
 import MeshFactory, { GeometryDataType } from '../MeshFactory';
 import PositionDetectHelper from '../PositionDetectHelper';
 import RenderingEngine from '../RenderingEngine';
 
-test.skip('clone scene for position detect', async () => {
+interface IContext {
+  canvas: HTMLCanvasElement;
+}
+
+interface ICanvas {
+  style: { width: number; height: number };
+}
+
+test('clone scene for position detect', async () => {
+  const width = 1920;
+  const height = 1080;
+  const context = createContext(width, height);
+  const canvas: HTMLCanvasElement = (createCanvas(width, height) as unknown) as HTMLCanvasElement;
+  (<ICanvas>(<unknown>canvas)).style = { width, height };
+
+  (<IContext>context).canvas = canvas;
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  canvas.addEventListener = () => {};
   const engine = new RenderingEngine();
   expect(engine).not.toBeNull();
-  engine.init(new HTMLDivElement(), 1920, 1080);
-  const mesh = await MeshFactory.createSolidMesh('http://localhost/stls/cast.tsl', GeometryDataType.STLMesh, 'pink');
+  engine.init(undefined, 1920, 1080, canvas, context);
+  const mesh = await MeshFactory.createSolidMesh(
+    'http://localhost:8081/api/stls/cast.stl',
+    GeometryDataType.STLMesh,
+    'pink'
+  );
   expect(mesh).not.toBeUndefined();
   if (mesh) {
     engine.addMesh(mesh);
@@ -14,7 +38,7 @@ test.skip('clone scene for position detect', async () => {
 
   const newScene = PositionDetectHelper.createDetectScene(engine.scene);
 
-  const ret = engine.exportImage(1920, 1080, newScene);
+  const ret = engine.exportImage(1920, 1080, newScene.scene);
 
   expect(ret).not.toBeNull();
 });

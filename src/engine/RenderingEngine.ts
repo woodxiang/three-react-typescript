@@ -1,7 +1,7 @@
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { Scene } from 'three/src/scenes/Scene';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
-import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
+import { WebGLRenderer, WebGLRendererParameters } from 'three/src/renderers/WebGLRenderer';
 import { Color } from 'three/src/math/Color';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
 import { Box3 } from 'three/src/math/Box3';
@@ -122,14 +122,27 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
    * @param width width of the rendering window
    * @param height height of the rendering window
    */
-  public init(div: HTMLDivElement, width: number, height: number): void {
+  public init(
+    div: HTMLDivElement | undefined,
+    width: number,
+    height: number,
+    canvas: HTMLCanvasElement | OffscreenCanvas | undefined = undefined,
+    context: WebGLRenderingContext | undefined = undefined
+  ): void {
     if (this.parentDiv) {
       throw Error('already initialized.');
     }
 
     this.parentDiv = div;
     this.wrappedScene = new Scene();
-    this.renderer = new WebGLRenderer({ antialias: true, alpha: true });
+    const renderParam: WebGLRendererParameters = { antialias: true, alpha: true };
+    if (canvas) {
+      renderParam.canvas = canvas;
+    }
+    if (context) {
+      renderParam.context = context;
+    }
+    this.renderer = new WebGLRenderer(renderParam);
     this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 100);
     this.wrappedCamera.position.set(0, 0, 10);
 
@@ -140,7 +153,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.resize(width, height);
 
-    div.appendChild(this.renderer.domElement);
+    this.parentDiv?.appendChild(this.renderer.domElement);
 
     this.prepareEnvironment();
 
@@ -154,10 +167,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.wrappedActionHandlers.push(new RotationHandler(this.wrappedCamera));
 
-    if (this.debugMode) {
+    if (this.debugMode && this.parentDiv) {
       this.stats = Stats();
       this.stats.dom.style.position = 'absolute';
-      div.appendChild(this.stats.dom);
+      this.parentDiv.appendChild(this.stats.dom);
     }
 
     this.initEvents();

@@ -1,3 +1,4 @@
+export default `
 #include <common>
 #include <clipping_planes_pars_fragment>
 
@@ -10,3 +11,4 @@ void main() {
 	gl_FragColor = vColor;
 
 }
+`;

@@ -1,3 +1,4 @@
+export default `
 #include <common>
 #include <uv_pars_vertex>
 #include <uv2_pars_vertex>
@@ -42,3 +43,4 @@ void main() {
 	#include <fog_vertex>
 
 }
+`;
