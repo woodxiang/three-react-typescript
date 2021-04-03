@@ -1,5 +1,6 @@
 import createContext from 'gl';
 import { createCanvas } from 'canvas';
+import fs from 'fs';
 import MeshFactory, { GeometryDataType } from '../MeshFactory';
 import PositionDetectHelper from '../PositionDetectHelper';
 import RenderingEngine from '../RenderingEngine';
@@ -41,4 +42,9 @@ test('clone scene for position detect', async () => {
   const ret = engine.exportImage(1920, 1080, newScene.scene);
 
   expect(ret).not.toBeNull();
+
+  if (!fs.existsSync('test_result')) {
+    fs.mkdirSync('test_result');
+  }
+  fs.writeFileSync('test_result/cast.jpg', ret);
 });

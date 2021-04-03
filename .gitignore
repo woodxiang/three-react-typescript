@@ -1,5 +1,6 @@
 node_modules
 dist
 distSvc
+test_result
 package-lock.json
 debug.log

@@ -4,7 +4,6 @@ import { Material } from 'three/src/materials/Material';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
 import { Points } from 'three/src/objects/Points';
 import DracoExLoader from './loaders/DracoExLoader';
@@ -13,6 +12,7 @@ import TextureFactory from './TextureFactory';
 import LutEx from './LutEx';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import PointsExMaterial from './Materials/PointsExMaterial';
+import STLExLoader from './loaders/STLExLoader';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -127,7 +127,7 @@ export default class MeshFactory {
     url: string,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
-    const loader = new STLLoader();
+    const loader = new STLExLoader();
     const geo = (await loader.loadAsync(url, onProgress)) as BufferGeometry;
     return geo as BufferGeometry;
   }
