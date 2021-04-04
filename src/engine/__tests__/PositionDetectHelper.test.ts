@@ -4,7 +4,6 @@ import fs from 'fs';
 import MeshFactory, { GeometryDataType } from '../MeshFactory';
 import PositionDetectHelper from '../PositionDetectHelper';
 import RenderingEngine from '../RenderingEngine';
-
 interface IContext {
   canvas: HTMLCanvasElement;
 }

@@ -1,7 +1,7 @@
 import axios, { CancelTokenSource } from 'axios';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
-import { isBrowser } from '../utils/environment';
+import { isNode } from 'browser-or-node';
 
 interface ISTLParser {
   parse(text: ArrayBuffer): BufferGeometry;
@@ -22,7 +22,7 @@ export default class STLExLoader {
 
     let { data } = stlContent;
 
-    if (!isBrowser()) {
+    if (isNode) {
       const ab = new ArrayBuffer(data.length);
       const view = new Uint8Array(ab);
       for (let i = 0; i < data.length; i += 1) {

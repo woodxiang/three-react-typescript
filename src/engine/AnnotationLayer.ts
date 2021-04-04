@@ -6,7 +6,6 @@ import { Sprite } from 'three/src/objects/Sprite';
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
 import { CanvasTexture } from 'three/src/textures/CanvasTexture';
-import { isBrowser } from './utils/environment';
 
 export interface IAnnotationDrawer {
   draw(ctx: CanvasRenderingContext2D): void;
@@ -29,7 +28,7 @@ export default class AnnotationLayer {
     this.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 2);
     this.camera.position.set(0, 0, 1);
 
-    this.canvas = isBrowser() ? document.createElement('canvas') : <HTMLCanvasElement>(<unknown>createCanvas(1, 1));
+    this.canvas = <HTMLCanvasElement>(<unknown>createCanvas(1, 1));
     const texture = new CanvasTexture(this.canvas);
 
     this.sprite = new Sprite();
