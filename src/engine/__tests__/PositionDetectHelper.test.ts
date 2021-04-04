@@ -1,28 +1,11 @@
-import createContext from 'gl';
-import { createCanvas } from 'canvas';
 import fs from 'fs';
+import NodeEnvironmentHelper from '../utils/NodeEnvironmentHelper';
 import MeshFactory, { GeometryDataType } from '../MeshFactory';
 import PositionDetectHelper from '../PositionDetectHelper';
 import RenderingEngine from '../RenderingEngine';
-interface IContext {
-  canvas: HTMLCanvasElement;
-}
-
-interface ICanvas {
-  style: { width: number; height: number };
-}
 
 test('clone scene for position detect', async () => {
-  const width = 1920;
-  const height = 1080;
-  const context = createContext(width, height);
-  const canvas: HTMLCanvasElement = (createCanvas(width, height) as unknown) as HTMLCanvasElement;
-  (<ICanvas>(<unknown>canvas)).style = { width, height };
-
-  (<IContext>context).canvas = canvas;
-
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  canvas.addEventListener = () => {};
+  const { canvas, context } = NodeEnvironmentHelper.createContext(1920, 1080);
   const engine = new RenderingEngine();
   expect(engine).not.toBeNull();
   engine.init(undefined, 1920, 1080, canvas, context);
