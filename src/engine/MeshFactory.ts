@@ -128,7 +128,6 @@ export default class MeshFactory {
       throw Error('invalid data type.');
     } catch (e) {
       if (isCancel(e)) {
-        console.log(`${url} cancelled.`);
         return undefined;
       }
 
@@ -223,7 +222,6 @@ export default class MeshFactory {
       return geo as BufferGeometry;
     } finally {
       loader.dispose();
-      console.log('loader disposed.');
     }
   }
 

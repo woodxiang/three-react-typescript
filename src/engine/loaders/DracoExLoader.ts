@@ -58,7 +58,6 @@ export default class DracoExLoader extends DRACOLoader implements ICancellableLo
       data = ab;
     }
 
-    console.log(`${url} downloaded.`);
     this.cancelSource.token.throwIfRequested();
     const fixer = <IDracoLoader>(<unknown>this);
     const taskConfig = {
@@ -75,7 +74,7 @@ export default class DracoExLoader extends DRACOLoader implements ICancellableLo
   }
 
   // eslint-disable-next-line no-underscore-dangle
-  protected async _loadLibrary(url: string, responseType: ResponseType): Promise<any> {
+  protected async _loadLibrary(url: string, responseType: ResponseType): Promise<unknown> {
     const fixer = <IDracoLoader>(<unknown>this);
     const response = await axios(fixer.decoderPath + url, { responseType });
     return response.data;
