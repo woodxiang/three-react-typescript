@@ -25,13 +25,17 @@ export enum GeometryDataType {
 export default class MeshFactory {
   private runningTasks = new Map<string, { loader: ICancellableLoader | undefined }>();
 
-  private async loadAsync(url: string, dataType: GeometryDataType): Promise<BufferGeometry> {
+  private async loadAsync(
+    url: string,
+    dataType: GeometryDataType,
+    onProgress?: (event: ProgressEvent<EventTarget>) => void
+  ): Promise<BufferGeometry> {
     switch (dataType) {
       case GeometryDataType.STLMesh:
-        return this.loadStlAsync(url);
+        return this.loadStlAsync(url, onProgress);
       case GeometryDataType.DracoExMesh:
       case GeometryDataType.DracoExPoints:
-        return this.loadDracoExAsync(url);
+        return this.loadDracoExAsync(url, onProgress);
       default:
         throw Error('unexpected type.');
     }
@@ -41,7 +45,8 @@ export default class MeshFactory {
     url: string,
     dataType: GeometryDataType,
     color: string,
-    opacity = 1
+    opacity = 1,
+    onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<Mesh | undefined> {
     if (this.runningTasks.has(url)) {
       throw Error('loading');
@@ -49,7 +54,7 @@ export default class MeshFactory {
 
     this.runningTasks.set(url, { loader: undefined });
     try {
-      const geometry = await this.loadAsync(url, dataType);
+      const geometry = await this.loadAsync(url, dataType, onProgress);
 
       if (!this.runningTasks.get(url)) {
         throw new CancelError();
@@ -87,7 +92,8 @@ export default class MeshFactory {
     url: string,
     dataType: GeometryDataType,
     lut: string | Lut | LutEx | Color | undefined = undefined,
-    opacity = 1
+    opacity = 1,
+    onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<{ mesh: Mesh | Points; range: { min: number; max: number } | undefined } | undefined> {
     if (this.runningTasks.has(url)) {
       throw Error('loading');
@@ -95,7 +101,7 @@ export default class MeshFactory {
 
     this.runningTasks.set(url, { loader: undefined });
     try {
-      const geometry = await this.loadAsync(url, dataType);
+      const geometry = await this.loadAsync(url, dataType, onProgress);
       if (!this.runningTasks.get(url)) {
         throw new CancelError();
       }
