@@ -1,4 +1,4 @@
-import axios, { CancelTokenSource } from 'axios';
+import axios, { CancelTokenSource, ResponseType } from 'axios';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { isNode } from 'browser-or-node';
@@ -20,6 +20,7 @@ interface ITaskConfig {
 interface IDracoLoader {
   defaultAttributeIDs: IAttributeProperties;
   defaultAttributeTypes: IAttributeProperties;
+  decoderPath: string;
 
   decodeGeometry(buffer: ArrayBuffer, taskConfig: ITaskConfig): Promise<BufferGeometry>;
 }
@@ -69,5 +70,12 @@ export default class DracoExLoader extends DRACOLoader {
 
   public cancel(): void {
     this.cancelSource?.cancel();
+  }
+
+  // eslint-disable-next-line no-underscore-dangle
+  protected async _loadLibrary(url: string, responseType: ResponseType): Promise<any> {
+    const fixer = <IDracoLoader>(<unknown>this);
+    const response = await axios(fixer.decoderPath + url, { responseType });
+    return response.data;
   }
 }
