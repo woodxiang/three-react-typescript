@@ -100,7 +100,7 @@ export default class LegendManager implements IAnnotationDrawer {
           color.b * 255
         )}, 1)`;
 
-        ctx.fillRect(colorBarLeft, colorBarTop + step * i, colorBarWidth, step);
+        ctx.fillRect(colorBarLeft, colorBarTop + step * (nGrid - i - 1), colorBarWidth, step);
       }
       ctx.beginPath();
       for (let i = 1; i < nGrid; i += 1) {
@@ -139,7 +139,7 @@ export default class LegendManager implements IAnnotationDrawer {
         ctx.fillText(
           label,
           labelLeft,
-          colorBarTop + step * i - (textSize.fontBoundingBoxDescent - textSize.fontBoundingBoxAscent) / 2
+          colorBarTop + step * (nGrid - i) - (textSize.fontBoundingBoxDescent - textSize.fontBoundingBoxAscent) / 2
         );
       }
 

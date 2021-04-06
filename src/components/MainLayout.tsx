@@ -47,7 +47,7 @@ export default function MainLayout(): JSX.Element {
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
   const [enableMeasurement, setEnableMeasurement] = useState<boolean>(false);
   const [displayingTab, setDisplayingTab] = useState<number>(0);
-  const [displayingPreprocessView, setDisplayingPreprocessView] = useState<boolean>(true);
+  const [displayingPreprocessView, setDisplayingPreprocessView] = useState<boolean>(false);
 
   const engineRef = useRef<RenderingEngine | undefined>(undefined);
 
