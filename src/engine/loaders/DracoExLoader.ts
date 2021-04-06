@@ -2,6 +2,7 @@ import axios, { CancelTokenSource, ResponseType } from 'axios';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { isNode } from 'browser-or-node';
+import { ICancellableLoader } from './ICancellableLoader';
 
 interface IAttributeProperties {
   position: string;
@@ -25,7 +26,7 @@ interface IDracoLoader {
   decodeGeometry(buffer: ArrayBuffer, taskConfig: ITaskConfig): Promise<BufferGeometry>;
 }
 
-export default class DracoExLoader extends DRACOLoader {
+export default class DracoExLoader extends DRACOLoader implements ICancellableLoader {
   private cancelSource: CancelTokenSource | undefined = undefined;
 
   constructor() {
@@ -57,6 +58,7 @@ export default class DracoExLoader extends DRACOLoader {
       data = ab;
     }
 
+    console.log(`${url} downloaded.`);
     this.cancelSource.token.throwIfRequested();
     const fixer = <IDracoLoader>(<unknown>this);
     const taskConfig = {

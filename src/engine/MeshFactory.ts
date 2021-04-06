@@ -3,9 +3,9 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Material } from 'three/src/materials/Material';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { Lut } from 'three/examples/jsm/math/Lut';
 import { Points } from 'three/src/objects/Points';
+import axios from 'axios';
 import DracoExLoader from './loaders/DracoExLoader';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import TextureFactory from './TextureFactory';
@@ -13,76 +13,129 @@ import LutEx from './LutEx';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import PointsExMaterial from './Materials/PointsExMaterial';
 import STLExLoader from './loaders/STLExLoader';
+import CancelError, { isCancel } from './utils/CancelError';
+import { ICancellableLoader } from './loaders/ICancellableLoader';
 
 export enum GeometryDataType {
   STLMesh = 1,
-  DracoMesh,
   DracoExMesh,
   DracoExPoints,
 }
 
 export default class MeshFactory {
-  public static async loadAsync(url: string, dataType: GeometryDataType): Promise<BufferGeometry> {
+  private runningTasks = new Map<string, { loader: ICancellableLoader | undefined }>();
+
+  private async loadAsync(url: string, dataType: GeometryDataType): Promise<BufferGeometry> {
     switch (dataType) {
       case GeometryDataType.STLMesh:
-        return MeshFactory.loadStlAsync(url);
-      case GeometryDataType.DracoMesh:
-        return MeshFactory.loadDracoAsync(url);
+        return this.loadStlAsync(url);
       case GeometryDataType.DracoExMesh:
       case GeometryDataType.DracoExPoints:
-        return MeshFactory.loadDracoExAsync(url);
+        return this.loadDracoExAsync(url);
       default:
         throw Error('unexpected type.');
     }
   }
 
-  public static async createSolidMesh(
+  public async createSolidMesh(
     url: string,
     dataType: GeometryDataType,
     color: string,
     opacity = 1
   ): Promise<Mesh | undefined> {
-    const geometry = await MeshFactory.loadAsync(url, dataType);
+    if (this.runningTasks.has(url)) {
+      throw Error('loading');
+    }
 
-    const materialColor = new Color();
-    materialColor.set(color);
+    this.runningTasks.set(url, { loader: undefined });
+    try {
+      const geometry = await this.loadAsync(url, dataType);
 
-    const material = new MeshLambertExMaterial({
-      diffuse: materialColor,
-      reflectivity: 0.0,
-      side: FrontSide,
-      opacity,
-      transparent: opacity < 1,
-      clipping: true,
-      lights: true,
-    });
+      if (!this.runningTasks.get(url)) {
+        throw new CancelError();
+      }
 
-    const mesh = new Mesh(geometry, material);
-    mesh.name = url;
+      const materialColor = new Color();
+      materialColor.set(color);
 
-    return mesh;
+      const material = new MeshLambertExMaterial({
+        diffuse: materialColor,
+        reflectivity: 0.0,
+        side: FrontSide,
+        opacity,
+        transparent: opacity < 1,
+        clipping: true,
+        lights: true,
+      });
+
+      const mesh = new Mesh(geometry, material);
+      mesh.name = url;
+
+      return mesh;
+    } catch (e) {
+      if (isCancel(e)) {
+        return undefined;
+      }
+
+      throw Error(`unexpected exception ${e}`);
+    } finally {
+      this.runningTasks.delete(url);
+    }
   }
 
-  public static async createColorMapMesh(
+  public async createColorMapMesh(
     url: string,
     dataType: GeometryDataType,
-    lut: string | Lut | LutEx | undefined = undefined,
+    lut: string | Lut | LutEx | Color | undefined = undefined,
     opacity = 1
-  ): Promise<Mesh | Points | undefined> {
-    const geometry = await MeshFactory.loadAsync(url, dataType);
-    const range = MeshFactory.calculateValueRange(geometry, 'generic');
-    let material: Material;
-    if (!range) {
-      material = new PointsExMaterial({ diffuse: new Color('cyan'), size: 0.05 });
-      const points = new Points(geometry, material);
-      points.name = url;
-      return points;
+  ): Promise<{ mesh: Mesh | Points; range: { min: number; max: number } | undefined } | undefined> {
+    if (this.runningTasks.has(url)) {
+      throw Error('loading');
     }
-    material = this.createColorMapMaterial(range, lut, opacity);
-    const mesh = new Mesh(geometry, material);
-    mesh.name = url;
 
-    return mesh;
+    this.runningTasks.set(url, { loader: undefined });
+    try {
+      const geometry = await this.loadAsync(url, dataType);
+      if (!this.runningTasks.get(url)) {
+        throw new CancelError();
+      }
+      const range = MeshFactory.calculateValueRange(geometry, 'generic');
+      let material: Material;
+
+      if (dataType === GeometryDataType.DracoExPoints) {
+        if (!(lut instanceof Color)) {
+          throw Error('invalid color');
+        }
+        material = new PointsExMaterial({ diffuse: lut, size: 0.05 });
+        const points = new Points(geometry, material);
+        points.name = url;
+        return { mesh: points, range: undefined };
+      }
+      if (dataType === GeometryDataType.DracoExMesh) {
+        if (lut instanceof Color) {
+          throw Error('invalid color');
+        }
+
+        if (!range) {
+          throw Error('no range.');
+        }
+        material = MeshFactory.createColorMapMaterial(range, lut, opacity);
+        const mesh = new Mesh(geometry, material);
+        mesh.name = url;
+
+        return { mesh, range };
+      }
+      throw Error('invalid data type.');
+    } catch (e) {
+      if (isCancel(e)) {
+        console.log(`${url} cancelled.`);
+        return undefined;
+      }
+
+      throw Error(`unexpected exception ${e}`);
+    } finally {
+      this.runningTasks.delete(url);
+    }
   }
 
   public static createColorMapMaterial(
@@ -123,43 +176,66 @@ export default class MeshFactory {
     });
   }
 
-  private static async loadStlAsync(
+  private async loadStlAsync(
     url: string,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
+    const state = this.runningTasks.get(url);
+    if (!state) {
+      throw new CancelError('cancelled.');
+    }
+
     const loader = new STLExLoader();
-    const geo = (await loader.loadAsync(url, onProgress)) as BufferGeometry;
-    return geo as BufferGeometry;
+    this.runningTasks.set(url, { loader });
+
+    try {
+      const geo = await loader.loadAsync(url, onProgress);
+      return geo;
+    } catch (e) {
+      if (axios.isCancel(e)) {
+        throw new CancelError();
+      }
+      throw e;
+    }
   }
 
-  private static async loadDracoAsync(
+  private async loadDracoExAsync(
     url: string,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
-    const loader = new DRACOLoader();
-    loader.setDecoderPath('/wasm/draco/');
-    const geo = await loader.loadAsync(url, onProgress);
+    const state = this.runningTasks.get(url);
+    if (!state) {
+      throw new CancelError('cancelled.');
+    }
 
-    geo.computeVertexNormals();
-
-    loader.dispose();
-
-    return geo as BufferGeometry;
-  }
-
-  private static async loadDracoExAsync(
-    url: string,
-    onProgress?: (event: ProgressEvent<EventTarget>) => void
-  ): Promise<BufferGeometry> {
     const loader = new DracoExLoader();
     loader.setDecoderPath('./wasm/dracoEx/');
-    const geo = await loader.loadAsync(url, onProgress);
 
-    geo.computeVertexNormals();
+    try {
+      this.runningTasks.set(url, { loader });
+      const geo = await loader.loadAsync(url, onProgress);
 
-    loader.dispose();
+      if (!this.runningTasks.has(url)) {
+        throw new CancelError('cancelled after download');
+      }
 
-    return geo as BufferGeometry;
+      geo.computeVertexNormals();
+      return geo as BufferGeometry;
+    } finally {
+      loader.dispose();
+      console.log('loader disposed.');
+    }
+  }
+
+  public cancel(url: string): void {
+    const state = this.runningTasks.get(url);
+    if (!state) {
+      throw Error('no such task.');
+    }
+
+    state.loader?.cancel();
+
+    this.runningTasks.delete(url);
   }
 
   public static calculateValueRange(

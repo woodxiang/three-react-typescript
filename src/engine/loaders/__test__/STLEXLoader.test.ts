@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { isCancel } from '../../utils/CancelError';
 import STLExLoader from '../STLExLoader';
 
 test('load stl file test', async () => {
@@ -17,7 +17,7 @@ test('load stl file abort test', async () => {
     const geometry = await geometryPromise;
     expect(geometry).not.toBeNull();
   } catch (e) {
-    if (axios.isCancel(e)) {
+    if (isCancel(e)) {
       cancelled = true;
     }
   }

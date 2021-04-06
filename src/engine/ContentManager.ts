@@ -19,6 +19,8 @@ export default class ContentManager {
 
   private stlMeshes = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
+  protected factory = new MeshFactory();
+
   public bind(engine: RenderingEngine | undefined): void {
     if (this.engine === engine) {
       return;
@@ -60,6 +62,8 @@ export default class ContentManager {
       this.engine?.removeMesh(url);
       return true;
     }
+
+    this.factory.cancel(url);
     return false;
   }
 
@@ -123,14 +127,13 @@ export default class ContentManager {
     });
   }
 
-  private async loadAndAddStl(url: string, color: string, opacity?: number): Promise<void> {
-    if (!this.engine) {
-      return;
-    }
-    const mesh = await MeshFactory.createSolidMesh(url, GeometryDataType.STLMesh, color, opacity);
+  private async loadAndAddStl(url: string, color: string, opacity?: number): Promise<boolean> {
+    const mesh = await this.factory.createSolidMesh(url, GeometryDataType.STLMesh, color, opacity);
 
-    if (this.engine && mesh) {
-      this.engine.addMesh(mesh);
+    if (mesh) {
+      this.engine?.addMesh(mesh);
+      return true;
     }
+    return false;
   }
 }

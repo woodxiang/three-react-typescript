@@ -1,12 +1,9 @@
 import { Color } from 'three/src/math/Color';
-import { Mesh } from 'three/src/objects/Mesh';
-import { Points } from 'three/src/objects/Points';
 import ContentManager from './ContentManager';
 import LegendManager from './LegendManager';
 import LutEx from './LutEx';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
-import PointsExMaterial from './Materials/PointsExMaterial';
-import MeshFactory, { GeometryDataType } from './MeshFactory';
+import { GeometryDataType } from './MeshFactory';
 
 export default class PostProcessViewManager extends ContentManager {
   private wrappedEnableLegend = true;
@@ -23,8 +20,6 @@ export default class PostProcessViewManager extends ContentManager {
     }
   >();
 
-  private dracoMeshes = new Map<string, { color: string; opacity: number; visible: boolean }>();
-
   private dracoExPoints = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
   public async LoadDracoExMesh(url: string, opacity?: number): Promise<void> {
@@ -33,19 +28,10 @@ export default class PostProcessViewManager extends ContentManager {
     }
 
     const range = await this.loadAndAddDracoExMesh(url, opacity);
-
-    this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
-
-    this.updateColormap();
-  }
-
-  public async LoadDracoMesh(url: string, color: string, opacity?: number): Promise<void> {
-    if (this.dracoMeshes.has(url)) {
-      throw Error('exits url');
+    if (range) {
+      this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
+      this.updateColormap();
     }
-
-    await this.loadAndAddDracoMesh(url, color, opacity);
-    this.dracoMeshes.set(url, { color, opacity: opacity || 1, visible: true });
   }
 
   public async LoadDracoExPoints(url: string, color: string): Promise<void> {
@@ -53,8 +39,9 @@ export default class PostProcessViewManager extends ContentManager {
       throw Error('exits url');
     }
 
-    await this.loadAndAddDracoExPoints(url, color);
-    this.dracoExPoints.set(url, { color, opacity: 1, visible: true });
+    if (await this.loadAndAddDracoExPoints(url, color)) {
+      this.dracoExPoints.set(url, { color, opacity: 1, visible: true });
+    }
   }
 
   public remove(url: string): boolean {
@@ -65,12 +52,6 @@ export default class PostProcessViewManager extends ContentManager {
       const totalRange = this.calculateRange();
       this.legend.setRange(totalRange);
       this.updateColormap();
-      return true;
-    }
-
-    if (this.dracoMeshes.get(url)) {
-      this.dracoMeshes.delete(url);
-      this.engine?.removeMesh(url);
       return true;
     }
 
@@ -106,22 +87,13 @@ export default class PostProcessViewManager extends ContentManager {
       this.engine?.removeMesh(key);
     });
 
-    this.dracoMeshes.forEach((value, key) => {
-      this.engine?.removeMesh(key);
-    });
-
     this.legend.bind(undefined);
     super.onUnbind();
   }
 
   protected restore(): void {
     super.restore();
-    this.dracoMeshes.forEach((value, key) => {
-      this.loadAndAddDracoMesh(key, value.color, value.opacity);
-      if (!value.visible) {
-        this.engine?.setVisible(false, key);
-      }
-    });
+
     this.dracoExMeshes.forEach((value, key) => {
       this.loadAndAddDracoExMesh(key, value.opacity);
       if (!value.visible) {
@@ -137,42 +109,28 @@ export default class PostProcessViewManager extends ContentManager {
     });
   }
 
-  private async loadAndAddDracoExMesh(url: string, opacity?: number): Promise<{ min: number; max: number }> {
-    const geometry = await MeshFactory.loadAsync(url, GeometryDataType.DracoExMesh);
-    const range = MeshFactory.calculateValueRange(geometry, 'generic');
-    if (!range) {
-      throw Error('invalid file.');
+  private async loadAndAddDracoExMesh(
+    url: string,
+    opacity?: number
+  ): Promise<{ min: number; max: number } | undefined> {
+    const result = await this.factory.createColorMapMesh(url, GeometryDataType.DracoExMesh, this.legend.lut, opacity);
+    if (result) {
+      result.mesh.name = url;
+
+      this.engine?.addMesh(result.mesh);
+      return result.range;
     }
 
-    // add color mapped mesh.
-    if (this.engine) {
-      const material = MeshFactory.createColorMapMaterial({ min: 0, max: 1 }, this.legend.lut, opacity);
-      const mesh = new Mesh(geometry, material);
-      mesh.name = url;
-
-      this.engine.addMesh(mesh);
-    }
-
-    return range;
+    return undefined;
   }
 
-  private async loadAndAddDracoMesh(url: string, color: string, opacity?: number): Promise<void> {
-    if (this.engine) {
-      const mesh = await MeshFactory.createSolidMesh(url, GeometryDataType.DracoMesh, color, opacity);
-      if (mesh) {
-        this.engine.addMesh(mesh);
-      }
+  private async loadAndAddDracoExPoints(url: string, color: string): Promise<boolean> {
+    const result = await this.factory.createColorMapMesh(url, GeometryDataType.DracoExPoints, new Color(color));
+    if (result) {
+      this.engine?.addMesh(result.mesh);
+      return true;
     }
-  }
-
-  private async loadAndAddDracoExPoints(url: string, color: string): Promise<void> {
-    if (this.engine) {
-      const geometry = await MeshFactory.loadAsync(url, GeometryDataType.DracoExPoints);
-      const material = new PointsExMaterial({ diffuse: new Color(color), size: 0.05 });
-      const points = new Points(geometry, material);
-      points.name = url;
-      this.engine.addMesh(points);
-    }
+    return false;
   }
 
   private calculateRange(): {

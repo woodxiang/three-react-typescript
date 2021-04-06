@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { isCancel } from '../../utils/CancelError';
 import DracoExLoader from '../DracoExLoader';
 
 test('load draco file test', async () => {
@@ -18,7 +18,7 @@ test('load draco file cancel test', async () => {
     const geometry = await geometryPromise;
     expect(geometry).not.toBeNull();
   } catch (e) {
-    if (axios.isCancel(e)) {
+    if (isCancel(e)) {
       cancelled = true;
     }
   }

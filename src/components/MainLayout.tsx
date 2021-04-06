@@ -74,17 +74,12 @@ export default function MainLayout(): JSX.Element {
   };
 
   const loadDraco = async (item: string) => {
-    let dracoType = GeometryDataType.DracoMesh;
-    if (item.endsWith('.sd')) {
-      dracoType = GeometryDataType.DracoExMesh;
-    } else if (item.endsWith('.sp')) {
+    let dracoType = GeometryDataType.DracoExMesh;
+    if (item.endsWith('.sp')) {
       dracoType = GeometryDataType.DracoExPoints;
     }
 
     switch (dracoType) {
-      case GeometryDataType.DracoMesh:
-        postProcessViewManager.LoadDracoMesh(dracoPrefix + item, preDefinedColors[dracoFiles.indexOf(item)]);
-        break;
       case GeometryDataType.DracoExMesh:
         postProcessViewManager.LoadDracoExMesh(dracoPrefix + item);
         break;
