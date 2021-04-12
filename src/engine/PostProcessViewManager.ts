@@ -150,11 +150,7 @@ export default class PostProcessViewManager extends ContentManager {
 
   private updateColormap() {
     const totalRange = this.calculateRange();
-    const newLut = new LutEx([
-      { color: new Color(0, 0, 1), value: 0 },
-      { color: new Color(0, 1, 1), value: 0.5 },
-      { color: new Color(0, 1, 0), value: 1 },
-    ]);
+    const newLut = new LutEx();
     this.legend.updateLut(newLut);
     this.legend.setRange(totalRange);
 

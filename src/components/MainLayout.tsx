@@ -217,10 +217,10 @@ export default function MainLayout(): JSX.Element {
   }, [enableMultiFlatsSelection, preprocessViewManager]);
 
   useEffect(() => {
-    if (preprocessViewManager) {
-      preprocessViewManager.enableClipping = enableClipping;
+    if (currentViewManager) {
+      currentViewManager.enableClipping = enableClipping;
     }
-  }, [enableClipping, preprocessViewManager]);
+  }, [enableClipping, currentViewManager]);
 
   const onClippingChanged = (newPosition: { dir: Direction; pos: number }) => {
     if (!currentViewManager.clipping) {
@@ -248,7 +248,7 @@ export default function MainLayout(): JSX.Element {
     const engine = engineRef.current;
 
     // engine.updateBackground([new Color(), new Color('gray')]);
-    engine.clearMeshes();
+    engine.setMeshColor(new Color('red'), stlPrefix + stlFiles[0]);
   };
 
   // init effect when mount.
@@ -350,13 +350,7 @@ export default function MainLayout(): JSX.Element {
             label="Enable Multiple Flat Selection"
           />
           <FormControlLabel
-            control={
-              <Switch
-                disabled={currentViewManager !== preprocessViewManager}
-                checked={enableClipping}
-                onChange={onToggleClipping}
-              />
-            }
+            control={<Switch checked={enableClipping} onChange={onToggleClipping} />}
             label="Enable Clipping"
           />
           <FormControlLabel
