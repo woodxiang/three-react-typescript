@@ -1,5 +1,5 @@
 import axios, { CancelTokenSource, ResponseType } from 'axios';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+import { DRACOLoader } from '../three/examples/jsm/loaders/DRACOLoader';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { isNode } from 'browser-or-node';
 import { ICancellableLoader } from './ICancellableLoader';

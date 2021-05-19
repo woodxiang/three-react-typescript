@@ -25,7 +25,7 @@ export default class LegendManager implements IAnnotationDrawer {
 
   private textFont = 'Arial';
 
-  private textColor = 'rgb(0, 0, 0)';
+  private textColor = 'rgba(0,0,0,1)';
 
   private title = '';
 
@@ -136,10 +136,12 @@ export default class LegendManager implements IAnnotationDrawer {
           maxTextSize = textSize.width;
         }
 
+        const boxDescent = textSize.fontBoundingBoxDescent ?? textSize.actualBoundingBoxDescent; // For node.js
+        const boxAscent = textSize.fontBoundingBoxAscent ?? textSize.actualBoundingBoxAscent; // For node.js
         ctx.fillText(
           label,
           labelLeft,
-          colorBarTop + step * (nGrid - i) - (textSize.fontBoundingBoxDescent - textSize.fontBoundingBoxAscent) / 2
+          colorBarTop + step * (nGrid - i) - (boxDescent - boxAscent) / 2
         );
       }
 

@@ -1,4 +1,4 @@
-import { Lut } from 'three/examples/jsm/math/Lut';
+import { Lut } from './three/examples/jsm/math/Lut';
 import { RGBFormat } from 'three/src/constants';
 import { Color } from 'three/src/math/Color';
 import { DataTexture } from 'three/src/textures/DataTexture';

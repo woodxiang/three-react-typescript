@@ -4,7 +4,7 @@ import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
 import { PointLight } from 'three/src/lights/PointLight';
-import { TextureLoader } from 'three/src/loaders/TextureLoader';
+import { TextureExLoader } from './loaders/TextureExLoader';
 import { MeshBasicMaterial, MeshLambertMaterial } from 'three/src/materials/Materials';
 import { Color } from 'three/src/math/Color';
 import { Matrix4 } from 'three/src/math/Matrix4';
@@ -27,6 +27,10 @@ interface INavigatorSource {
   removeRenderHandler(handler: IRenderHandler): void;
   readonly rotationMatrix: Matrix4;
   objectTransformChangedEvent: LiteEvent<Matrix4>;
+}
+
+declare const window: Window & {
+  assetBaseUrl: string
 }
 
 const dirs = [
@@ -64,7 +68,9 @@ export default class NavigatorHandler extends ActionHandlerBase implements IRend
 
     const cubeGeo = new IdentityBoxBufferGeometry(true);
 
-    const texture = new TextureLoader().load('/asset/dice.png');
+    const loader = new TextureExLoader();
+    if (window.assetBaseUrl) loader.setPath(window.assetBaseUrl);
+    const texture = loader.load('/asset/dice.png');
     const cubeMaterial = new MeshLambertMaterial({ map: texture });
 
     const mesh = new Mesh(cubeGeo, cubeMaterial);

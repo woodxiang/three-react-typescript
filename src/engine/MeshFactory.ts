@@ -3,8 +3,9 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Material } from 'three/src/materials/Material';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
-import { Lut } from 'three/examples/jsm/math/Lut';
+import { Lut } from './three/examples/jsm/math/Lut';
 import { Points } from 'three/src/objects/Points';
+import ComponentsManager from './components/ComponentsManager';
 import axios from 'axios';
 import DracoExLoader from './loaders/DracoExLoader';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
@@ -13,29 +14,55 @@ import LutEx from './LutEx';
 import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import PointsExMaterial from './Materials/PointsExMaterial';
 import STLExLoader from './loaders/STLExLoader';
+import PLYExLoader from './loaders/PLYExLoader';
 import CancelError, { isCancel } from './utils/CancelError';
 import { ICancellableLoader } from './loaders/ICancellableLoader';
+import { isNode } from 'browser-or-node';
 
 export enum GeometryDataType {
   STLMesh = 1,
   DracoExMesh,
   DracoExPoints,
+  PLYMesh,
+}
+
+export class MeshConfig {
+  public attr: string | undefined = undefined;
+}
+
+declare const window: Window & {
+  assetBaseUrl: string
 }
 
 export default class MeshFactory {
+  private static componentsManager: ComponentsManager;
+
   private runningTasks = new Map<string, { loader: ICancellableLoader | undefined }>();
 
   private async loadAsync(
     url: string,
     dataType: GeometryDataType,
-    onProgress?: (event: ProgressEvent<EventTarget>) => void
+    onProgress?: (event: ProgressEvent<EventTarget>) => void,
+    config?: MeshConfig
   ): Promise<BufferGeometry> {
+    if (!MeshFactory.componentsManager) {
+      MeshFactory.componentsManager = new ComponentsManager();
+      if (isNode) {
+        MeshFactory.componentsManager.setDecoderPath(`${window.assetBaseUrl}/draco/split/`);
+      } else {
+        MeshFactory.componentsManager.setDecoderPath('./wasm/split/');
+      }
+      MeshFactory.componentsManager.setDecoderConfig({ type: "wasm" });
+      MeshFactory.componentsManager.loadDecoder().catch(reason => console.log("Load decoder failed:", reason));
+    }
     switch (dataType) {
       case GeometryDataType.STLMesh:
         return this.loadStlAsync(url, onProgress);
       case GeometryDataType.DracoExMesh:
       case GeometryDataType.DracoExPoints:
-        return this.loadDracoExAsync(url, onProgress);
+        return this.loadDracoExAsync(url, onProgress, config?.attr);
+      case GeometryDataType.PLYMesh:
+        return this.loadPlyAsync(url, onProgress);
       default:
         throw Error('unexpected type.');
     }
@@ -93,7 +120,8 @@ export default class MeshFactory {
     dataType: GeometryDataType,
     lut: string | Lut | LutEx | Color | undefined = undefined,
     opacity = 1,
-    onProgress?: (event: ProgressEvent<EventTarget>) => void
+    onProgress?: (event: ProgressEvent<EventTarget>) => void,
+    config?: MeshConfig
   ): Promise<{ mesh: Mesh | Points; range: { min: number; max: number } | undefined } | undefined> {
     if (this.runningTasks.has(url)) {
       throw Error('loading');
@@ -101,35 +129,36 @@ export default class MeshFactory {
 
     this.runningTasks.set(url, { loader: undefined });
     try {
-      const geometry = await this.loadAsync(url, dataType, onProgress);
+      const geometry = await this.loadAsync(url, dataType, onProgress, config);
       if (!this.runningTasks.get(url)) {
         throw new CancelError();
       }
       const range = MeshFactory.calculateValueRange(geometry, 'generic');
       let material: Material;
 
-      if (dataType === GeometryDataType.DracoExPoints) {
-        if (!(lut instanceof Color)) {
-          throw Error('invalid color');
-        }
-        material = new PointsExMaterial({ diffuse: lut, size: 0.05 });
-        const points = new Points(geometry, material);
-        points.name = url;
-        return { mesh: points, range: undefined };
-      }
-      if (dataType === GeometryDataType.DracoExMesh) {
-        if (lut instanceof Color) {
-          throw Error('invalid color');
-        }
+      switch (dataType) {
+        case GeometryDataType.DracoExPoints:
+          if (!(lut instanceof Color)) {
+            throw Error('invalid color');
+          }
+          material = new PointsExMaterial({ diffuse: lut, size: 0.05 });
+          const points = new Points(geometry, material);
+          points.name = url;
+          return { mesh: points, range: undefined };
+        case GeometryDataType.DracoExMesh:
+        case GeometryDataType.PLYMesh:
+          if (lut instanceof Color) {
+            throw Error('invalid color');
+          }
 
-        if (!range) {
-          throw Error('no range.');
-        }
-        material = MeshFactory.createColorMapMaterial(range, lut, opacity);
-        const mesh = new Mesh(geometry, material);
-        mesh.name = url;
+          if (!range) {
+            throw Error('no range.');
+          }
+          material = MeshFactory.createColorMapMaterial(range, lut, opacity);
+          const mesh = new Mesh(geometry, material);
+          mesh.name = url;
 
-        return { mesh, range };
+          return { mesh, range };
       }
       throw Error('invalid data type.');
     } catch (e) {
@@ -206,6 +235,83 @@ export default class MeshFactory {
 
   private async loadDracoExAsync(
     url: string,
+    onProgress?: (event: ProgressEvent<EventTarget>) => void,
+    attr?: string
+  ): Promise<BufferGeometry> {
+    const state = this.runningTasks.get(url);
+    if (!state) {
+      throw new CancelError('cancelled.');
+    }
+
+    const compositeId = 0;
+    const componentsManager = MeshFactory.componentsManager;
+    componentsManager.destroyComposite(compositeId);
+    let composite = componentsManager.addComposite(compositeId);
+
+    try {
+      this.runningTasks.set(url, { loader: composite });
+
+      if (!this.runningTasks.has(url)) {
+        throw new CancelError('cancelled after download');
+      }
+
+      const promise = new Promise<BufferGeometry>((resolve) => {
+        const onDone = (value: BufferGeometry) => {
+          resolve(value);
+        };
+        let onError = function (err: string) {
+          console.log("Failed to load:", url, err);
+          throw new CancelError(err);
+        };
+        if (attr) {
+          const fileName = url.substring(0, url.lastIndexOf('.'));
+          composite.addComponent("base", url, onProgress, onError);
+          composite.addComponent("position", `${fileName}_position.drc`, onProgress, onError);
+          composite.addComponent(attr, `${fileName}_${attr}.drc`, onProgress, onError);
+          componentsManager.loadComponent(compositeId, "base").then(() => {
+            componentsManager.loadComponent(compositeId, "position").then(() => {
+              componentsManager.loadComponent(compositeId, attr).catch((err) => {
+                onError(`load ${attr} err: ${err}`);
+              });
+            }).catch((err) => {
+              onError(`load position err: ${err}`);
+            });
+          }).catch((err) => {
+            onError(`load base err: ${err}`);
+          });
+
+          componentsManager.decodeComponent(compositeId, "base").then(() => {
+            componentsManager.decodeComponent(compositeId, "position").then(() => {
+              componentsManager.decodeComponent(compositeId, attr).then(onDone).catch((err) => {
+                onError(`decode ${attr} err: ${err}`);
+              });
+            }).catch((err) => {
+              onError(`decode position err: ${err}`);
+            });
+          }).catch((err) => {
+            onError(`decode base err: ${err}`);
+          });
+        }
+        else {
+          composite.addComponent("no_split", url, onProgress, onError);
+          componentsManager.loadComponent(compositeId, "no_split").catch((err) => {
+            onError(`load no_split err: ${err}`);
+          });
+          componentsManager.decodeComponent(compositeId, "no_split").then(onDone).catch((err) => {
+            onError(`decode no_split err: ${err}`);
+          });;
+        }
+      });
+      
+      const geo = await promise;
+      geo.computeVertexNormals();
+      return geo;
+    } finally {
+    }
+  }
+
+  private async loadPlyAsync(
+    url: string,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<BufferGeometry> {
     const state = this.runningTasks.get(url);
@@ -213,21 +319,16 @@ export default class MeshFactory {
       throw new CancelError('cancelled.');
     }
 
-    const loader = new DracoExLoader();
-    loader.setDecoderPath('./wasm/dracoEx/');
+    const loader = new PLYExLoader();
+    this.runningTasks.set(url, { loader });
 
     try {
-      this.runningTasks.set(url, { loader });
-      const geo = await loader.loadAsync(url, onProgress);
-
-      if (!this.runningTasks.has(url)) {
-        throw new CancelError('cancelled after download');
+      return loader.loadAsync(url, undefined, onProgress, undefined);
+    } catch (e) {
+      if (axios.isCancel(e)) {
+        throw new CancelError();
       }
-
-      geo.computeVertexNormals();
-      return geo as BufferGeometry;
-    } finally {
-      loader.dispose();
+      throw e;
     }
   }
 

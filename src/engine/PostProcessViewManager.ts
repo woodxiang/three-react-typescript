@@ -22,12 +22,12 @@ export default class PostProcessViewManager extends ContentManager {
 
   private dracoExPoints = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
-  public async LoadDracoExMesh(url: string, opacity?: number): Promise<void> {
+  public async LoadDracoExMesh(url: string, opacity?: number, attr?: string): Promise<void> {
     if (this.dracoExMeshes.has(url)) {
       throw Error('exits url');
     }
 
-    const range = await this.loadAndAddDracoExMesh(url, opacity);
+    const range = await this.loadAndAddDracoExMesh(url, opacity, attr);
     if (range) {
       this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
       this.updateColormap();
@@ -42,6 +42,23 @@ export default class PostProcessViewManager extends ContentManager {
     if (await this.loadAndAddDracoExPoints(url, color)) {
       this.dracoExPoints.set(url, { color, opacity: 1, visible: true });
     }
+  }
+
+  public async LoadPLYExMesh(url: string, opacity?: number): Promise<void> {
+    const scope = this;
+    return scope.factory.createColorMapMesh(url, GeometryDataType.PLYMesh, this.legend.lut, opacity).then((result) => {
+      if (result) {
+        result.mesh.name = url;
+        scope.engine?.addMesh(result.mesh);
+        if (result.range) {
+          scope.dracoExMeshes.set(
+            url,
+            {min: result.range.min, max: result.range.max, opacity: opacity || 1, visible: true }
+          );
+          scope.updateColormap();
+        }
+      }
+    });
   }
 
   public remove(url: string): boolean {
@@ -111,9 +128,11 @@ export default class PostProcessViewManager extends ContentManager {
 
   private async loadAndAddDracoExMesh(
     url: string,
-    opacity?: number
+    opacity?: number,
+    attr?: string
   ): Promise<{ min: number; max: number } | undefined> {
-    const result = await this.factory.createColorMapMesh(url, GeometryDataType.DracoExMesh, this.legend.lut, opacity);
+    const result = await this.factory.createColorMapMesh(
+      url, GeometryDataType.DracoExMesh, this.legend.lut, opacity, undefined, {attr});
     if (result) {
       result.mesh.name = url;
 

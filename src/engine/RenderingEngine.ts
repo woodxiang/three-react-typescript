@@ -1,6 +1,7 @@
-import Stats from 'three/examples/jsm/libs/stats.module';
+import Stats from './three/examples/jsm/libs/stats.module';
 import { Scene } from 'three/src/scenes/Scene';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
+import { NodeWebGLRenderer } from '../node-threejs/node-three';
 import { WebGLRenderer, WebGLRendererParameters } from 'three/src/renderers/WebGLRenderer';
 import { Color } from 'three/src/math/Color';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
@@ -21,6 +22,7 @@ import { Vector4 } from 'three/src/math/Vector4';
 import { Camera } from 'three/src/cameras/Camera';
 import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
 import { encode } from './utils/encoder';
+import { isBrowser, isNode } from 'browser-or-node';
 import {
   IActionCallback,
   STATE,
@@ -71,6 +73,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private wrappedBoundingBox: Box3 | undefined; // bounding box of all the objects.
 
+  public fixedBoundingBox: Box3 | undefined; // fix bounding box of all the objects.
+
   public wrappedAdaptRange: Box3 | undefined; // user defined adapt range. if it is undefined use bounding box of all the objects.
 
   public meshAddedEvent = new LiteEvent<Mesh | Points>(); // raised when a mesh or points added.
@@ -87,7 +91,7 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private overlapLayer: AnnotationLayer | undefined;
 
-  private debugMode = true;
+  private debugMode = false;
 
   private stats: Stats | undefined;
 
@@ -135,14 +139,24 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
     this.parentDiv = div;
     this.wrappedScene = new Scene();
-    const renderParam: WebGLRendererParameters = { antialias: true, alpha: true };
-    if (canvas) {
-      renderParam.canvas = canvas;
+    if (isBrowser) {
+      const renderParam: WebGLRendererParameters = { antialias: true, alpha: true };
+      if (canvas) {
+        renderParam.canvas = canvas;
+      }
+      if (context) {
+        renderParam.context = context;
+      }
+      this.renderer = new WebGLRenderer(renderParam);
+    } else if (isNode) {
+      this.renderer = new NodeWebGLRenderer({ 
+        width,
+        height,
+        antialias: true,
+        alpha: true });
+    } else {
+      throw Error('unknown environment.');
     }
-    if (context) {
-      renderParam.context = context;
-    }
-    this.renderer = new WebGLRenderer(renderParam);
     this.wrappedCamera = new PerspectiveCamera(15, 1, 0.01, 100);
     this.wrappedCamera.position.set(0, 0, 10);
 
@@ -446,6 +460,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
 
     throw Error('no specified geometry.');
+  }
+
+  public renderFrame(): void {
+    if (!this.wrappedCamera) {
+      throw new Error('not initialized.');
+    }
+    this.render(this.wrappedCamera);
+    this.stats?.update();
   }
 
   public calculateScreenPosition(pos: Vector3): Vector2 {
@@ -856,17 +878,22 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     }
     let boundingBox: Box3 | undefined;
 
-    for (let i = 0; i < this.targetObject3D.children.length; i += 1) {
-      const thisMesh = this.targetObject3D.children[i] as Mesh;
-      if (thisMesh) {
-        const thisGeometry = thisMesh.geometry;
-        if (!thisGeometry.boundingBox) thisGeometry.computeBoundingBox();
-        const thisBox = thisGeometry.boundingBox;
-        if (thisBox) {
-          if (!boundingBox) {
-            boundingBox = thisBox.clone();
-          } else {
-            boundingBox.union(thisBox);
+    if (this.fixedBoundingBox) {
+      if (this.wrappedBoundingBox) return;
+      boundingBox = this.fixedBoundingBox;
+    } else {
+      for (let i = 0; i < this.targetObject3D.children.length; i += 1) {
+        const thisMesh = this.targetObject3D.children[i] as Mesh;
+        if (thisMesh) {
+          const thisGeometry = thisMesh.geometry;
+          if (!thisGeometry.boundingBox) thisGeometry.computeBoundingBox();
+          const thisBox = thisGeometry.boundingBox;
+          if (thisBox) {
+            if (!boundingBox) {
+              boundingBox = thisBox.clone();
+            } else {
+              boundingBox.union(thisBox);
+            }
           }
         }
       }

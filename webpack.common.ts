@@ -88,7 +88,7 @@ const clientConfig: webpack.Configuration = {
       patterns: [{ from: 'node_modules/three/examples/js/libs/draco', to: 'wasm/draco' }],
     }),
     new CopyWebpackPlugin({
-      patterns: [{ from: 'src/wasm/dracoEx', to: 'wasm/dracoEx' }],
+      patterns: [{ from: 'src/wasm', to: 'wasm' }],
     }),
     new CopyWebpackPlugin({
       patterns: [{ from: 'src/engine/asset/', to: 'asset' }],
