@@ -3,11 +3,11 @@ import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { Material } from 'three/src/materials/Material';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
-import { Lut } from './three/examples/jsm/math/Lut';
 import { Points } from 'three/src/objects/Points';
-import ComponentsManager from './components/ComponentsManager';
 import axios from 'axios';
-import DracoExLoader from './loaders/DracoExLoader';
+import { isNode } from 'browser-or-node';
+import { Lut } from './three/examples/jsm/math/Lut';
+import ComponentsManager from './components/ComponentsManager';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import TextureFactory from './TextureFactory';
 import LutEx from './LutEx';
@@ -17,7 +17,6 @@ import STLExLoader from './loaders/STLExLoader';
 import PLYExLoader from './loaders/PLYExLoader';
 import CancelError, { isCancel } from './utils/CancelError';
 import { ICancellableLoader } from './loaders/ICancellableLoader';
-import { isNode } from 'browser-or-node';
 
 export enum GeometryDataType {
   STLMesh = 1,
@@ -26,13 +25,13 @@ export enum GeometryDataType {
   PLYMesh,
 }
 
-export class MeshConfig {
-  public attr: string | undefined = undefined;
+export interface MeshConfig {
+  attr: string | undefined;
 }
 
 declare const window: Window & {
-  assetBaseUrl: string
-}
+  assetBaseUrl: string;
+};
 
 export default class MeshFactory {
   private static componentsManager: ComponentsManager;
@@ -52,8 +51,8 @@ export default class MeshFactory {
       } else {
         MeshFactory.componentsManager.setDecoderPath('./wasm/split/');
       }
-      MeshFactory.componentsManager.setDecoderConfig({ type: "wasm" });
-      MeshFactory.componentsManager.loadDecoder().catch(reason => console.log("Load decoder failed:", reason));
+      MeshFactory.componentsManager.setDecoderConfig({ type: 'wasm' });
+      MeshFactory.componentsManager.loadDecoder().catch((reason) => console.log('Load decoder failed:', reason));
     }
     switch (dataType) {
       case GeometryDataType.STLMesh:
@@ -137,7 +136,7 @@ export default class MeshFactory {
       let material: Material;
 
       switch (dataType) {
-        case GeometryDataType.DracoExPoints:
+        case GeometryDataType.DracoExPoints: {
           if (!(lut instanceof Color)) {
             throw Error('invalid color');
           }
@@ -145,8 +144,9 @@ export default class MeshFactory {
           const points = new Points(geometry, material);
           points.name = url;
           return { mesh: points, range: undefined };
+        }
         case GeometryDataType.DracoExMesh:
-        case GeometryDataType.PLYMesh:
+        case GeometryDataType.PLYMesh: {
           if (lut instanceof Color) {
             throw Error('invalid color');
           }
@@ -159,8 +159,10 @@ export default class MeshFactory {
           mesh.name = url;
 
           return { mesh, range };
+        }
+        default:
+          throw new Error('invalid datatype.');
       }
-      throw Error('invalid data type.');
     } catch (e) {
       if (isCancel(e)) {
         return undefined;
@@ -179,10 +181,10 @@ export default class MeshFactory {
   ): ColorMapLambertMaterial {
     let volatileLut = lut;
     if (!volatileLut) {
-      volatileLut = new Lut('rainbow', 64);
+      volatileLut = new Lut('rainbow', 8192);
     }
     if (typeof volatileLut === 'string') {
-      volatileLut = new Lut(<string>volatileLut, 64);
+      volatileLut = new Lut(<string>volatileLut, 8192);
     }
     if (!(volatileLut instanceof Lut) && !(volatileLut instanceof LutEx)) {
       throw Error('Invalid lut');
@@ -244,70 +246,84 @@ export default class MeshFactory {
     }
 
     const compositeId = 0;
-    const componentsManager = MeshFactory.componentsManager;
+    const { componentsManager } = MeshFactory;
     componentsManager.destroyComposite(compositeId);
-    let composite = componentsManager.addComposite(compositeId);
+    const composite = componentsManager.addComposite(compositeId);
 
-    try {
-      this.runningTasks.set(url, { loader: composite });
+    this.runningTasks.set(url, { loader: composite });
 
-      if (!this.runningTasks.has(url)) {
-        throw new CancelError('cancelled after download');
-      }
+    if (!this.runningTasks.has(url)) {
+      throw new CancelError('cancelled after download');
+    }
 
-      const promise = new Promise<BufferGeometry>((resolve) => {
-        const onDone = (value: BufferGeometry) => {
-          resolve(value);
-        };
-        let onError = function (err: string) {
-          console.log("Failed to load:", url, err);
-          throw new CancelError(err);
-        };
-        if (attr) {
-          const fileName = url.substring(0, url.lastIndexOf('.'));
-          composite.addComponent("base", url, onProgress, onError);
-          composite.addComponent("position", `${fileName}_position.drc`, onProgress, onError);
-          composite.addComponent(attr, `${fileName}_${attr}.drc`, onProgress, onError);
-          componentsManager.loadComponent(compositeId, "base").then(() => {
-            componentsManager.loadComponent(compositeId, "position").then(() => {
-              componentsManager.loadComponent(compositeId, attr).catch((err) => {
-                onError(`load ${attr} err: ${err}`);
+    const promise = new Promise<BufferGeometry>((resolve) => {
+      const onDone = (value: BufferGeometry) => {
+        resolve(value);
+      };
+      const onError = (err: string) => {
+        console.log('Failed to load:', url, err);
+        throw new CancelError(err);
+      };
+      if (attr) {
+        const fileName = url.substring(0, url.lastIndexOf('.'));
+        composite.addComponent('base', url, onProgress, onError);
+        composite.addComponent('position', `${fileName}_position.drc`, onProgress, onError);
+        composite.addComponent(attr, `${fileName}_${attr}.drc`, onProgress, onError);
+        componentsManager
+          .loadComponent(compositeId, 'base')
+          .then(() => {
+            componentsManager
+              .loadComponent(compositeId, 'position')
+              .then(() => {
+                componentsManager.loadComponent(compositeId, attr).catch((err) => {
+                  onError(`load ${attr} err: ${err}`);
+                });
+              })
+              .catch((err) => {
+                onError(`load position err: ${err}`);
               });
-            }).catch((err) => {
-              onError(`load position err: ${err}`);
-            });
-          }).catch((err) => {
+          })
+          .catch((err) => {
             onError(`load base err: ${err}`);
           });
 
-          componentsManager.decodeComponent(compositeId, "base").then(() => {
-            componentsManager.decodeComponent(compositeId, "position").then(() => {
-              componentsManager.decodeComponent(compositeId, attr).then(onDone).catch((err) => {
-                onError(`decode ${attr} err: ${err}`);
+        componentsManager
+          .decodeComponent(compositeId, 'base')
+          .then(() => {
+            componentsManager
+              .decodeComponent(compositeId, 'position')
+              .then(() => {
+                componentsManager
+                  .decodeComponent(compositeId, attr)
+                  .then(onDone)
+                  .catch((err) => {
+                    onError(`decode ${attr} err: ${err}`);
+                  });
+              })
+              .catch((err) => {
+                onError(`decode position err: ${err}`);
               });
-            }).catch((err) => {
-              onError(`decode position err: ${err}`);
-            });
-          }).catch((err) => {
+          })
+          .catch((err) => {
             onError(`decode base err: ${err}`);
           });
-        }
-        else {
-          composite.addComponent("no_split", url, onProgress, onError);
-          componentsManager.loadComponent(compositeId, "no_split").catch((err) => {
-            onError(`load no_split err: ${err}`);
-          });
-          componentsManager.decodeComponent(compositeId, "no_split").then(onDone).catch((err) => {
+      } else {
+        composite.addComponent('no_split', url, onProgress, onError);
+        componentsManager.loadComponent(compositeId, 'no_split').catch((err) => {
+          onError(`load no_split err: ${err}`);
+        });
+        componentsManager
+          .decodeComponent(compositeId, 'no_split')
+          .then(onDone)
+          .catch((err) => {
             onError(`decode no_split err: ${err}`);
-          });;
-        }
-      });
-      
-      const geo = await promise;
-      geo.computeVertexNormals();
-      return geo;
-    } finally {
-    }
+          });
+      }
+    });
+
+    const geo = await promise;
+    geo.computeVertexNormals();
+    return geo;
   }
 
   private async loadPlyAsync(

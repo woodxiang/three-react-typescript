@@ -230,8 +230,11 @@ export class NodeWebGLRenderer implements Renderer {
   pixelRatio: number;
 
   capabilities: WebGLCapabilities;
+
   properties: WebGLProperties;
+
   renderLists: WebGLRenderLists;
+
   state: WebGLState;
 
   xr: WebXRManager;
@@ -240,7 +243,9 @@ export class NodeWebGLRenderer implements Renderer {
    * Return the WebGL context.
    */
   getContext(): WebGLRenderingContext;
+
   getContextAttributes(): any;
+
   forceContextLoss(): void;
 
   /**
@@ -254,9 +259,11 @@ export class NodeWebGLRenderer implements Renderer {
   getPrecision(): string;
 
   getPixelRatio(): number;
+
   setPixelRatio(value: number): void;
 
   getDrawingBufferSize(target: Vector2): Vector2;
+
   setDrawingBufferSize(width: number, height: number, pixelRatio: number): void;
 
   getSize(target: Vector2): Vector2;
@@ -333,14 +340,18 @@ export class NodeWebGLRenderer implements Renderer {
   clear(color?: boolean, depth?: boolean, stencil?: boolean): void;
 
   clearColor(): void;
+
   clearDepth(): void;
+
   clearStencil(): void;
+
   clearTarget(renderTarget: WebGLRenderTarget, color: boolean, depth: boolean, stencil: boolean): void;
 
   /**
    * @deprecated Use {@link WebGLState#reset .state.reset()} instead.
    */
   resetGLState(): void;
+
   dispose(): void;
 
   renderBufferImmediate(object: Object3D, program: WebGLProgram): void;

@@ -1,7 +1,5 @@
-import Stats from './three/examples/jsm/libs/stats.module';
 import { Scene } from 'three/src/scenes/Scene';
 import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
-import { NodeWebGLRenderer } from '../node-threejs/node-three';
 import { WebGLRenderer, WebGLRendererParameters } from 'three/src/renderers/WebGLRenderer';
 import { Color } from 'three/src/math/Color';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
@@ -21,8 +19,10 @@ import { Points } from 'three/src/objects/Points';
 import { Vector4 } from 'three/src/math/Vector4';
 import { Camera } from 'three/src/cameras/Camera';
 import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
-import { encode } from './utils/encoder';
 import { isBrowser, isNode } from 'browser-or-node';
+import { encode } from './utils/encoder';
+import { NodeWebGLRenderer } from '../node-threejs/node-three';
+import Stats from './three/examples/jsm/libs/stats.module';
 import {
   IActionCallback,
   STATE,
@@ -149,11 +149,12 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       }
       this.renderer = new WebGLRenderer(renderParam);
     } else if (isNode) {
-      this.renderer = new NodeWebGLRenderer({ 
+      this.renderer = new NodeWebGLRenderer({
         width,
         height,
         antialias: true,
-        alpha: true });
+        alpha: true,
+      });
     } else {
       throw Error('unknown environment.');
     }

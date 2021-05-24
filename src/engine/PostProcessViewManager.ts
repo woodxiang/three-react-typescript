@@ -1,4 +1,5 @@
 import { Color } from 'three/src/math/Color';
+import { InterpolateLinear } from 'three/src/constants';
 import ContentManager from './ContentManager';
 import LegendManager from './LegendManager';
 import LutEx from './LutEx';
@@ -45,20 +46,20 @@ export default class PostProcessViewManager extends ContentManager {
   }
 
   public async LoadPLYExMesh(url: string, opacity?: number): Promise<void> {
-    const scope = this;
-    return scope.factory.createColorMapMesh(url, GeometryDataType.PLYMesh, this.legend.lut, opacity).then((result) => {
-      if (result) {
-        result.mesh.name = url;
-        scope.engine?.addMesh(result.mesh);
-        if (result.range) {
-          scope.dracoExMeshes.set(
-            url,
-            {min: result.range.min, max: result.range.max, opacity: opacity || 1, visible: true }
-          );
-          scope.updateColormap();
-        }
+    const result = await this.factory.createColorMapMesh(url, GeometryDataType.PLYMesh, this.legend.lut, opacity);
+    if (result) {
+      result.mesh.name = url;
+      this.engine?.addMesh(result.mesh);
+      if (result.range) {
+        this.dracoExMeshes.set(url, {
+          min: result.range.min,
+          max: result.range.max,
+          opacity: opacity || 1,
+          visible: true,
+        });
+        this.updateColormap();
       }
-    });
+    }
   }
 
   public remove(url: string): boolean {
@@ -132,7 +133,13 @@ export default class PostProcessViewManager extends ContentManager {
     attr?: string
   ): Promise<{ min: number; max: number } | undefined> {
     const result = await this.factory.createColorMapMesh(
-      url, GeometryDataType.DracoExMesh, this.legend.lut, opacity, undefined, {attr});
+      url,
+      GeometryDataType.DracoExMesh,
+      this.legend.lut,
+      opacity,
+      undefined,
+      { attr }
+    );
     if (result) {
       result.mesh.name = url;
 
@@ -169,7 +176,10 @@ export default class PostProcessViewManager extends ContentManager {
 
   private updateColormap() {
     const totalRange = this.calculateRange();
-    const newLut = new LutEx();
+    const newLut = new LutEx([
+      { color: new Color(1.0, 1.0, 1.0), value: 0, method: InterpolateLinear },
+      { color: new Color(1.0, 0, 0), value: 1, method: InterpolateLinear },
+    ]);
     this.legend.updateLut(newLut);
     this.legend.setRange(totalRange);
 

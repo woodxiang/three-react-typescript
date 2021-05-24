@@ -1,4 +1,6 @@
 export default `
+precision highp float;
+
 uniform vec3 diffuse;
 uniform vec3 emissive;
 uniform float opacity;
@@ -35,11 +37,14 @@ varying vec3 vIndirectFront;
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
-varying vec4 vColor;
+uniform sampler2D colorMapTexture;
+
+varying float vGeneric;
 
 void main() {
 
 	#include <clipping_planes_fragment>
+	vec4 vColor = texture2D(colorMapTexture, vec2(vGeneric, 1.));
 	vec4 diffuseColor = vec4( vec3(vColor), opacity );
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 	vec3 totalEmissiveRadiance = emissive;
