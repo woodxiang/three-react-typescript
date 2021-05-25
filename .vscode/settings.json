@@ -9,6 +9,7 @@
     "glsl",
     "lerp",
     "lut",
+    "luts",
     "stl",
     "wasm"
   ]

@@ -56,7 +56,8 @@ interface IActionCallback {
     xPos: number,
     yPos: number,
     camera: Camera | undefined,
-    viewPort: Vector4 | undefined
+    viewPort: Vector4 | undefined,
+    clearColor: Vector4 | undefined
   ): Float32Array;
 }
 

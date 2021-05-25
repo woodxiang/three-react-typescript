@@ -4,7 +4,6 @@ import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { AmbientLight } from 'three/src/lights/AmbientLight';
 import { PointLight } from 'three/src/lights/PointLight';
-import { TextureExLoader } from './loaders/TextureExLoader';
 import { MeshBasicMaterial, MeshLambertMaterial } from 'three/src/materials/Materials';
 import { Color } from 'three/src/math/Color';
 import { Matrix4 } from 'three/src/math/Matrix4';
@@ -14,6 +13,7 @@ import { Group } from 'three/src/objects/Group';
 import { Mesh } from 'three/src/objects/Mesh';
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer';
 import { Scene } from 'three/src/scenes/Scene';
+import { TextureExLoader } from './loaders/TextureExLoader';
 import ActionHandlerBase from './ActionHandlerBase';
 import LiteEvent from './event';
 import { generateArrow } from './Geometry/boxConstants';
@@ -30,8 +30,8 @@ interface INavigatorSource {
 }
 
 declare const window: Window & {
-  assetBaseUrl: string
-}
+  assetBaseUrl: string;
+};
 
 const dirs = [
   new Vector3(1, 0, 0),

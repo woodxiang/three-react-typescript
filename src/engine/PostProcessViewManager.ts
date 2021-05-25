@@ -3,10 +3,12 @@ import { Mesh } from 'three/src/objects/Mesh';
 import BottomManager from './BottomManager';
 import ContentManager, { BackgroundColor as BackgroundColorType } from './ContentManager';
 import LegendManager from './LegendManager';
+import { InterpolateLinear } from 'three/src/constants';
 import LutEx from './LutEx';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import { GeometryDataType } from './MeshFactory';
 import { TextureLoader } from 'three/src/loaders/TextureLoader';
+import PickValueHandler from './PickValueHandler';
 
 export interface GateInterface {
   normalX: number;
@@ -47,6 +49,10 @@ export default class PostProcessViewManager extends ContentManager {
       opacity: number;
     }
   >();
+
+  private wrappedEnableValuePick = false;
+
+  private readonly valuePick: PickValueHandler = new PickValueHandler();
 
   private dracoExPoints = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
@@ -126,20 +132,20 @@ export default class PostProcessViewManager extends ContentManager {
   }
 
   public async LoadPLYExMesh(url: string, opacity?: number): Promise<void> {
-    const scope = this;
-    return scope.factory.createColorMapMesh(url, GeometryDataType.PLYMesh, this.legend.lut, opacity).then((result) => {
-      if (result) {
-        result.mesh.name = url;
-        scope.engine?.addMesh(result.mesh);
-        if (result.range) {
-          scope.dracoExMeshes.set(
-            url,
-            {min: result.range.min, max: result.range.max, opacity: opacity || 1, visible: true }
-          );
-          scope.updateColormap();
-        }
+    const result = await this.factory.createColorMapMesh(url, GeometryDataType.PLYMesh, this.legend.lut, opacity);
+    if (result) {
+      result.mesh.name = url;
+      this.engine?.addMesh(result.mesh);
+      if (result.range) {
+        this.dracoExMeshes.set(url, {
+          min: result.range.min,
+          max: result.range.max,
+          opacity: opacity || 1,
+          visible: true,
+        });
+        this.updateColormap();
       }
-    });
+    }
   }
 
   public async loadAndAddStl(url: string, color: string, opacity?: number): Promise<any> {
@@ -193,11 +199,21 @@ export default class PostProcessViewManager extends ContentManager {
   get enableBottom(): boolean {
     return this.wrappedEnableBottom;
   }
+  
+  set enableValuePick(enable: boolean) {
+    this.wrappedEnableValuePick = enable;
+    this.valuePick.bind(enable ? this.engine : undefined);
+  }
+
+  get enableValuePick(): boolean {
+    return this.wrappedEnableValuePick;
+  }
 
   protected onBind(): void {
     super.onBind();
     if (this.wrappedEnableLegend) this.legend.bind(this.engine);
     if (this.wrappedEnableBottom) this.bottom.bind(this.engine);
+    if (this.wrappedEnableValuePick) this.valuePick.bind(this.engine);
   }
 
   protected onUnbind(): void {
@@ -211,6 +227,7 @@ export default class PostProcessViewManager extends ContentManager {
 
     this.legend.bind(undefined);
     this.bottom.bind(undefined);
+    this.valuePick.bind(undefined);
     super.onUnbind();
   }
 

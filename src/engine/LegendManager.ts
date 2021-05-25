@@ -145,8 +145,10 @@ export default class LegendManager implements IAnnotationDrawer {
           maxTextSize = textSize.width;
         }
 
-        const offset = (textSize.fontBoundingBoxDescent - textSize.fontBoundingBoxAscent) / 2 || -3.5;
-
+        const boxDescent = textSize.fontBoundingBoxDescent ?? textSize.actualBoundingBoxDescent; // For node.js
+        const boxAscent = textSize.fontBoundingBoxAscent ?? textSize.actualBoundingBoxAscent; // For node.js
+        const offset = (boxDescent - boxAscent) / 2 || -3.5;
+        // ctx.fillText(label, labelLeft, colorBarTop + step * (nGrid - i) - (boxDescent - boxAscent) / 2);
         ctx.fillText(label, labelLeft, colorBarTop + step * i - offset);
       }
 

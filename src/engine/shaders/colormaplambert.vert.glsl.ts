@@ -1,4 +1,7 @@
 export default `
+
+precision highp float;
+
 #define LAMBERT
 
 varying vec3 vLightFront;
@@ -24,13 +27,12 @@ varying vec3 vIndirectFront;
 #include <clipping_planes_pars_vertex>
 
 attribute float generic;
-
-uniform sampler2D colorMapTexture;
 uniform float colorMapOffset;
 uniform float colorMapRatio;
+
 uniform mat4 afterProjectMatrix;
 
-varying vec4 vColor;
+varying float vGeneric;
 
 void main() {
 
@@ -60,7 +62,6 @@ void main() {
 	#include <shadowmap_vertex>
 	#include <fog_vertex>
 
-	vColor = texture2D(colorMapTexture,
-                     vec2((generic + colorMapOffset) * colorMapRatio, 1.));
+	vGeneric = (generic + colorMapOffset) * colorMapRatio;
 }
 `;
