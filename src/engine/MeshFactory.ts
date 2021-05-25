@@ -1,5 +1,6 @@
 import { FrontSide } from 'three/src/constants';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { BufferAttribute } from 'three/src/core/BufferAttribute';
 import { Material } from 'three/src/materials/Material';
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
@@ -7,7 +8,6 @@ import { Lut } from './three/examples/jsm/math/Lut';
 import { Points } from 'three/src/objects/Points';
 import ComponentsManager from './components/ComponentsManager';
 import axios from 'axios';
-import DracoExLoader from './loaders/DracoExLoader';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import TextureFactory from './TextureFactory';
 import LutEx from './LutEx';
@@ -28,6 +28,7 @@ export enum GeometryDataType {
 
 export class MeshConfig {
   public attr: string | undefined = undefined;
+  public split: boolean = false;
 }
 
 declare const window: Window & {
@@ -60,7 +61,7 @@ export default class MeshFactory {
         return this.loadStlAsync(url, onProgress);
       case GeometryDataType.DracoExMesh:
       case GeometryDataType.DracoExPoints:
-        return this.loadDracoExAsync(url, onProgress, config?.attr);
+        return this.loadDracoExAsync(url, onProgress, config?.split ? config.attr : undefined);
       case GeometryDataType.PLYMesh:
         return this.loadPlyAsync(url, onProgress);
       default:
@@ -73,6 +74,7 @@ export default class MeshFactory {
     dataType: GeometryDataType,
     color: string,
     opacity = 1,
+    config: any,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<Mesh | undefined> {
     if (this.runningTasks.has(url)) {
@@ -98,6 +100,7 @@ export default class MeshFactory {
         transparent: opacity < 1,
         clipping: true,
         lights: true,
+        ...config,
       });
 
       const mesh = new Mesh(geometry, material);
@@ -155,7 +158,10 @@ export default class MeshFactory {
             throw Error('no range.');
           }
           material = MeshFactory.createColorMapMaterial(range, lut, opacity);
-          const mesh = new Mesh(geometry, material);
+          let geo = geometry;
+          if (config?.attr) 
+            geo = MeshFactory.formatGeoAttribute(geometry, 'generic', config?.attr);
+          const mesh = new Mesh(geo, material);
           mesh.name = url;
 
           return { mesh, range };
@@ -361,5 +367,38 @@ export default class MeshFactory {
       }
     }
     return undefined;
+  }
+
+  public static formatGeoAttribute(geo: BufferGeometry, attributeName: string, fileType: string): BufferGeometry {
+    const attribute = geo.getAttribute(attributeName);
+    if (attribute) {
+      const { array, count } = attribute;
+      if (array.length === count) {
+        return geo;
+      }
+      if (fileType === 'defect') {
+        const current = geo.clone();
+        const len = geo.attributes.generic.array.length;
+        const list = new Float32Array(len);
+        for (let i = 0; i < len; i += 1) {
+          if (i % 2 === 1) list[(i - 1) / 2] = attribute.array[i];
+        }
+        const attr = new BufferAttribute(list, 1);
+        current.setAttribute(attributeName, attr);
+        return current;
+      }
+      if (fileType === 'temperature') {
+        const current = geo.clone();
+        const len = geo.attributes.generic.array.length;
+        const list = new Float32Array(len);
+        for (let i = 0; i < len; i += 1) {
+          if (i % 2 === 1) list[(i - 1) / 2] = attribute.array[i];
+        }
+        const attr = new BufferAttribute(list, 1);
+        current.setAttribute(attributeName, attr);
+        return current;
+      }
+    }
+    return geo;
   }
 }

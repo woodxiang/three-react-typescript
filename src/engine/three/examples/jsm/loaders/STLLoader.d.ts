@@ -1,6 +1,6 @@
-import { BufferGeometry, Loader, LoadingManager } from 'three';
+import { BufferGeometry, LoadingManager } from 'three';
 
-export class STLLoader extends Loader {
+export class STLLoader /* extends Loader */ {
     constructor(manager?: LoadingManager);
 
     load(

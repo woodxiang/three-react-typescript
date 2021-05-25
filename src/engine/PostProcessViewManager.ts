@@ -1,14 +1,42 @@
 import { Color } from 'three/src/math/Color';
-import ContentManager from './ContentManager';
+import { Mesh } from 'three/src/objects/Mesh';
+import BottomManager from './BottomManager';
+import ContentManager, { BackgroundColor as BackgroundColorType } from './ContentManager';
 import LegendManager from './LegendManager';
 import LutEx from './LutEx';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import { GeometryDataType } from './MeshFactory';
+import { TextureLoader } from 'three/src/loaders/TextureLoader';
+
+export interface GateInterface {
+  normalX: number;
+  normalY: number;
+  normalZ: number;
+}
+
+interface modelRange {
+  min: number;
+  max: number;
+}
+
+export type BackgroundColor = BackgroundColorType;
+
+declare const window: Window & {
+  assetBaseUrl: string
+}
 
 export default class PostProcessViewManager extends ContentManager {
   private wrappedEnableLegend = true;
 
+  private wrappedEnableBottom = true;
+
+  private logo: Promise<HTMLImageElement>;
+
   private readonly legend: LegendManager = new LegendManager();
+
+  private readonly bottom: BottomManager = new BottomManager();
+
+  public clearMeshesStatus = true;
 
   private dracoExMeshes = new Map<
     string,
@@ -22,19 +50,72 @@ export default class PostProcessViewManager extends ContentManager {
 
   private dracoExPoints = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
-  public async LoadDracoExMesh(url: string, opacity?: number, attr?: string): Promise<void> {
-    if (this.dracoExMeshes.has(url)) {
-      throw Error('exits url');
-    }
+  private customColorMapWrapped: modelRange = { min: 0, max: 1 };
 
-    const range = await this.loadAndAddDracoExMesh(url, opacity, attr);
-    if (range) {
-      this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
-      this.updateColormap();
+  get customColorMap(): modelRange {
+    return this.customColorMapWrapped;
+  }
+
+  set customColorMap(colorMap: { min: number; max: number }) {
+    this.customColorMapWrapped = colorMap;
+    this.updateColormap();
+  }
+
+  constructor() {
+    super();
+    
+    this.logo = new Promise<HTMLImageElement>((resolve, reject) => {
+      const loader = new TextureLoader();
+      if (window.assetBaseUrl) loader.setPath(window.assetBaseUrl);
+      loader.load('/asset/supreium_logo.png', (texture) => {
+        resolve(texture.image);
+      }, undefined, (event) => {
+        reject(event);
+      });
+    });
+  }
+
+  public async LoadDracoExMesh(
+    url: string | Array<string>,
+    fileType: string,
+    split?: boolean,
+    opacity?: number,
+    onProgress?: (event: ProgressEvent<EventTarget>) => void
+  ): Promise<void> {
+    if (typeof url === 'string') {
+      if (this.dracoExMeshes.has(url)) throw Error('exits url');
+      const range = (await this.loadAndAddDracoExMesh(url, fileType, split, opacity, (e) => {
+        if (this.progressCallback) this.progressCallback(e);
+        if (onProgress) onProgress(e);
+      })) as modelRange;
+      if (range) {
+        this.dracoExMeshes.set(url, { min: range.min, max: range.max, opacity: opacity || 1, visible: true });
+        this.updateColormap();
+      }
+    } else if (url instanceof Array) {
+      if (url.every((item) => this.dracoExMeshes.has(item))) throw Error('exits url');
+      const list = url.filter((item) => !this.dracoExMeshes.has(item));
+      const range = await this.loadAndAddDracoExMesh(list, fileType, split, opacity, (e) => {
+        if (this.progressCallback) this.progressCallback(e);
+        if (onProgress) onProgress(e);
+      });
+      console.log(range);
+      if (range) {
+        url.forEach((item, index) => {
+          this.dracoExMeshes.set(item, {
+            min: range[index].min,
+            max: range[index].max,
+            opacity: opacity || 1,
+            visible: true,
+          });
+        });
+
+        this.updateColormap();
+      }
     }
   }
 
-  public async LoadDracoExPoints(url: string, color: string): Promise<void> {
+  protected async LoadDracoExPoints(url: string, color: string): Promise<void> {
     if (this.dracoExPoints.has(url)) {
       throw Error('exits url');
     }
@@ -61,12 +142,26 @@ export default class PostProcessViewManager extends ContentManager {
     });
   }
 
+  public async loadAndAddStl(url: string, color: string, opacity?: number): Promise<any> {
+    const mesh = await this.factory.createSolidMesh(url, GeometryDataType.STLMesh, color, opacity, {
+      polygonOffset: true,
+      polygonOffsetFactor: 6,
+      polygonOffsetUnits: 3,
+    });
+
+    if (mesh) {
+      this.engine?.addMesh(mesh);
+      return true;
+    }
+    return mesh as Mesh;
+  }
+
   public remove(url: string): boolean {
     const dracoExMesh = this.dracoExMeshes.get(url);
     if (dracoExMesh) {
       this.dracoExMeshes.delete(url);
       this.engine?.removeMesh(url);
-      const totalRange = this.calculateRange();
+      const totalRange = this.customColorMapWrapped;
       this.legend.setRange(totalRange);
       this.updateColormap();
       return true;
@@ -90,9 +185,19 @@ export default class PostProcessViewManager extends ContentManager {
     return this.wrappedEnableLegend;
   }
 
+  set enableBottom(enable: boolean) {
+    this.wrappedEnableBottom = enable;
+    this.bottom.bind(enable ? this.engine : undefined);
+  }
+
+  get enableBottom(): boolean {
+    return this.wrappedEnableBottom;
+  }
+
   protected onBind(): void {
     super.onBind();
     if (this.wrappedEnableLegend) this.legend.bind(this.engine);
+    if (this.wrappedEnableBottom) this.bottom.bind(this.engine);
   }
 
   protected onUnbind(): void {
@@ -105,6 +210,7 @@ export default class PostProcessViewManager extends ContentManager {
     });
 
     this.legend.bind(undefined);
+    this.bottom.bind(undefined);
     super.onUnbind();
   }
 
@@ -112,7 +218,7 @@ export default class PostProcessViewManager extends ContentManager {
     super.restore();
 
     this.dracoExMeshes.forEach((value, key) => {
-      this.loadAndAddDracoExMesh(key, value.opacity);
+      this.loadAndAddDracoExMesh(key, '', value.opacity);
       if (!value.visible) {
         this.engine?.setVisible(false, key);
       }
@@ -127,19 +233,75 @@ export default class PostProcessViewManager extends ContentManager {
   }
 
   private async loadAndAddDracoExMesh(
-    url: string,
+    url: string | Array<string>,
+    fileType: string,
+    split: boolean = false,
     opacity?: number,
-    attr?: string
-  ): Promise<{ min: number; max: number } | undefined> {
-    const result = await this.factory.createColorMapMesh(
-      url, GeometryDataType.DracoExMesh, this.legend.lut, opacity, undefined, {attr});
-    if (result) {
-      result.mesh.name = url;
+    onProgress?: (event: ProgressEvent<EventTarget>) => void
+  ): Promise<modelRange | Array<modelRange> | undefined> {
+    if (typeof url === 'string') {
+      const result = await this.factory.createColorMapMesh(
+        url,
+        GeometryDataType.DracoExMesh,
+        this.legend.lut,
+        opacity,
+        (e) => {
+          if (this.progressCallback) this.progressCallback(e);
+          if (onProgress) onProgress(e);
+        },
+        {attr: fileType, split}
+      );
+      if (result) {
+        result.mesh.name = url;
+        if (this.clearMeshesStatus) {
+          this.dracoExMeshes.forEach((val, key) => {
+            this.engine?.removeMesh(key);
+          });
+          this.dracoExMeshes.clear();
+        }
+        this.engine?.addMesh(result.mesh);
+        return result.range;
+      }
+    } else if (url instanceof Array) {
+      try {
+        if (this.clearMeshesStatus) {
+          this.dracoExMeshes.forEach((val, key) => {
+            this.engine?.removeMesh(key);
+          });
+          this.dracoExMeshes.clear();
+        }
 
-      this.engine?.addMesh(result.mesh);
-      return result.range;
+        const results = [];
+        for (const i in url) {
+          const result = await this.factory.createColorMapMesh(
+            url[i],
+            GeometryDataType.DracoExMesh,
+            this.legend.lut,
+            opacity,
+            (e) => {
+              if (this.progressCallback) this.progressCallback(e);
+              if (onProgress) onProgress(e);
+            },
+            {attr: fileType, split}
+          );
+          results.push(result);
+        }
+        if (this.clearMeshesStatus) {
+          this.dracoExMeshes.forEach((val, key) => {
+            this.engine?.removeMesh(key);
+          });
+          this.dracoExMeshes.clear();
+        }
+        results.forEach((result) => {
+          if (result) this.engine?.addMesh(result.mesh);
+        });
+
+        return results.map((item) => ({ ...item.range }));
+      } catch (err) {
+        console.log(err);
+        return undefined;
+      }
     }
-
     return undefined;
   }
 
@@ -152,10 +314,11 @@ export default class PostProcessViewManager extends ContentManager {
     return false;
   }
 
-  private calculateRange(): {
+  public calculateRange(): {
     min: number;
     max: number;
   } {
+    if (this.dracoExMeshes.size === 0) return { max: 1, min: 0 };
     let min = Number.MAX_VALUE;
     let max = Number.MIN_VALUE;
 
@@ -167,11 +330,13 @@ export default class PostProcessViewManager extends ContentManager {
     return { min, max };
   }
 
-  private updateColormap() {
-    const totalRange = this.calculateRange();
-    const newLut = new LutEx();
+  private async updateColormap() {
+    const totalRange = this.customColorMapWrapped;
+    const newLut = new LutEx('hot_and_color_new1', 1048);
+    newLut.setRange(totalRange);
     this.legend.updateLut(newLut);
     this.legend.setRange(totalRange);
+    this.bottom.setLogo(await this.logo);
 
     if (this.engine) {
       this.dracoExMeshes.forEach((value, key) => {
@@ -191,5 +356,9 @@ export default class PostProcessViewManager extends ContentManager {
         }
       });
     }
+  }
+
+  public setLegendTitle(title: string, unit = ''): void {
+    this.legend.setTitle(title, unit);
   }
 }

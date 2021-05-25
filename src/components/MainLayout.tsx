@@ -54,6 +54,7 @@ export default function MainLayout(): JSX.Element {
   const preprocessViewManager = useMemo<PreprocessViewManager>(() => new PreprocessViewManager(), []);
 
   const postProcessViewManager = useMemo<PostProcessViewManager>(() => new PostProcessViewManager(), []);
+  postProcessViewManager.changeBackground(new Color('0xf5f5f5'))
 
   const currentViewManager = useMemo<ContentManager>(
     () => (displayingPreprocessView ? preprocessViewManager : postProcessViewManager),

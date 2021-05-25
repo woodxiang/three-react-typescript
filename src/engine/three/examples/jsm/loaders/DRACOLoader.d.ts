@@ -1,6 +1,6 @@
-import { Loader, LoadingManager, BufferGeometry } from 'three';
+import { LoadingManager, BufferGeometry } from 'three';
 
-export class DRACOLoader extends Loader {
+export class DRACOLoader /* extends Loader */ {
     constructor(manager?: LoadingManager);
 
     load(

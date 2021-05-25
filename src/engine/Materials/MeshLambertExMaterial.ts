@@ -100,6 +100,10 @@ export default class MeshLambertExMaterial extends ShaderMaterial implements IAf
     this.uniforms.diffuse.value = color;
   }
 
+  public updateOpacity(opacity: number): void {
+    this.uniforms.opacity.value = opacity;
+  }
+
   public copy(source: Material): this {
     super.copy(source);
 

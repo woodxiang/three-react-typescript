@@ -83,6 +83,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   public meshVisibleChangedEvent = new LiteEvent<{ target: string; visible: boolean }>(); // mesh or objects visibility changed.
 
+  public meshOpacityChangedEvent = new LiteEvent<{ target: string; visible: boolean }>(); // mesh or objects opacity changed.
+
   public domainRangeChangedEvent = new LiteEvent<Box3>(); // raise when bounding box of all objects changed.
 
   public objectTransformChangedEvent = new LiteEvent<Matrix4>();
@@ -90,6 +92,10 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   public sizeChangedEvent = new LiteEvent<{ width: number; height: number }>();
 
   private overlapLayer: AnnotationLayer | undefined;
+
+  public width: number = 0;
+
+  public height: number = 0;
 
   private debugMode = false;
 
@@ -100,6 +106,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private wrappedRenderHandlers: IRenderHandler[] = [];
 
   private wrappedCursorType: CURSOR_TYPE = CURSOR_TYPE.ARROW;
+
+  private wrappedCursorTypeStack: Array<CURSOR_TYPE> = [];
 
   private capturedPointerId = -1;
 
@@ -241,7 +249,19 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
       throw Error('not initialized.');
     }
     this.wrappedCursorType = newType;
-    switch (newType) {
+
+    if (newType === CURSOR_TYPE.NONE) {
+      if (this.wrappedCursorTypeStack.length > 0) {
+        this.wrappedCursorTypeStack.pop();
+        if (this.wrappedCursorTypeStack.length > 0) {
+          this.wrappedCursorType = this.wrappedCursorTypeStack[this.wrappedCursorTypeStack.length - 1];
+        }
+      }
+    } else {
+      this.wrappedCursorTypeStack.push(newType);
+    }
+
+    switch (this.wrappedCursorType) {
       case CURSOR_TYPE.CROSS:
         this.renderer.domElement.style.cursor = 'crosshair';
         break;
@@ -415,6 +435,24 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     return false;
   }
 
+  public setFuzzyVisible(visible: boolean, name: string): boolean {
+    const group = this.root.children[0];
+    if (group) {
+      let fuzzyName = '#fuzzyName';
+      group.children.forEach((item) => {
+        if (item.name.indexOf(name) >= 0) fuzzyName = item.name;
+      });
+      const mesh = this.findMesh(fuzzyName);
+      if (mesh) {
+        mesh.visible = visible;
+        this.meshVisibleChangedEvent.trigger({ target: name, visible });
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public setMeshColor(color: Color, name: string): boolean {
     const mesh = this.findMesh(name);
 
@@ -424,7 +462,22 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
         : (mesh.material as MeshLambertExMaterial);
       if (material) {
         material.updateColor(color);
+        return true;
+      }
+    }
 
+    return false;
+  }
+
+  public setMeshOpacity(opacity: number, name: string): boolean {
+    const mesh = this.findMesh(name);
+
+    if (mesh) {
+      const material = Array.isArray(mesh.material)
+        ? (mesh.material[0] as MeshLambertExMaterial)
+        : (mesh.material as MeshLambertExMaterial);
+      if (material) {
+        material.updateOpacity(opacity);
         return true;
       }
     }
@@ -644,6 +697,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     if (!this.wrappedCamera || !this.renderer) {
       throw Error('Not initialized.');
     }
+    this.width = width;
+    this.height = height;
     if (this.wrappedCamera instanceof PerspectiveCamera) {
       this.wrappedCamera.aspect = width / height;
     } else {
@@ -733,12 +788,14 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
           switch (event.button) {
             case 0:
               isTerminated = handler.handleLeftButtonUp(event, this);
+              handler.handleRightButtonUp(event, this);
               break;
             case 1:
               isTerminated = handler.handleMiddleButtonUp(event, this);
               break;
             case 2:
               isTerminated = handler.handleRightButtonUp(event, this);
+              handler.handleLeftButtonUp(event, this);
               break;
             default:
               throw Error('invalid button.');

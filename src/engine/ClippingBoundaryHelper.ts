@@ -53,7 +53,7 @@ export default class ClippingBoundaryHelper {
       const boundaryGeo = new IdentityBoxBoundaryBufferGeometry();
       const line = new LineSegments(
         boundaryGeo,
-        new LineBasicExMaterial({ diffuse: new Color('white'), afterProjectMatrix: this.engine.afterProjectMatrix })
+        new LineBasicExMaterial({ diffuse: new Color(0xaaaaaa), afterProjectMatrix: this.engine.afterProjectMatrix })
       );
 
       this.clippingBoundary.add(line);

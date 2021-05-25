@@ -137,13 +137,22 @@ export default class RotationHandler extends ActionHandlerBase {
     if (this.isEnabled) {
       const localCallback = callback;
       if (localCallback.state === STATE.NONE) {
+        // firfox 新版本 88.0 之后 event.deltaY 值不是 3 或 -3，
+        let eventDelta = 0;
+        if (event.wheelDelta) {
+          eventDelta = event.wheelDelta;
+        } else if (event.deltaY > 0) {
+          eventDelta = -120;
+        } else if (event.deltaY < 0) {
+          eventDelta = 120;
+        }
         if (event.ctrlKey) {
-          this.zoom3d(event.deltaY, callback);
+          this.zoom3d(eventDelta, callback);
         } else {
           this.zoom2d(
             (event.offsetX / callback.viewPortSize.x) * 2 - 1,
             1 - (event.offsetY / callback.viewPortSize.y) * 2,
-            event.deltaY,
+            eventDelta,
             callback
           );
         }
