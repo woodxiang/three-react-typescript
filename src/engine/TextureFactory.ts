@@ -18,7 +18,6 @@ export default class TextureFactory {
       data[i * 3 + 2] = c.b * 255;
     }
     const texture = new DataTexture(data, width, height, RGBFormat);
-    debugger
     texture.magFilter = LinearFilter;
     texture.minFilter = LinearFilter;
     return texture;
