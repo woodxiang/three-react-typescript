@@ -5,6 +5,7 @@ import LegendManager from './LegendManager';
 import LutEx from './LutEx';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import { GeometryDataType } from './MeshFactory';
+import PickValueHandler from './PickValueHandler';
 
 export default class PostProcessViewManager extends ContentManager {
   private wrappedEnableLegend = true;
@@ -20,6 +21,10 @@ export default class PostProcessViewManager extends ContentManager {
       opacity: number;
     }
   >();
+
+  private wrappedEnableValuePick = false;
+
+  private readonly valuePick: PickValueHandler = new PickValueHandler();
 
   private dracoExPoints = new Map<string, { color: string; opacity: number; visible: boolean }>();
 
@@ -91,9 +96,19 @@ export default class PostProcessViewManager extends ContentManager {
     return this.wrappedEnableLegend;
   }
 
+  set enableValuePick(enable: boolean) {
+    this.wrappedEnableValuePick = enable;
+    this.valuePick.bind(enable ? this.engine : undefined);
+  }
+
+  get enableValuePick(): boolean {
+    return this.wrappedEnableValuePick;
+  }
+
   protected onBind(): void {
     super.onBind();
     if (this.wrappedEnableLegend) this.legend.bind(this.engine);
+    if (this.wrappedEnableValuePick) this.valuePick.bind(this.engine);
   }
 
   protected onUnbind(): void {
@@ -106,6 +121,7 @@ export default class PostProcessViewManager extends ContentManager {
     });
 
     this.legend.bind(undefined);
+    this.valuePick.bind(undefined);
     super.onUnbind();
   }
 
@@ -176,10 +192,7 @@ export default class PostProcessViewManager extends ContentManager {
 
   private updateColormap() {
     const totalRange = this.calculateRange();
-    const newLut = new LutEx([
-      { color: new Color(1.0, 1.0, 1.0), value: 0, method: InterpolateLinear },
-      { color: new Color(1.0, 0, 0), value: 1, method: InterpolateLinear },
-    ]);
+    const newLut = new LutEx();
     this.legend.updateLut(newLut);
     this.legend.setRange(totalRange);
 

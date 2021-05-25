@@ -46,6 +46,7 @@ export default function MainLayout(): JSX.Element {
   const [enableClipping, setEnableClipping] = useState<boolean>(false);
   const [enableSensorSelection, setEnableSensorSelection] = useState<boolean>(false);
   const [enableMeasurement, setEnableMeasurement] = useState<boolean>(false);
+  const [enableValuePick, setEnableValuePick] = useState<boolean>(false);
   const [displayingTab, setDisplayingTab] = useState<number>(0);
   const [displayingPreprocessView, setDisplayingPreprocessView] = useState<boolean>(false);
 
@@ -146,6 +147,10 @@ export default function MainLayout(): JSX.Element {
     setEnableMeasurement(enabled);
   };
 
+  const onToggleValuePick = (event: ChangeEvent<HTMLInputElement>, enabled: boolean) => {
+    setEnableValuePick(enabled);
+  };
+
   const onBackgroundChanged = (newBackground: string) => {
     setSelectedBackground(newBackground);
   };
@@ -209,6 +214,12 @@ export default function MainLayout(): JSX.Element {
       preprocessViewManager.enableMeasurement = enableMeasurement;
     }
   }, [enableMeasurement, preprocessViewManager]);
+
+  useEffect(() => {
+    if (postProcessViewManager && postProcessViewManager.enableValuePick !== enableValuePick) {
+      postProcessViewManager.enableValuePick = enableValuePick;
+    }
+  }, [enableValuePick, postProcessViewManager]);
 
   useEffect(() => {
     if (preprocessViewManager) {
@@ -362,6 +373,16 @@ export default function MainLayout(): JSX.Element {
               />
             }
             label="Enable Measurement"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                disabled={currentViewManager !== postProcessViewManager}
+                checked={enableValuePick}
+                onChange={onToggleValuePick}
+              />
+            }
+            label="Enable Pick Value"
           />
           <BackgroundSelector selectedBackground={selectedBackground} onBackgroundChanged={onBackgroundChanged} />
           <ClippingSelector

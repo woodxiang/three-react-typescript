@@ -558,7 +558,8 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     xPos: number,
     yPos: number,
     camera: Camera | undefined = undefined,
-    viewPort: Vector4 | undefined = undefined
+    viewPort: Vector4 | undefined = undefined,
+    clearColor: Vector4 | undefined = undefined
   ): Float32Array {
     if (!this.renderer || !this.wrappedCamera) {
       throw new Error('not initialized.');
@@ -568,6 +569,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
     this.renderer.getSize(size);
     const target = new WebGLRenderTarget(size.x, size.y, { type: FloatType, stencilBuffer: true });
     this.renderer.setRenderTarget(target);
+    if (clearColor !== undefined) {
+      this.renderer.setClearColor(new Color(clearColor.x, clearColor.y, clearColor.z), clearColor.w);
+    }
     let oldViewPort;
     if (viewPort) {
       oldViewPort = new Vector4();
