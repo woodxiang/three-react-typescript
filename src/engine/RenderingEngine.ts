@@ -22,7 +22,7 @@ import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
 import { isBrowser, isNode } from 'browser-or-node';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { encode } from './utils/encoder';
-import { NodeWebGLRenderer } from '../node-threejs/node-three';
+import NodeWebGLRenderer from '../node-threejs/node-three';
 import {
   IActionCallback,
   STATE,
