@@ -1,4 +1,4 @@
-import { RGBFormat } from 'three/src/constants';
+import { LinearFilter, RGBFormat } from 'three/src/constants';
 import { Color } from 'three/src/math/Color';
 import { DataTexture } from 'three/src/textures/DataTexture';
 import { Lut } from './three/examples/jsm/math/Lut';
@@ -17,7 +17,10 @@ export default class TextureFactory {
       data[i * 3 + 1] = c.g * 255;
       data[i * 3 + 2] = c.b * 255;
     }
-    return new DataTexture(data, width, height, RGBFormat);
+    const texture = new DataTexture(data, width, height, RGBFormat);
+    texture.magFilter = LinearFilter;
+    texture.minFilter = LinearFilter;
+    return texture;
   }
 
   public static vertical1DFromColors(colors: Color[]): DataTexture {

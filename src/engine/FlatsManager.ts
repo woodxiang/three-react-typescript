@@ -8,10 +8,21 @@ import MeshLambertExMaterial from './Materials/MeshLambertExMaterial';
 import RenderingEngine from './RenderingEngine';
 import SelectionHelper from './SelectionHelper';
 
+export interface IFlatInfo {
+  name: string;
+  indexes: number[];
+  normal: number[];
+  area: number;
+  key: string;
+  // optimizeCurve: string;
+}
+
+type CallbackHit = (flat: IFlatInfo) => void;
+
 export default class FlatManager extends ActionHandlerBase {
   private wrappedIsMultipleSelection = false;
 
-  private selectedFlats: { name: string; indexes: number[]; normal: number[] }[] = [];
+  private selectedFlats: IFlatInfo[] = [];
 
   private engine: RenderingEngine | undefined;
 
@@ -31,7 +42,9 @@ export default class FlatManager extends ActionHandlerBase {
     lights: true,
   });
 
-  public bind(engine: RenderingEngine | undefined): void {
+  private callbackHit: CallbackHit | undefined = undefined;
+
+  public bind(engine: RenderingEngine | undefined, _callbackHit: CallbackHit): void {
     if (this.engine === engine) return;
     if (this.engine !== undefined) {
       this.engine.domainRangeChangedEvent.remove(this.onDomainRangeChanged);
@@ -46,6 +59,7 @@ export default class FlatManager extends ActionHandlerBase {
       this.activeFlatMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
       this.inactiveFlatMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
     }
+    this.callbackHit = _callbackHit;
   }
 
   public onHit(res: IHitTestResult): boolean {
@@ -56,6 +70,7 @@ export default class FlatManager extends ActionHandlerBase {
     const index = this.selectedFlats.findIndex((v) => v.name === res.name && v.indexes.indexOf(res.index) >= 0);
     if (index >= 0) {
       const { name } = this.selectedFlats[index];
+      const selectedFlat = this.selectedFlats[index];
       if (this.wrappedIsMultipleSelection) {
         // remove the selected
         const previousActiveFlatName = this.selectedFlats[this.selectedFlats.length - 1].name;
@@ -69,31 +84,42 @@ export default class FlatManager extends ActionHandlerBase {
         if (newSelectedObjectName !== undefined && name !== newSelectedObjectName) {
           this.updateFlats(newSelectedObjectName);
         }
+      } else {
+        this.selectedFlats.splice(index, 1);
+        this.updateFlats(name);
       }
+
+      selectedFlat.key = 'del_' + index;
+      this.callbackHit?.(selectedFlat);
       return true;
     }
 
     const flat = this.findFlat(res.name, res.index);
     if (!flat) return false;
 
+    if (!this.wrappedIsMultipleSelection) {
+      this.clearAllFlats();
+    }
+    const selectedFlat = {
+      name: res.name,
+      indexes: flat.faceIndexes,
+      normal: [flat.normal.x, flat.normal.y, flat.normal.z],
+      area: flat.area,
+      key: 'add_' + this.selectedFlats.length + '_' + new Date().getTime(),
+    };
     if (this.wrappedIsMultipleSelection) {
       const lastActiveObjectName =
         this.selectedFlats.length > 0 ? this.selectedFlats[this.selectedFlats.length - 1].name : undefined;
-      this.selectedFlats = this.selectedFlats.concat([
-        { name: res.name, indexes: flat.faceIndexes, normal: [flat.normal.x, flat.normal.y, flat.normal.z] },
-      ]);
+      this.selectedFlats = this.selectedFlats.concat([selectedFlat]);
       if (lastActiveObjectName && lastActiveObjectName !== res.name) {
         this.updateFlats(lastActiveObjectName);
       }
       this.updateFlats(res.name);
     } else {
-      this.clearAllFlats();
-
-      this.selectedFlats = [
-        { name: res.name, indexes: flat.faceIndexes, normal: [flat.normal.x, flat.normal.y, flat.normal.z] },
-      ];
+      this.selectedFlats = [selectedFlat];
       this.updateFlats(res.name);
     }
+    this.callbackHit?.(selectedFlat);
     return true;
   }
 
@@ -165,6 +191,40 @@ export default class FlatManager extends ActionHandlerBase {
     }
 
     this.updateFlatsImpl(name, inactiveFaces, activeFaces);
+  }
+
+  public getSelectedFlats(): IFlatInfo[] {
+    return this.selectedFlats;
+  }
+
+  public addFlats(flat: IFlatInfo): void {
+    this.selectedFlats.push(flat);
+  }
+
+  public deleteFlat(flat: IFlatInfo): void {
+    // this.selectedFlats = this.selectedFlats.filter((item) => {
+    //   return item.key !== flat.key;
+    // });
+
+    const delIdx = this.selectedFlats.findIndex((item) => item.key === flat.key);
+    if (delIdx !== -1) {
+      const delName = this.selectedFlats[delIdx].name;
+      this.selectedFlats.splice(delIdx, 1);
+      this.updateFlats(delName);
+    }
+  }
+
+  public clearFlats(): void {
+    this.selectedFlats = [];
+  }
+
+  public clearAndRestore(flatNames: Set<string>): void {
+    this.selectedFlats = [];
+    if (this.engine) {
+      flatNames.forEach((name) => {
+        this.updateFlats(name);
+      });
+    }
   }
 
   /**

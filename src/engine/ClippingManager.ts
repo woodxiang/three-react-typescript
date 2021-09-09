@@ -572,4 +572,11 @@ export default class ClippingManager implements IClippingManager {
 
     return group;
   }
+
+  public clear(): void {
+    this.wrappedClipPositions = [0, 0, 0, 0, 0, 0];
+
+    // to indicate if the objects clipped on specified direction.
+    this.clipped = [false, false, false, false, false, false];
+  }
 }

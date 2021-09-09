@@ -25,9 +25,11 @@ export default class LegendManager implements IAnnotationDrawer {
 
   private textFont = 'Arial';
 
-  private textColor = 'rgba(0,0,0,1)';
+  private textColor = '#999999';
 
   private title = '';
+
+  private unit = '';
 
   get lut(): LutEx | undefined {
     return this.wrappedLut;
@@ -59,8 +61,9 @@ export default class LegendManager implements IAnnotationDrawer {
     this.engine?.invalidOverlap();
   }
 
-  public setTitle(newTitle: string): void {
+  public setTitle(newTitle: string, unit = ''): void {
     this.title = newTitle;
+    this.unit = unit;
     this.engine?.invalidOverlap();
   }
 
@@ -69,14 +72,18 @@ export default class LegendManager implements IAnnotationDrawer {
     this.engine?.invalidOverlap();
   }
 
+  public getRange(): { min: number; max: number } | undefined {
+    return this.range;
+  }
+
   public draw(ctx: CanvasRenderingContext2D): void {
     if (this.engine && this.wrappedLut) {
       const { y } = this.engine.viewPortSize;
-      const [clientWidth, clientHeight] = [y / 3, y / 3];
+      const [clientWidth, clientHeight] = [y / 2, y / 2];
 
       const titleHeight = 0.1 * clientHeight;
 
-      const colorBarTop = 0.15 * clientHeight;
+      const colorBarTop = 0.5 * clientHeight;
       const colorBarLeft = 0.1 * clientWidth;
       const colorBarHeight = 0.8 * clientHeight;
       const colorBarWidth = 0.1 * clientWidth;
@@ -85,37 +92,34 @@ export default class LegendManager implements IAnnotationDrawer {
 
       ctx.font = `Normal ${36}px Arial`;
       ctx.fillStyle = 'rgba(200, 0, 0, 1)';
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = this.textColor;
+      ctx.lineWidth = 1;
 
       // draw color box
-      ctx.strokeRect(colorBarLeft, colorBarTop, colorBarWidth, colorBarHeight);
+      // ctx.strokeRect(colorBarLeft, colorBarTop, colorBarWidth, colorBarHeight);
       const nGrid = this.wrappedLut.map.length - 1;
       const step = colorBarHeight / nGrid;
 
+      // 创建渐变
+      const grd = ctx.createLinearGradient(colorBarLeft, colorBarTop + colorBarHeight, colorBarLeft, colorBarTop);
       for (let i = 0; i < nGrid; i += 1) {
-        const { color } = this.wrappedLut.map[i];
-
-        ctx.fillStyle = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(
-          color.b * 255
-        )}, 1)`;
-
-        ctx.fillRect(colorBarLeft, colorBarTop + step * (nGrid - i - 1), colorBarWidth, step);
+        grd.addColorStop(this.wrappedLut.map[i].value, this.wrappedLut.map[i].rgb);
       }
-      ctx.beginPath();
-      for (let i = 1; i < nGrid; i += 1) {
-        ctx.moveTo(colorBarLeft, colorBarTop + step * i);
-        ctx.lineTo(colorBarLeft + colorBarWidth, colorBarTop + step * i);
-      }
-      ctx.stroke();
+
+      // 填充渐变
+      ctx.fillStyle = grd;
+      ctx.fillRect(colorBarLeft, colorBarTop, colorBarWidth, colorBarHeight);
 
       // draw marks
       const markLeft = colorBarLeft + colorBarWidth;
 
       ctx.beginPath();
       for (let i = 0; i <= nGrid; i += 1) {
-        ctx.moveTo(markLeft, colorBarTop + step * i);
-        ctx.lineTo(markLeft + markLength, colorBarTop + step * i);
+        let skewing = 0;
+        if (i === 0) skewing = 1;
+        if (i === nGrid) skewing = -1;
+        ctx.moveTo(markLeft, colorBarTop + step * i + skewing);
+        ctx.lineTo(markLeft + markLength, colorBarTop + step * i + skewing);
       }
       ctx.stroke();
 
@@ -123,6 +127,8 @@ export default class LegendManager implements IAnnotationDrawer {
       let labelFontSize = step * 0.5;
       if (labelFontSize > 36) {
         labelFontSize = 36;
+      } else if (labelFontSize < 13) {
+        labelFontSize = 13;
       }
 
       let maxTextSize = 0;
@@ -130,7 +136,10 @@ export default class LegendManager implements IAnnotationDrawer {
       ctx.font = `Normal ${labelFontSize}px ${this.textFont}`;
       ctx.fillStyle = this.textColor;
       for (let i = 0; i <= nGrid; i += 1) {
-        const label = this.wrappedLut.map[i].value.toFixed(5);
+        let label = this.wrappedLut.map[i].current.toFixed(4);
+        if (this.unit === 'Pa' && this.title === 'Pressure') {
+          label = (this.wrappedLut.map[i].current / 100000).toFixed(4);
+        }
         const textSize = ctx.measureText(label);
         if (maxTextSize < textSize.width) {
           maxTextSize = textSize.width;
@@ -138,22 +147,41 @@ export default class LegendManager implements IAnnotationDrawer {
 
         const boxDescent = textSize.fontBoundingBoxDescent ?? textSize.actualBoundingBoxDescent; // For node.js
         const boxAscent = textSize.fontBoundingBoxAscent ?? textSize.actualBoundingBoxAscent; // For node.js
-        ctx.fillText(label, labelLeft, colorBarTop + step * (nGrid - i) - (boxDescent - boxAscent) / 2);
+        const offset = (boxDescent - boxAscent) / 2 || -3.5;
+        // ctx.fillText(label, labelLeft, colorBarTop + step * (nGrid - i) - (boxDescent - boxAscent) / 2);
+        ctx.fillText(label, labelLeft, colorBarTop + step * i - offset);
       }
 
-      const totalSize = maxTextSize + labelLeft + clientWidth * 0.1;
-
       // Draw title
-      const titleFontSize = Math.round(titleHeight * 0.8);
+
+      const titleFontSize = Math.round(titleHeight * 0.5);
       ctx.font = `Normal ${titleFontSize}px ${this.textFont}`;
-      ctx.fillStyle = this.textColor;
-      const testString = this.title;
-      const textSize = ctx.measureText(testString);
-      ctx.fillText(
-        testString,
-        Math.max((totalSize - textSize.width) / 2, 0),
-        (titleHeight - textSize.fontBoundingBoxAscent) / 2 + textSize.fontBoundingBoxAscent
-      );
+      ctx.fillStyle = '#999999';
+
+      // 业务处理
+      /**
+       * 1. 当为压力，单位 Pa 时，转为 Bar ： 1Bar === 100000 Pa;
+       */
+      let unit = '';
+      if (this.unit) {
+        if (this.unit === 'Pa' && this.title === 'Pressure') {
+          unit = `[Bar]`;
+        } else {
+          unit = `[${this.unit}]`;
+        }
+      }
+
+      const testString = `${this.title} ${unit}`;
+      ctx.fillText(testString, colorBarLeft - titleFontSize, colorBarTop - titleFontSize * 1.2);
+
+      // this.drawLogo(ctx);
     }
   }
+
+  // 画离散图
+  // public drawDiscrete(ctx: CanvasRenderingContext2D): void {
+  //   ctx.fillText('还未支持离散图', 0, 0);
+  //   console.log('还未支持离散图');
+  //   return undefined;
+  // }
 }

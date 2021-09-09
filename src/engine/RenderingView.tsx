@@ -1,17 +1,6 @@
-import { createStyles, makeStyles } from '@material-ui/core';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { WEBGL } from 'three/examples/jsm/WebGL';
 import RenderingEngine from './RenderingEngine';
-
-const useStyles = makeStyles(() =>
-  createStyles({
-    root: {
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-    },
-  })
-);
 
 function init(newDiv: HTMLDivElement, renderEnv: RenderingEngine): void {
   const width = newDiv.clientWidth;
@@ -41,8 +30,6 @@ interface IRenderingViewProps {
 export default function RenderingView(props: IRenderingViewProps): JSX.Element {
   const renderDiv = useRef<HTMLDivElement>(null);
   const renderEnv = useMemo<RenderingEngine>(() => new RenderingEngine(), []);
-
-  const classes = useStyles();
 
   const { engineCallback } = props;
 
@@ -74,5 +61,5 @@ export default function RenderingView(props: IRenderingViewProps): JSX.Element {
     return <div>WebGL2 Required.</div>;
   }
 
-  return <div ref={renderDiv} className={classes.root} />;
+  return <div ref={renderDiv} id="canvas-container" style={{ position: 'relative', width: '100%', height: '100%' }} />;
 }
