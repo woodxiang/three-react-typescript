@@ -7,7 +7,7 @@ import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
 import axios from 'axios';
 import { isNode } from 'browser-or-node';
-import { Lut } from './three/examples/jsm/math/Lut';
+import { Lut } from 'three/examples/jsm/math/Lut';
 import ComponentsManager from './components/ComponentsManager';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import TextureFactory from './TextureFactory';
@@ -26,9 +26,9 @@ export enum GeometryDataType {
   PLYMesh,
 }
 
-export class MeshConfig {
-  public attr: string | undefined = undefined;
-  public split: boolean = false;
+export interface MeshConfig {
+  attr: string | undefined;
+  split: boolean;
 }
 
 declare const window: Window & {

@@ -20,9 +20,9 @@ import { Vector4 } from 'three/src/math/Vector4';
 import { Camera } from 'three/src/cameras/Camera';
 import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera';
 import { isBrowser, isNode } from 'browser-or-node';
+import Stats from 'three/examples/jsm/libs/stats.module';
 import { encode } from './utils/encoder';
 import { NodeWebGLRenderer } from '../node-threejs/node-three';
-import Stats from './three/examples/jsm/libs/stats.module';
 import {
   IActionCallback,
   STATE,
@@ -93,9 +93,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private overlapLayer: AnnotationLayer | undefined;
 
-  public width: number = 0;
+  public width = 0;
 
-  public height: number = 0;
+  public height = 0;
 
   private debugMode = false;
 

@@ -1,8 +1,11 @@
 /* eslint-disable class-methods-use-this */
-import { Mesh, SphereGeometry, Vector3, Vector4 } from 'three';
 import { FrontSide } from 'three/src/constants';
+import { SphereGeometry } from 'three/src/geometries/SphereGeometry';
 import { Color } from 'three/src/math/Color';
+import { Vector3 } from 'three/src/math/Vector3';
+import { Vector4 } from 'three/src/math/Vector4';
 import { Group } from 'three/src/objects/Group';
+import { Mesh } from 'three/src/objects/Mesh';
 import ActionHandlerBase from './ActionHandlerBase';
 import { IAnnotationDrawer } from './AnnotationLayer';
 import { IActionCallback, STATE } from './interfaces';

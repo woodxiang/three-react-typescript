@@ -1,8 +1,8 @@
 import axios, { CancelTokenSource } from 'axios';
-import { STLLoader } from '../three/examples/jsm/loaders/STLLoader';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { isNode } from 'browser-or-node';
-import { Loader } from 'three';
+import { Loader } from 'three/src/loaders/Loader';
 import CancelError from '../utils/CancelError';
 import { ICancellableLoader } from './ICancellableLoader';
 
