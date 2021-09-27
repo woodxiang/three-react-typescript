@@ -112,13 +112,11 @@ export default class SelectionHelper {
 
     const cosAngle = selectedTriangleNormal.dot(new Vector3(0, 0, 1));
     const mat = new Matrix4();
-    if (cosAngle < 1 - this.wrappedErrorRate) {
-      let axis = new Vector3(0, 1, 0);
-      let angle = Math.PI;
-      if (cosAngle > -1 + this.wrappedErrorRate) {
-        axis = selectedTriangleNormal.clone().cross(new Vector3(0, 0, 1));
-        angle = Math.asin(axis.length());
-      }
+    // rotate only when normal is not z nor z-
+    if (Math.abs(cosAngle) < 1 - this.wrappedErrorRate) {
+      const axis = selectedTriangleNormal.clone().cross(new Vector3(0, 0, 1));
+      let angle = Math.asin(axis.length());
+      if (cosAngle < 0) angle *= -1;
 
       mat.makeRotationAxis(axis.normalize(), angle);
 

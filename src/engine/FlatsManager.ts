@@ -55,6 +55,7 @@ export default class FlatManager extends ActionHandlerBase {
     if (this.engine !== undefined) {
       this.engine.addActionHandler(this);
       this.engine.domainRangeChangedEvent.add(this.onDomainRangeChanged);
+      this.onDomainRangeChanged();
 
       this.activeFlatMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
       this.inactiveFlatMaterial.ReplaceAfterProjectMatrix(this.engine.afterProjectMatrix);
@@ -89,7 +90,7 @@ export default class FlatManager extends ActionHandlerBase {
         this.updateFlats(name);
       }
 
-      selectedFlat.key = 'del_' + index;
+      selectedFlat.key = `del_${index}`;
       this.callbackHit?.(selectedFlat);
       return true;
     }
@@ -105,7 +106,7 @@ export default class FlatManager extends ActionHandlerBase {
       indexes: flat.faceIndexes,
       normal: [flat.normal.x, flat.normal.y, flat.normal.z],
       area: flat.area,
-      key: 'add_' + this.selectedFlats.length + '_' + new Date().getTime(),
+      key: `add_${this.selectedFlats.length}_${new Date().getTime()}`,
     };
     if (this.wrappedIsMultipleSelection) {
       const lastActiveObjectName =
