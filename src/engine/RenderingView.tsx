@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { WEBGL } from 'three/examples/jsm/WebGL';
+import WEBGL from 'three/examples/jsm/capabilities/WebGL';
 import RenderingEngine from './RenderingEngine';
 
 function init(newDiv: HTMLDivElement, renderEnv: RenderingEngine): void {

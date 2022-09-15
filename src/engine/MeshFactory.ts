@@ -26,9 +26,9 @@ export enum GeometryDataType {
   PLYMesh,
 }
 
-export class MeshConfig {
-  public attr: string | undefined = undefined;
-  public split: boolean = false;
+export interface MeshConfig {
+  attr: string | undefined;
+  split: boolean;
 }
 
 declare const window: Window & {
@@ -73,8 +73,8 @@ export default class MeshFactory {
     url: string,
     dataType: GeometryDataType,
     color: string,
-    opacity = 1,
-    config: any,
+    opacity: number,
+    config: MeshConfig,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<Mesh | undefined> {
     if (this.runningTasks.has(url)) {
@@ -96,7 +96,7 @@ export default class MeshFactory {
         diffuse: materialColor,
         reflectivity: 0.0,
         side: FrontSide,
-        opacity,
+        opacity: 1.0,
         transparent: opacity < 1,
         clipping: true,
         lights: true,
@@ -121,8 +121,8 @@ export default class MeshFactory {
   public async createColorMapMesh(
     url: string,
     dataType: GeometryDataType,
-    lut: string | Lut | LutEx | Color | undefined = undefined,
-    opacity = 1,
+    lut: string | Lut | LutEx | Color | undefined,
+    opacity: number,
     onProgress?: (event: ProgressEvent<EventTarget>) => void,
     config?: MeshConfig
   ): Promise<{ mesh: Mesh | Points; range: { min: number; max: number } | undefined } | undefined> {
@@ -160,8 +160,7 @@ export default class MeshFactory {
           }
           material = MeshFactory.createColorMapMaterial(range, lut, opacity);
           let geo = geometry;
-          if (config?.attr) 
-            geo = MeshFactory.formatGeoAttribute(geometry, 'generic', config?.attr);
+          if (config?.attr) geo = MeshFactory.formatGeoAttribute(geometry, 'generic', config?.attr);
           const mesh = new Mesh(geo, material);
           mesh.name = url;
 
@@ -358,7 +357,7 @@ export default class MeshFactory {
   public cancel(url: string): void {
     const state = this.runningTasks.get(url);
     if (!state) {
-      throw Error('no such task.');
+      return;
     }
 
     state.loader?.cancel();

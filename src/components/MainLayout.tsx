@@ -55,7 +55,7 @@ export default function MainLayout(): JSX.Element {
   const preprocessViewManager = useMemo<PreprocessViewManager>(() => new PreprocessViewManager(), []);
 
   const postProcessViewManager = useMemo<PostProcessViewManager>(() => new PostProcessViewManager(), []);
-  postProcessViewManager.changeBackground(new Color('0xf5f5f5'))
+  postProcessViewManager.changeBackground(new Color(0xf5, 0xf5, 0xf5));
 
   const currentViewManager = useMemo<ContentManager>(
     () => (displayingPreprocessView ? preprocessViewManager : postProcessViewManager),
@@ -100,7 +100,7 @@ export default function MainLayout(): JSX.Element {
     if (index !== -1) {
       // remove mesh
       newSelectedStls.splice(index, 1);
-      preprocessViewManager.remove(stlPrefix + item);
+      currentViewManager.remove(stlPrefix + item);
     } else {
       // add mesh
       newSelectedStls.push(item);

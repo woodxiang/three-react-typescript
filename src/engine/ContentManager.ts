@@ -180,7 +180,7 @@ export default class ContentManager {
       this.engine?.addMesh(mesh);
       return true;
     }
-    return mesh ? mesh as Mesh : undefined;
+    return mesh ? (mesh as Mesh) : undefined;
   }
 
   public changeBackground(newBackground: BackgroundColor): void {
