@@ -1,6 +1,6 @@
 import { Color } from 'three';
 
-var Lut = function (colormap, numberofcolors) {
+const Lut = function (colormap, numberofcolors) {
   this.lut = [];
   this.setColorMap(colormap, numberofcolors);
   return this;
@@ -15,7 +15,7 @@ Lut.prototype = {
   minV: 0,
   maxV: 1,
 
-  set: function (value) {
+  set(value) {
     if (value instanceof Lut) {
       this.copy(value);
     }
@@ -23,35 +23,35 @@ Lut.prototype = {
     return this;
   },
 
-  setMin: function (min) {
+  setMin(min) {
     this.minV = min;
 
     return this;
   },
 
-  setMax: function (max) {
+  setMax(max) {
     this.maxV = max;
 
     return this;
   },
 
-  setColorMap: function (colormap, numberofcolors) {
+  setColorMap(colormap, numberofcolors) {
     this.map = ColorMapKeywords[colormap] || ColorMapKeywords.rainbow;
     this.n = numberofcolors || 32;
 
-    var step = 1.0 / this.n;
+    const step = 1.0 / this.n;
 
     this.lut.length = 0;
-    for (var i = 0; i <= 1; i += step) {
-      for (var j = 0; j < this.map.length - 1; j++) {
+    for (let i = 0; i <= 1; i += step) {
+      for (let j = 0; j < this.map.length - 1; j++) {
         if (i >= this.map[j][0] && i < this.map[j + 1][0]) {
-          var min = this.map[j][0];
-          var max = this.map[j + 1][0];
+          const min = this.map[j][0];
+          const max = this.map[j + 1][0];
 
-          var minColor = new Color(this.map[j][1]);
-          var maxColor = new Color(this.map[j + 1][1]);
+          const minColor = new Color(this.map[j][1]);
+          const maxColor = new Color(this.map[j + 1][1]);
 
-          var color = minColor.lerp(maxColor, (i - min) / (max - min));
+          const color = minColor.lerp(maxColor, (i - min) / (max - min));
 
           this.lut.push(color);
         }
@@ -61,7 +61,7 @@ Lut.prototype = {
     return this;
   },
 
-  copy: function (lut) {
+  copy(lut) {
     this.lut = lut.lut;
     this.map = lut.map;
     this.n = lut.n;
@@ -71,7 +71,7 @@ Lut.prototype = {
     return this;
   },
 
-  getColor: function (alpha) {
+  getColor(alpha) {
     if (alpha <= this.minV) {
       alpha = this.minV;
     } else if (alpha >= this.maxV) {
@@ -80,18 +80,18 @@ Lut.prototype = {
 
     alpha = (alpha - this.minV) / (this.maxV - this.minV);
 
-    var colorPosition = Math.round(alpha * this.n);
+    let colorPosition = Math.round(alpha * this.n);
     colorPosition == this.n ? (colorPosition -= 1) : colorPosition;
 
     return this.lut[colorPosition];
   },
 
-  addColorMap: function (colormapName, arrayOfColors) {
+  addColorMap(colormapName, arrayOfColors) {
     ColorMapKeywords[colormapName] = arrayOfColors;
   },
 
-  createCanvas: function () {
-    var canvas = document.createElement('canvas');
+  createCanvas() {
+    const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = this.n;
 
@@ -100,27 +100,27 @@ Lut.prototype = {
     return canvas;
   },
 
-  updateCanvas: function (canvas) {
-    var ctx = canvas.getContext('2d', { alpha: false });
+  updateCanvas(canvas) {
+    const ctx = canvas.getContext('2d', { alpha: false });
 
-    var imageData = ctx.getImageData(0, 0, 1, this.n);
+    const imageData = ctx.getImageData(0, 0, 1, this.n);
 
-    var data = imageData.data;
+    const { data } = imageData;
 
-    var k = 0;
+    let k = 0;
 
-    var step = 1.0 / this.n;
+    const step = 1.0 / this.n;
 
-    for (var i = 1; i >= 0; i -= step) {
-      for (var j = this.map.length - 1; j >= 0; j--) {
+    for (let i = 1; i >= 0; i -= step) {
+      for (let j = this.map.length - 1; j >= 0; j--) {
         if (i < this.map[j][0] && i >= this.map[j - 1][0]) {
-          var min = this.map[j - 1][0];
-          var max = this.map[j][0];
+          const min = this.map[j - 1][0];
+          const max = this.map[j][0];
 
-          var minColor = new Color(this.map[j - 1][1]);
-          var maxColor = new Color(this.map[j][1]);
+          const minColor = new Color(this.map[j - 1][1]);
+          const maxColor = new Color(this.map[j][1]);
 
-          var color = minColor.lerp(maxColor, (i - min) / (max - min));
+          const color = minColor.lerp(maxColor, (i - min) / (max - min));
 
           data[k * 4] = Math.round(color.r * 255);
           data[k * 4 + 1] = Math.round(color.g * 255);

@@ -1,19 +1,22 @@
 /* WEB WORKER */
 
-var DracoWorker = function () {
-  let decoderConfig, decoderPending;
-  let dracoGeometry, dracoHeader, baseArray;
+const DracoWorker = function () {
+  let decoderConfig;
+  let decoderPending;
+  let dracoGeometry;
+  let dracoHeader;
+  let baseArray;
 
   onmessage = function (e) {
-    var message = e.data;
+    const message = e.data;
 
     switch (message.type) {
       case 'init':
         decoderConfig = message.decoderConfig;
-        decoderPending = new Promise(function (resolve /*, reject*/) {
+        decoderPending = new Promise(function (resolve /* , reject */) {
           decoderConfig.onModuleLoaded = function (draco) {
             // Module is Promise-like. Wrap before resolving to avoid loop.
-            resolve({ draco: draco });
+            resolve({ draco });
           };
 
           DracoDecoderModule(decoderConfig); // eslint-disable-line no-undef
@@ -21,11 +24,11 @@ var DracoWorker = function () {
         break;
       case 'decode':
         decoderPending.then((module) => {
-          var draco = module.draco;
-          var decoder = new draco.Decoder();
+          const { draco } = module;
+          const decoder = new draco.Decoder();
 
           try {
-            let geometry = Decode(draco, decoder, message.buffer, message.name);
+            const geometry = Decode(draco, decoder, message.buffer, message.name);
 
             self.postMessage({ type: 'decode', name: message.name, geometry });
           } catch (error) {
@@ -61,14 +64,14 @@ var DracoWorker = function () {
   }
 
   function DecodeAll(draco, decoder, buffer, name) {
-    let startDecode = performance.now();
-    let bufferArray = new Int8Array(buffer);
+    const startDecode = performance.now();
+    const bufferArray = new Int8Array(buffer);
 
-    let dracoHeaderLocal = new draco.DracoHeader();
+    const dracoHeaderLocal = new draco.DracoHeader();
     let lastStatus = decoder.DecodeArrayToDracoHeader(bufferArray, bufferArray.length, dracoHeaderLocal);
 
     if (!lastStatus.ok() || dracoHeaderLocal.ptr === 0) {
-      throw new Error('Worker: Decoding header failed: ' + lastStatus.error_msg());
+      throw new Error(`Worker: Decoding header failed: ${lastStatus.error_msg()}`);
     }
 
     let dracoGeometryLocal;
@@ -86,11 +89,11 @@ var DracoWorker = function () {
     }
 
     if (!lastStatus.ok() || dracoGeometryLocal.ptr === 0) {
-      throw new Error('Worker: Decoding geometry failed: ' + lastStatus.error_msg());
+      throw new Error(`Worker: Decoding geometry failed: ${lastStatus.error_msg()}`);
     }
     // console.log("decode geometry duration", performance.now() - startDecode);
 
-    var geometry = { index: null, attributes: [] };
+    const geometry = { index: null, attributes: [] };
 
     // Gather all vertex attributes.
     const attributeIDs = {
@@ -108,8 +111,8 @@ var DracoWorker = function () {
       generic: 'Float32Array',
     };
     const useUniqueIDs = false;
-    for (var attributeName in attributeIDs) {
-      var attributeType = self[attributeTypes[attributeName]];
+    for (const attributeName in attributeIDs) {
+      const attributeType = self[attributeTypes[attributeName]];
 
       var attribute;
       var attributeID;
@@ -153,15 +156,15 @@ var DracoWorker = function () {
       throw new Error('Worker: Mesh info already exists.');
     }
 
-    let startDecode = performance.now();
-    let bufferArray = new Int8Array(buffer);
+    const startDecode = performance.now();
+    const bufferArray = new Int8Array(buffer);
     baseArray = bufferArray;
 
     dracoHeader = new draco.DracoHeader();
     let lastStatus = decoder.DecodeArrayToDracoHeader(bufferArray, bufferArray.length, dracoHeader);
 
     if (!lastStatus.ok() || dracoHeader.ptr === 0) {
-      throw new Error('Worker: Decoding header failed: ' + lastStatus.error_msg());
+      throw new Error(`Worker: Decoding header failed: ${lastStatus.error_msg()}`);
     }
 
     switch (dracoHeader.GetEncoderType()) {
@@ -179,7 +182,7 @@ var DracoWorker = function () {
     }
 
     if (!lastStatus.ok() || dracoGeometry.ptr === 0) {
-      throw new Error('Worker: Decoding geometry failed: ' + lastStatus.error_msg());
+      throw new Error(`Worker: Decoding geometry failed: ${lastStatus.error_msg()}`);
     }
 
     // console.log("decode geometry duration", performance.now() - startDecode);
@@ -191,8 +194,8 @@ var DracoWorker = function () {
       throw new Error('Worker: Mesh info not exists.');
     }
 
-    let startDecode = performance.now();
-    let bufferArray = new Int8Array(buffer);
+    const startDecode = performance.now();
+    const bufferArray = new Int8Array(buffer);
 
     switch (dracoHeader.GetEncoderType()) {
       case draco.TRIANGULAR_MESH:
@@ -209,13 +212,13 @@ var DracoWorker = function () {
     }
 
     // console.log("decode attribute duration", performance.now() - startDecode);
-    const attributeName = name,
-      attributeType = Float32Array;
-    let attributeID = decoder.GetAttributeIdByName(dracoGeometry, attributeName);
+    const attributeName = name;
+    const attributeType = Float32Array;
+    const attributeID = decoder.GetAttributeIdByName(dracoGeometry, attributeName);
     if (attributeID === -1) throw new Error('THREE.DRACOLoader: Unexpected attribute ID.');
 
-    let attribute = decoder.GetAttribute(dracoGeometry, attributeID);
-    let geometry = {
+    const attribute = decoder.GetAttribute(dracoGeometry, attributeID);
+    const geometry = {
       index: null,
       attribute: decodeAttribute(draco, decoder, dracoGeometry, attributeName, attributeType, attribute),
     };
@@ -225,38 +228,38 @@ var DracoWorker = function () {
       geometry.index = decodeIndex(draco, decoder, dracoGeometry);
     }
 
-    //draco.destroy(dracoGeometry);
+    // draco.destroy(dracoGeometry);
     return geometry;
   }
 
   function decodeIndex(draco, decoder, dracoGeometry) {
-    var numFaces = dracoGeometry.num_faces();
-    var numIndices = numFaces * 3;
-    var byteLength = numIndices * 4;
+    const numFaces = dracoGeometry.num_faces();
+    const numIndices = numFaces * 3;
+    const byteLength = numIndices * 4;
 
-    var ptr = draco._malloc(byteLength);
+    const ptr = draco._malloc(byteLength);
     decoder.GetTrianglesUInt32Array(dracoGeometry, byteLength, ptr);
-    var index = new Uint32Array(draco.HEAPF32.buffer, ptr, numIndices).slice();
+    const index = new Uint32Array(draco.HEAPF32.buffer, ptr, numIndices).slice();
     draco._free(ptr);
 
     return { array: index, itemSize: 1 };
   }
 
   function decodeAttribute(draco, decoder, dracoGeometry, attributeName, attributeType, attribute) {
-    var numComponents = attribute.num_components();
-    var numPoints = dracoGeometry.num_points();
-    var numValues = numPoints * numComponents;
-    var byteLength = numValues * attributeType.BYTES_PER_ELEMENT;
-    var dataType = getDracoDataType(draco, attributeType);
+    const numComponents = attribute.num_components();
+    const numPoints = dracoGeometry.num_points();
+    const numValues = numPoints * numComponents;
+    const byteLength = numValues * attributeType.BYTES_PER_ELEMENT;
+    const dataType = getDracoDataType(draco, attributeType);
 
-    var ptr = draco._malloc(byteLength);
+    const ptr = draco._malloc(byteLength);
     decoder.GetAttributeDataArrayForAllPoints(dracoGeometry, attribute, dataType, byteLength, ptr);
-    var array = new attributeType(draco.HEAPF32.buffer, ptr, numValues).slice();
+    const array = new attributeType(draco.HEAPF32.buffer, ptr, numValues).slice();
     draco._free(ptr);
 
     return {
       name: attributeName,
-      array: array,
+      array,
       itemSize: numComponents,
     };
   }

@@ -1,13 +1,13 @@
 import { Color } from 'three/src/math/Color';
 import { Mesh } from 'three/src/objects/Mesh';
+import { InterpolateLinear } from 'three/src/constants';
+import { TextureLoader } from 'three/src/loaders/TextureLoader';
 import BottomManager from './BottomManager';
 import ContentManager, { BackgroundColor as BackgroundColorType } from './ContentManager';
 import LegendManager from './LegendManager';
-import { InterpolateLinear } from 'three/src/constants';
 import LutEx from './LutEx';
 import ColorMapLambertMaterial from './Materials/ColorMapLambertMaterial';
 import { GeometryDataType } from './MeshFactory';
-import { TextureLoader } from 'three/src/loaders/TextureLoader';
 import PickValueHandler from './PickValueHandler';
 
 export interface GateInterface {
@@ -257,7 +257,7 @@ export default class PostProcessViewManager extends ContentManager {
   private async loadAndAddDracoExMesh(
     url: string | Array<string>,
     fileType: string,
-    split: boolean = false,
+    split = false,
     opacity?: number,
     onProgress?: (event: ProgressEvent<EventTarget>) => void
   ): Promise<modelRange | Array<modelRange> | undefined> {

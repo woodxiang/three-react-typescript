@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as THREE from 'three';
 
-var Component = function (name, url, loadProgress, loadError) {
+const Component = function (name, url, loadProgress, loadError) {
   this.parent = null;
   this.name = name;
   this.url = url;
@@ -17,10 +17,10 @@ var Component = function (name, url, loadProgress, loadError) {
 Component.prototype = {
   constructor: Component,
 
-  load: function () {
+  load() {
     const that = this;
     // const startDownload = performance.now();
-    let prePromise = that.promise;
+    const prePromise = that.promise;
     that.promise = new Promise((resolve, reject) => {
       prePromise.then(() => {
         if (that.done) {
@@ -45,7 +45,7 @@ Component.prototype = {
     return that.promise;
   },
 
-  decode: function () {
+  decode() {
     const that = this;
 
     this.decodePending = new Promise((resolve, reject) => {
@@ -59,18 +59,18 @@ Component.prototype = {
             worker._callbacks[that.name] = {
               resolve: (msg) => {
                 const geometryData = msg.geometry;
-                const geometry = that.parent.geometry;
+                const { geometry } = that.parent;
                 switch (msg.name) {
                   case 'no_split':
                     if (geometryData.index) {
                       geometry.setIndex(new THREE.BufferAttribute(geometryData.index.array, 1));
                     }
 
-                    for (var i = 0; i < geometryData.attributes.length; i++) {
-                      var attribute = geometryData.attributes[i];
-                      var name = attribute.name;
-                      var array = attribute.array;
-                      var itemSize = attribute.itemSize;
+                    for (let i = 0; i < geometryData.attributes.length; i++) {
+                      const attribute = geometryData.attributes[i];
+                      const { name } = attribute;
+                      const { array } = attribute;
+                      const { itemSize } = attribute;
                       geometry.setAttribute(name, new THREE.BufferAttribute(array, itemSize));
                     }
                     break;
@@ -110,7 +110,7 @@ Component.prototype = {
     });
     return this.decodePending;
   },
-  destroy: function () {},
+  destroy() {},
 };
 
 export { Component };

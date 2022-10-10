@@ -93,9 +93,9 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
 
   private overlapLayer: AnnotationLayer | undefined;
 
-  public width: number = 0;
+  public width = 0;
 
-  public height: number = 0;
+  public height = 0;
 
   private debugMode = false;
 

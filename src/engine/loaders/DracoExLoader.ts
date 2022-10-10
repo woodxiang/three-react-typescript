@@ -1,7 +1,7 @@
 import axios, { CancelTokenSource, ResponseType } from 'axios';
-import { DRACOLoader } from '../three/examples/jsm/loaders/DRACOLoader';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
 import { isNode } from 'browser-or-node';
+import { DRACOLoader } from '../three/examples/jsm/loaders/DRACOLoader';
 import { ICancellableLoader } from './ICancellableLoader';
 
 interface IAttributeProperties {

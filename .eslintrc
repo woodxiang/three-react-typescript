@@ -1,8 +1,53 @@
 {
-  "extends": ["airbnb-typescript-prettier"],
+  "extends": [
+    "airbnb",
+    "airbnb/hooks",
+    "prettier",
+    "prettier/react"
+  ],
+  "plugins": [
+    "react",
+    "jsx-a11y",
+    "import",
+    "prettier"
+  ],
   "rules": {
-    "no-console": "off",
-    "linebreak-style": "off"
+    // prettier
+    "prettier/prettier": [
+      "error"
+    ],
+    // v4 changes
+    "no-use-before-define": "off",
+    "no-shadow": "off",
+    // React
+    "react/prop-types": [
+      "off",
+      {}
+    ],
+    // import
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "mjs": "never",
+        "jsx": "never"
+      }
+    ]
   },
+  "overrides": [
+    {
+      "files": [
+        "*.{ts,tsx}"
+      ],
+      "extends": [
+        "airbnb-typescript-prettier"
+      ],
+      "rules": {
+        "no-console": "off",
+        "linebreak-style": "off"
+      }
+    }
+  ],
   "ignorePatterns": "src/wasm/*.*"
 }

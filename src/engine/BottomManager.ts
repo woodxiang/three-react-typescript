@@ -1,9 +1,9 @@
 import { Vector2 } from 'three/src/math/Vector2';
 import { Mesh } from 'three/src/objects/Mesh';
 import { Points } from 'three/src/objects/Points';
+import { isNode } from 'browser-or-node';
 import LiteEvent from './event';
 import { IAnnotationDrawer } from './AnnotationLayer';
-import { isNode } from 'browser-or-node';
 
 interface ILegendSource {
   addOverlayLayer(drawer: IAnnotationDrawer): void;

@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry, FileLoader, Loader } from 'three';
 
-var DRACOLoader = function (manager) {
+const DRACOLoader = function (manager) {
   Loader.call(this, manager);
 
   this.decoderPath = '';
@@ -30,41 +30,41 @@ var DRACOLoader = function (manager) {
 DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
   constructor: DRACOLoader,
 
-  setDecoderPath: function (path) {
+  setDecoderPath(path) {
     this.decoderPath = path;
 
     return this;
   },
 
-  setDecoderConfig: function (config) {
+  setDecoderConfig(config) {
     this.decoderConfig = config;
 
     return this;
   },
 
-  setWorkerLimit: function (workerLimit) {
+  setWorkerLimit(workerLimit) {
     this.workerLimit = workerLimit;
 
     return this;
   },
 
   /** @deprecated */
-  setVerbosity: function () {
+  setVerbosity() {
     console.warn('THREE.DRACOLoader: The .setVerbosity() method has been removed.');
   },
 
   /** @deprecated */
-  setDrawMode: function () {
+  setDrawMode() {
     console.warn('THREE.DRACOLoader: The .setDrawMode() method has been removed.');
   },
 
   /** @deprecated */
-  setSkipDequantization: function () {
+  setSkipDequantization() {
     console.warn('THREE.DRACOLoader: The .setSkipDequantization() method has been removed.');
   },
 
-  load: function (url, onLoad, onProgress, onError) {
-    var loader = new FileLoader(this.manager);
+  load(url, onLoad, onProgress, onError) {
+    const loader = new FileLoader(this.manager);
 
     loader.setPath(this.path);
     loader.setResponseType('arraybuffer');
@@ -74,7 +74,7 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     loader.load(
       url,
       (buffer) => {
-        var taskConfig = {
+        const taskConfig = {
           attributeIDs: this.defaultAttributeIDs,
           attributeTypes: this.defaultAttributeTypes,
           useUniqueIDs: false,
@@ -88,8 +88,8 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
   },
 
   /** @deprecated Kept for backward-compatibility with previous DRACOLoader versions. */
-  decodeDracoFile: function (buffer, callback, attributeIDs, attributeTypes) {
-    var taskConfig = {
+  decodeDracoFile(buffer, callback, attributeIDs, attributeTypes) {
+    const taskConfig = {
       attributeIDs: attributeIDs || this.defaultAttributeIDs,
       attributeTypes: attributeTypes || this.defaultAttributeTypes,
       useUniqueIDs: !!attributeIDs,
@@ -98,12 +98,12 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     this.decodeGeometry(buffer, taskConfig).then(callback);
   },
 
-  decodeGeometry: function (buffer, taskConfig) {
+  decodeGeometry(buffer, taskConfig) {
     // TODO: For backward-compatibility, support 'attributeTypes' objects containing
     // references (rather than names) to typed array constructors. These must be
     // serialized before sending them to the worker.
-    for (var attribute in taskConfig.attributeTypes) {
-      var type = taskConfig.attributeTypes[attribute];
+    for (const attribute in taskConfig.attributeTypes) {
+      const type = taskConfig.attributeTypes[attribute];
 
       if (type.BYTES_PER_ELEMENT !== undefined) {
         taskConfig.attributeTypes[attribute] = type.name;
@@ -112,16 +112,17 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
 
     //
 
-    var taskKey = JSON.stringify(taskConfig);
+    const taskKey = JSON.stringify(taskConfig);
 
     // Check for an existing task using this buffer. A transferred buffer cannot be transferred
     // again from this thread.
     if (DRACOLoader.taskCache.has(buffer)) {
-      var cachedTask = DRACOLoader.taskCache.get(buffer);
+      const cachedTask = DRACOLoader.taskCache.get(buffer);
 
       if (cachedTask.key === taskKey) {
         return cachedTask.promise;
-      } else if (buffer.byteLength === 0) {
+      }
+      if (buffer.byteLength === 0) {
         // Technically, it would be possible to wait for the previous task to complete,
         // transfer the buffer back, and decode again with the second configuration. That
         // is complex, and I don't know of any reason to decode a Draco buffer twice in
@@ -135,13 +136,13 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
 
     //
 
-    var worker;
-    var taskID = this.workerNextTaskID++;
-    var taskCost = buffer.byteLength;
+    let worker;
+    const taskID = this.workerNextTaskID++;
+    const taskCost = buffer.byteLength;
 
     // Obtain a worker and assign a task, and construct a geometry instance
     // when the task completes.
-    var geometryPending = this._getWorker(taskID, taskCost)
+    const geometryPending = this._getWorker(taskID, taskCost)
       .then((_worker) => {
         worker = _worker;
 
@@ -176,18 +177,18 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     return geometryPending;
   },
 
-  _createGeometry: function (geometryData) {
-    var geometry = new BufferGeometry();
+  _createGeometry(geometryData) {
+    const geometry = new BufferGeometry();
 
     if (geometryData.index) {
       geometry.setIndex(new BufferAttribute(geometryData.index.array, 1));
     }
 
-    for (var i = 0; i < geometryData.attributes.length; i++) {
-      var attribute = geometryData.attributes[i];
-      var name = attribute.name;
-      var array = attribute.array;
-      var itemSize = attribute.itemSize;
+    for (let i = 0; i < geometryData.attributes.length; i++) {
+      const attribute = geometryData.attributes[i];
+      const { name } = attribute;
+      const { array } = attribute;
+      const { itemSize } = attribute;
 
       geometry.setAttribute(name, new BufferAttribute(array, itemSize));
     }
@@ -195,8 +196,8 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     return geometry;
   },
 
-  _loadLibrary: function (url, responseType) {
-    var loader = new FileLoader(this.manager);
+  _loadLibrary(url, responseType) {
+    const loader = new FileLoader(this.manager);
     loader.setPath(this.decoderPath);
     loader.setResponseType(responseType);
     loader.setWithCredentials(this.withCredentials);
@@ -206,17 +207,17 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     });
   },
 
-  preload: function () {
+  preload() {
     this._initDecoder();
 
     return this;
   },
 
-  _initDecoder: function () {
+  _initDecoder() {
     if (this.decoderPending) return this.decoderPending;
 
-    var useJS = typeof WebAssembly !== 'object' || this.decoderConfig.type === 'js';
-    var librariesPending = [];
+    const useJS = typeof WebAssembly !== 'object' || this.decoderConfig.type === 'js';
+    const librariesPending = [];
 
     if (useJS) {
       librariesPending.push(this._loadLibrary('draco_decoder.js', 'text'));
@@ -226,15 +227,15 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     }
 
     this.decoderPending = Promise.all(librariesPending).then((libraries) => {
-      var jsContent = libraries[0];
+      const jsContent = libraries[0];
 
       if (!useJS) {
         this.decoderConfig.wasmBinary = libraries[1];
       }
 
-      var fn = DRACOLoader.DRACOWorker.toString();
+      const fn = DRACOLoader.DRACOWorker.toString();
 
-      var body = [
+      const body = [
         '/* draco decoder */',
         jsContent,
         '',
@@ -248,7 +249,7 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     return this.decoderPending;
   },
 
-  _getWorker: function (taskID, taskCost) {
+  _getWorker(taskID, taskCost) {
     return this._initDecoder().then(() => {
       if (this.workerPool.length < this.workerLimit) {
         var worker = new Worker(this.workerSourceURL);
@@ -260,7 +261,7 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
         worker.postMessage({ type: 'init', decoderConfig: this.decoderConfig });
 
         worker.onmessage = function (e) {
-          var message = e.data;
+          const message = e.data;
 
           switch (message.type) {
             case 'decode':
@@ -272,7 +273,7 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
               break;
 
             default:
-              console.error('THREE.DRACOLoader: Unexpected message, "' + message.type + '"');
+              console.error(`THREE.DRACOLoader: Unexpected message, "${message.type}"`);
           }
         };
 
@@ -290,21 +291,21 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     });
   },
 
-  _releaseTask: function (worker, taskID) {
+  _releaseTask(worker, taskID) {
     worker._taskLoad -= worker._taskCosts[taskID];
     delete worker._callbacks[taskID];
     delete worker._taskCosts[taskID];
   },
 
-  debug: function () {
+  debug() {
     console.log(
       'Task load: ',
       this.workerPool.map((worker) => worker._taskLoad)
     );
   },
 
-  dispose: function () {
-    for (var i = 0; i < this.workerPool.length; ++i) {
+  dispose() {
+    for (let i = 0; i < this.workerPool.length; ++i) {
       this.workerPool[i].terminate();
     }
 
@@ -317,19 +318,19 @@ DRACOLoader.prototype = Object.assign(Object.create(Loader.prototype), {
 /* WEB WORKER */
 
 DRACOLoader.DRACOWorker = function () {
-  var decoderConfig;
-  var decoderPending;
+  let decoderConfig;
+  let decoderPending;
 
   onmessage = function (e) {
-    var message = e.data;
+    const message = e.data;
 
     switch (message.type) {
       case 'init':
         decoderConfig = message.decoderConfig;
-        decoderPending = new Promise(function (resolve /*, reject*/) {
+        decoderPending = new Promise(function (resolve /* , reject */) {
           decoderConfig.onModuleLoaded = function (draco) {
             // Module is Promise-like. Wrap before resolving to avoid loop.
-            resolve({ draco: draco });
+            resolve({ draco });
           };
 
           DracoDecoderModule(decoderConfig); // eslint-disable-line no-undef
@@ -337,18 +338,18 @@ DRACOLoader.DRACOWorker = function () {
         break;
 
       case 'decode':
-        var buffer = message.buffer;
-        var taskConfig = message.taskConfig;
+        var { buffer } = message;
+        var { taskConfig } = message;
         decoderPending.then((module) => {
-          var draco = module.draco;
-          var decoder = new draco.Decoder();
-          var decoderBuffer = new draco.DecoderBuffer();
+          const { draco } = module;
+          const decoder = new draco.Decoder();
+          const decoderBuffer = new draco.DecoderBuffer();
           decoderBuffer.Init(new Int8Array(buffer), buffer.byteLength);
 
           try {
-            var geometry = decodeGeometry(draco, decoder, decoderBuffer, taskConfig);
+            const geometry = decodeGeometry(draco, decoder, decoderBuffer, taskConfig);
 
-            var buffers = geometry.attributes.map((attr) => attr.array.buffer);
+            const buffers = geometry.attributes.map((attr) => attr.array.buffer);
 
             if (geometry.index) buffers.push(geometry.index.array.buffer);
 
@@ -367,13 +368,13 @@ DRACOLoader.DRACOWorker = function () {
   };
 
   function decodeGeometry(draco, decoder, decoderBuffer, taskConfig) {
-    var attributeIDs = taskConfig.attributeIDs;
-    var attributeTypes = taskConfig.attributeTypes;
+    const { attributeIDs } = taskConfig;
+    const { attributeTypes } = taskConfig;
 
-    var dracoGeometry;
-    var decodingStatus;
+    let dracoGeometry;
+    let decodingStatus;
 
-    var geometryType = decoder.GetEncodedGeometryType(decoderBuffer);
+    const geometryType = decoder.GetEncodedGeometryType(decoderBuffer);
 
     if (geometryType === draco.TRIANGULAR_MESH) {
       dracoGeometry = new draco.Mesh();
@@ -386,14 +387,14 @@ DRACOLoader.DRACOWorker = function () {
     }
 
     if (!decodingStatus.ok() || dracoGeometry.ptr === 0) {
-      throw new Error('THREE.DRACOLoader: Decoding failed: ' + decodingStatus.error_msg());
+      throw new Error(`THREE.DRACOLoader: Decoding failed: ${decodingStatus.error_msg()}`);
     }
 
-    var geometry = { index: null, attributes: [] };
+    const geometry = { index: null, attributes: [] };
 
     // Gather all vertex attributes.
-    for (var attributeName in attributeIDs) {
-      var attributeType = self[attributeTypes[attributeName]];
+    for (const attributeName in attributeIDs) {
+      const attributeType = self[attributeTypes[attributeName]];
 
       var attribute;
       var attributeID;
@@ -427,33 +428,33 @@ DRACOLoader.DRACOWorker = function () {
   }
 
   function decodeIndex(draco, decoder, dracoGeometry) {
-    var numFaces = dracoGeometry.num_faces();
-    var numIndices = numFaces * 3;
-    var byteLength = numIndices * 4;
+    const numFaces = dracoGeometry.num_faces();
+    const numIndices = numFaces * 3;
+    const byteLength = numIndices * 4;
 
-    var ptr = draco._malloc(byteLength);
+    const ptr = draco._malloc(byteLength);
     decoder.GetTrianglesUInt32Array(dracoGeometry, byteLength, ptr);
-    var index = new Uint32Array(draco.HEAPF32.buffer, ptr, numIndices).slice();
+    const index = new Uint32Array(draco.HEAPF32.buffer, ptr, numIndices).slice();
     draco._free(ptr);
 
     return { array: index, itemSize: 1 };
   }
 
   function decodeAttribute(draco, decoder, dracoGeometry, attributeName, attributeType, attribute) {
-    var numComponents = attribute.num_components();
-    var numPoints = dracoGeometry.num_points();
-    var numValues = numPoints * numComponents;
-    var byteLength = numValues * attributeType.BYTES_PER_ELEMENT;
-    var dataType = getDracoDataType(draco, attributeType);
+    const numComponents = attribute.num_components();
+    const numPoints = dracoGeometry.num_points();
+    const numValues = numPoints * numComponents;
+    const byteLength = numValues * attributeType.BYTES_PER_ELEMENT;
+    const dataType = getDracoDataType(draco, attributeType);
 
-    var ptr = draco._malloc(byteLength);
+    const ptr = draco._malloc(byteLength);
     decoder.GetAttributeDataArrayForAllPoints(dracoGeometry, attribute, dataType, byteLength, ptr);
-    var array = new attributeType(draco.HEAPF32.buffer, ptr, numValues).slice();
+    const array = new attributeType(draco.HEAPF32.buffer, ptr, numValues).slice();
     draco._free(ptr);
 
     return {
       name: attributeName,
-      array: array,
+      array,
       itemSize: numComponents,
     };
   }

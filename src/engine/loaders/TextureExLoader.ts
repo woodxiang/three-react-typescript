@@ -28,17 +28,17 @@ export class TextureExLoader extends Loader {
       function (image) {
         if (isNode) {
           // Node.js env
-          var canvas = document.createElement('canvas');
+          const canvas = document.createElement('canvas');
           canvas.width = image.width;
           canvas.height = image.height;
-          let ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext('2d');
 
           if (!ctx) {
             throw Error('TextureExLoader: no context.');
           }
 
           ctx.drawImage(image, 0, 0);
-          let imgData = ctx.getImageData(0, 0, image.width, image.height);
+          const imgData = ctx.getImageData(0, 0, image.width, image.height);
 
           texture.image = imgData;
         } else {

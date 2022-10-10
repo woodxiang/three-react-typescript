@@ -3,7 +3,7 @@ type Color = {
   rgb: number[];
 };
 
-let colorMap: Map<string, Color[]> = new Map();
+const colorMap: Map<string, Color[]> = new Map();
 colorMap.set('jet', [
   { index: 0, rgb: [0, 0, 131] },
   { index: 0.125, rgb: [0, 60, 170] },

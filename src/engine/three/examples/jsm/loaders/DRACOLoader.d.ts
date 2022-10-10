@@ -9,10 +9,16 @@ export class DRACOLoader /* extends Loader */ {
     onProgress?: (event: ProgressEvent) => void,
     onError?: (event: ErrorEvent) => void
   ): void;
+
   loadAsync(url: string, onProgress?: (event: ProgressEvent) => void): Promise<BufferGeometry>;
+
   setDecoderPath(path: string): DRACOLoader;
+
   setDecoderConfig(config: object): DRACOLoader;
+
   setWorkerLimit(workerLimit: number): DRACOLoader;
+
   preload(): DRACOLoader;
+
   dispose(): DRACOLoader;
 }

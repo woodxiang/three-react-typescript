@@ -2,6 +2,7 @@ import path from 'path';
 import nodeExternals from 'webpack-node-externals';
 import HtmlWebPackPlugin from 'html-webpack-plugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
+import ESLintPlugin from 'eslint-webpack-plugin';
 import webpack from 'webpack';
 
 const serverConfig: webpack.Configuration = {
@@ -84,6 +85,7 @@ const clientConfig: webpack.Configuration = {
     ],
   },
   plugins: [
+    new ESLintPlugin(),
     new CopyWebpackPlugin({
       patterns: [{ from: 'node_modules/three/examples/js/libs/draco', to: 'wasm/draco' }],
     }),

@@ -11,7 +11,7 @@ interface ILutExEntry {
 }
 
 const luts = new Map<string, ILutExEntry[]>([]);
-for (let entry of colorMapUtil.entries()) {
+for (const entry of colorMapUtil.entries()) {
   luts.set(
     entry[0],
     entry[1].map((color) => ({

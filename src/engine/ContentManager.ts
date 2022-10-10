@@ -289,8 +289,8 @@ export default class ContentManager {
   }
 
   public screenShot(
-    width: number = 0,
-    height: number = 0,
+    width = 0,
+    height = 0,
     scene: Scene | undefined = undefined,
     camera: Camera | undefined = undefined,
     viewPort: Vector4 | undefined = undefined
