@@ -14,20 +14,11 @@
  *
  */
 
-import axios from "axios";
-import { Uint32BufferAttribute } from "three";
-import { BufferGeometry, Float32BufferAttribute, Loader } from "three";
+import axios from 'axios';
+import { Uint32BufferAttribute } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Loader } from 'three';
 
-const genericAttrs = [
-  "generic",
-  "filling_seq",
-  "liq_track_sur",
-  "P",
-  "tau_sma",
-  "temperature",
-  "umag",
-  "vof_sf",
-];
+const genericAttrs = ['generic', 'filling_seq', 'liq_track_sur', 'P', 'tau_sma', 'temperature', 'umag', 'vof_sf'];
 
 var PLYExLoader = function (manager) {
   Loader.call(this, manager);
@@ -47,7 +38,7 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
       scope.cancelSource = cancelToken.source();
       axios
         .get(url, {
-          responseType: "arraybuffer",
+          responseType: 'arraybuffer',
           onDownloadProgress: onProgress,
           cancelToken: scope.cancelSource.token,
         })
@@ -66,7 +57,7 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
   parse: function (data) {
     function parseHeader(data) {
       var patternHeader = /ply([\s\S]*)end_header\r?\n/;
-      var headerText = "";
+      var headerText = '';
       var headerLength = 0;
       var result = patternHeader.exec(data);
 
@@ -81,14 +72,14 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
         headerLength: headerLength,
       };
 
-      var lines = headerText.split("\n");
+      var lines = headerText.split('\n');
       var currentElement;
       var lineType, lineValues;
 
       function make_ply_element_property(propertValues) {
         var property = { type: propertValues[0] };
 
-        if (property.type === "list") {
+        if (property.type === 'list') {
           property.name = propertValues[3];
           property.countType = propertValues[1];
           property.itemType = propertValues[2];
@@ -103,32 +94,32 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
         var line = lines[i];
         line = line.trim();
 
-        if (line === "") continue;
+        if (line === '') continue;
 
         lineValues = line.split(/\s+/);
         lineType = lineValues.shift();
-        line = lineValues.join(" ");
+        line = lineValues.join(' ');
 
         switch (lineType) {
-          case "format":
+          case 'format':
             header.format = lineValues[0];
             header.version = lineValues[1];
             break;
-          case "comment":
+          case 'comment':
             header.comments.push(line);
             break;
-          case "element":
+          case 'element':
             if (currentElement !== undefined) header.elements.push(currentElement);
             currentElement = {};
             currentElement.name = lineValues[0];
             currentElement.count = parseInt(lineValues[1]);
             currentElement.properties = [];
             break;
-          case "property":
+          case 'property':
             currentElement.properties.push(make_ply_element_property(lineValues));
             break;
           default:
-            console.log("unhandled", lineType, lineValues);
+            console.log('unhandled', lineType, lineValues);
         }
       }
 
@@ -139,23 +130,15 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
 
     function initBuffer(header, buffer) {
       function buf2Float32Array(buf) {
-        return new Float32Array(
-          buf.buffer,
-          buf.byteOffset,
-          buf.length / Float32Array.BYTES_PER_ELEMENT
-        );
+        return new Float32Array(buf.buffer, buf.byteOffset, buf.length / Float32Array.BYTES_PER_ELEMENT);
       }
       function buf2Uint32Array(buf) {
-        return new Uint32Array(
-          buf.buffer,
-          buf.byteOffset,
-          buf.length / Uint32Array.BYTES_PER_ELEMENT
-        );
+        return new Uint32Array(buf.buffer, buf.byteOffset, buf.length / Uint32Array.BYTES_PER_ELEMENT);
       }
       for (let i in header.elements) {
         const element = header.elements[i];
         switch (element.name) {
-          case "vertex":
+          case 'vertex':
             for (let j in element.properties) {
               const prop = element.properties[j];
               if (genericAttrs.indexOf(prop.name) > -1) {
@@ -164,10 +147,10 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
             }
             buffer.position = buf2Float32Array(Buffer.alloc(element.count * 12));
             break;
-          case "face":
+          case 'face':
             const prop = element.properties[0];
-            if (prop?.type != "list" || prop?.itemType != "int") {
-              throw Error("face property type error.");
+            if (prop?.type != 'list' || prop?.itemType != 'int') {
+              throw Error('face property type error.');
             }
             buffer.index = buf2Uint32Array(Buffer.alloc(element.count * 12)); // list uchar int
             break;
@@ -180,7 +163,7 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
       for (let i in header.elements) {
         const element = header.elements[i];
         switch (element.name) {
-          case "vertex":
+          case 'vertex':
             for (let j = 0, k = 0; j < element.count; j++) {
               buffer.position[k++] = data.readFloatLE(pos);
               pos += 4;
@@ -194,7 +177,7 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
               }
             }
             break;
-          case "face":
+          case 'face':
             pos += 1;
             for (let j = 0, k = 0; j < element.count; j++) {
               buffer.index[k++] = data.readUInt32LE(pos);
@@ -210,15 +193,15 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
     }
 
     function parseBinaryBE(data, header, buffer) {
-      throw Error("binary_big_endian is not supported.");
+      throw Error('binary_big_endian is not supported.');
     }
 
     let header = parseHeader(data);
     let buffer = {};
     initBuffer(header, buffer);
 
-    if (header.format === "binary_little_endian" || header.format === "binary_big_endian") {
-      if (header.format === "binary_little_endian") {
+    if (header.format === 'binary_little_endian' || header.format === 'binary_big_endian') {
+      if (header.format === 'binary_little_endian') {
         parseBinaryLE(data, header, buffer);
       } else {
         parseBinaryBE(data, header, buffer);
@@ -232,10 +215,10 @@ PLYExLoader.prototype = Object.assign(Object.create(Loader.prototype), {
       geometry.setIndex(new Uint32BufferAttribute(buffer.index, 1));
     }
     if (buffer.position) {
-      geometry.setAttribute("position", new Float32BufferAttribute(buffer.position, 3));
+      geometry.setAttribute('position', new Float32BufferAttribute(buffer.position, 3));
     }
     if (buffer.generic) {
-      geometry.setAttribute("generic", new Float32BufferAttribute(buffer.generic, 1));
+      geometry.setAttribute('generic', new Float32BufferAttribute(buffer.generic, 1));
     }
     geometry.computeVertexNormals();
     return geometry;

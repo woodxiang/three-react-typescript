@@ -24,8 +24,8 @@ interface modelRange {
 export type BackgroundColor = BackgroundColorType;
 
 declare const window: Window & {
-  assetBaseUrl: string
-}
+  assetBaseUrl: string;
+};
 
 export default class PostProcessViewManager extends ContentManager {
   private wrappedEnableLegend = true;
@@ -69,15 +69,20 @@ export default class PostProcessViewManager extends ContentManager {
 
   constructor() {
     super();
-    
+
     this.logo = new Promise<HTMLImageElement>((resolve, reject) => {
       const loader = new TextureLoader();
       if (window.assetBaseUrl) loader.setPath(window.assetBaseUrl);
-      loader.load('/asset/supreium_logo.png', (texture) => {
-        resolve(texture.image);
-      }, undefined, (event) => {
-        reject(event);
-      });
+      loader.load(
+        '/asset/supreium_logo.png',
+        (texture) => {
+          resolve(texture.image);
+        },
+        undefined,
+        (event) => {
+          reject(event);
+        }
+      );
     });
   }
 
@@ -199,7 +204,7 @@ export default class PostProcessViewManager extends ContentManager {
   get enableBottom(): boolean {
     return this.wrappedEnableBottom;
   }
-  
+
   set enableValuePick(enable: boolean) {
     this.wrappedEnableValuePick = enable;
     this.valuePick.bind(enable ? this.engine : undefined);
@@ -266,7 +271,7 @@ export default class PostProcessViewManager extends ContentManager {
           if (this.progressCallback) this.progressCallback(e);
           if (onProgress) onProgress(e);
         },
-        {attr: fileType, split}
+        { attr: fileType, split }
       );
       if (result) {
         result.mesh.name = url;
@@ -299,7 +304,7 @@ export default class PostProcessViewManager extends ContentManager {
               if (this.progressCallback) this.progressCallback(e);
               if (onProgress) onProgress(e);
             },
-            {attr: fileType, split}
+            { attr: fileType, split }
           );
           results.push(result);
         }

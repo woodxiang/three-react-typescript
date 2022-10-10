@@ -1,9 +1,9 @@
-import { ImageLoader, Loader, LoadingManager, RGBAFormat, RGBFormat, Texture } from "three";
+import { ImageLoader, Loader, LoadingManager, RGBAFormat, RGBFormat, Texture } from 'three';
 import { isNode } from 'browser-or-node';
 
 /**
  * Class for loading a texture.
- * Unlike other loaders, this one emits events instead of using predefined callbacks. 
+ * Unlike other loaders, this one emits events instead of using predefined callbacks.
  * So if you're interested in getting notified when things happen, you need to add listeners to the object.
  */
 export class TextureExLoader extends Loader {
@@ -28,13 +28,13 @@ export class TextureExLoader extends Loader {
       function (image) {
         if (isNode) {
           // Node.js env
-          var canvas = document.createElement("canvas");
+          var canvas = document.createElement('canvas');
           canvas.width = image.width;
           canvas.height = image.height;
-          let ctx = canvas.getContext("2d");
+          let ctx = canvas.getContext('2d');
 
           if (!ctx) {
-            throw Error("TextureExLoader: no context.");
+            throw Error('TextureExLoader: no context.');
           }
 
           ctx.drawImage(image, 0, 0);

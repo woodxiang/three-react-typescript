@@ -15,7 +15,7 @@ export default class NodeEnvironmentHelper {
     height: number
   ): { canvas: HTMLCanvasElement; context: WebGLRenderingContext } {
     const context = createContext(width, height);
-    const canvas: HTMLCanvasElement = (createCanvas(width, height) as unknown) as HTMLCanvasElement;
+    const canvas: HTMLCanvasElement = createCanvas(width, height) as unknown as HTMLCanvasElement;
     (<ICanvas>(<unknown>canvas)).style = { width, height };
 
     (<IContext>context).canvas = canvas;

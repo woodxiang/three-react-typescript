@@ -13,7 +13,7 @@
  *	} );
  *
  */
-import { BufferGeometry, Loader, LoadingManager } from "three";
+import { BufferGeometry, Loader, LoadingManager } from 'three';
 import { ICancellableLoader } from './ICancellableLoader';
 
 export default class PLYExLoader extends Loader implements ICancellableLoader {

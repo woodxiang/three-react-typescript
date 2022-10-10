@@ -1,9 +1,9 @@
 type Color = {
-  index: number,
-  rgb: number[]
+  index: number;
+  rgb: number[];
 };
 
-let colorMap : Map<string, Color[]> = new Map();
+let colorMap: Map<string, Color[]> = new Map();
 colorMap.set('jet', [
   { index: 0, rgb: [0, 0, 131] },
   { index: 0.125, rgb: [0, 60, 170] },

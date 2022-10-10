@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { Component } from "./Component.js";
+import * as THREE from 'three';
+import { Component } from './Component.js';
 
 var Composite = function (parent, id) {
   let that = this;
@@ -8,10 +8,12 @@ var Composite = function (parent, id) {
   this.components = {};
   this.worker = null;
   this.workerPending = new Promise((resolve, reject) => {
-    parent.decoderPending.then(() => {
-      that.worker = parent.getWorker(id);
-      resolve(that.worker);
-    }).catch(reason => reject(reason));
+    parent.decoderPending
+      .then(() => {
+        that.worker = parent.getWorker(id);
+        resolve(that.worker);
+      })
+      .catch((reason) => reject(reason));
   });
   this.geometry = new THREE.BufferGeometry();
   this.geometry.compositeId = id;
@@ -23,7 +25,7 @@ Composite.prototype = {
 
   addComponent: function (name, url, loadProgress, loadError) {
     const exist_comp = this.components[name];
-    if (name === "no_split" || !exist_comp) {
+    if (name === 'no_split' || !exist_comp) {
       if (exist_comp) {
         exist_comp.destroy();
       }
@@ -40,23 +42,25 @@ Composite.prototype = {
   destroy: function () {
     const that = this;
     let decodePendingList = [];
-    that.workerPending.then((worker) => {
-      for (let name in that.components) {
-        const decodePending = that.components[name].decodePending;
-        if (decodePending) decodePendingList.push(decodePending);
-      }
-      Promise.all(decodePendingList).then((results) => {
+    that.workerPending
+      .then((worker) => {
         for (let name in that.components) {
-          that.components[name].destroy();
+          const decodePending = that.components[name].decodePending;
+          if (decodePending) decodePendingList.push(decodePending);
         }
-        worker.terminate();
-        that.geometry.dispose();
-      });
-    }).catch(reason => console.log("Get worker failed:", reason))
+        Promise.all(decodePendingList).then((results) => {
+          for (let name in that.components) {
+            that.components[name].destroy();
+          }
+          worker.terminate();
+          that.geometry.dispose();
+        });
+      })
+      .catch((reason) => console.log('Get worker failed:', reason));
   },
 
   cancel: function () {
-    console.log("Cancel:", this.id);
+    console.log('Cancel:', this.id);
   },
 };
 

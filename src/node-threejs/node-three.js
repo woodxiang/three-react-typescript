@@ -1,5 +1,5 @@
 // import createCanvasGL from "./canvas-gl.js";
-import * as THREE from "three";
+import * as THREE from 'three';
 
 let NodeWebGLRenderer = (options) => {
   // Create context
@@ -22,7 +22,7 @@ let NodeWebGLRenderer = (options) => {
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.setPixelRatio(devicePixelRatio);
   renderer.setSize(width, height);
-  renderer.domElement = document.createElement("div");
+  renderer.domElement = document.createElement('div');
   return renderer;
 };
 

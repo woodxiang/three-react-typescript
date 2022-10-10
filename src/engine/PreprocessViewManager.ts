@@ -165,43 +165,43 @@ export default class PreprocessViewManager extends ContentManager {
 
   public async refresh3D(taskId: string): Promise<void> {
     if (!taskId) return;
-  //   if (this.flats) this.flats.bind(undefined, undefined);
-  //   try {
-  //     const { data: entitys } = await axios.get(`${apiProjectModelGetEntityList}?projectTaskId=${taskId}`);
-  //     const { data: gates } = await axios.get(`${apiTaskGateGetList}?taskId=${taskId}`);
-  //     const { data: filling } = await axios.get(`${apiTaskParamFillingQuery}?projectTaskId=${taskId}`);
-  //     if (filling) {
-  //       this.gravityDirection = filling.gravityDirectionId as number;
-  //     }
-  //     if (entitys.length > 0) {
-  //       const sources = entitys.map((item: any) => item.source);
-  //       const params = { fileNames: sources };
-  //       const temp = await axios.post(`${apiProjectModelDownloadModel}`, params);
+    //   if (this.flats) this.flats.bind(undefined, undefined);
+    //   try {
+    //     const { data: entitys } = await axios.get(`${apiProjectModelGetEntityList}?projectTaskId=${taskId}`);
+    //     const { data: gates } = await axios.get(`${apiTaskGateGetList}?taskId=${taskId}`);
+    //     const { data: filling } = await axios.get(`${apiTaskParamFillingQuery}?projectTaskId=${taskId}`);
+    //     if (filling) {
+    //       this.gravityDirection = filling.gravityDirectionId as number;
+    //     }
+    //     if (entitys.length > 0) {
+    //       const sources = entitys.map((item: any) => item.source);
+    //       const params = { fileNames: sources };
+    //       const temp = await axios.post(`${apiProjectModelDownloadModel}`, params);
 
-  //       const stlInfoList: Array<IStlInfo> = entitys.map((enti, j) => {
-  //         const newStl: IStlInfo = {
-  //           taskEntityId: enti.id,
-  //           url: temp.data[j].ossUrl + '&taskEntityId=' + enti.id,
-  //           color: enti.color,
-  //           source: enti.source,
-  //         };
-  //         const ossUrl2 = temp.data[j].ossUrl.split('?');
-  //         window.localStorage.setItem(enti.source, ossUrl2[1]);
-  //         return newStl;
-  //       });
+    //       const stlInfoList: Array<IStlInfo> = entitys.map((enti, j) => {
+    //         const newStl: IStlInfo = {
+    //           taskEntityId: enti.id,
+    //           url: temp.data[j].ossUrl + '&taskEntityId=' + enti.id,
+    //           color: enti.color,
+    //           source: enti.source,
+    //         };
+    //         const ossUrl2 = temp.data[j].ossUrl.split('?');
+    //         window.localStorage.setItem(enti.source, ossUrl2[1]);
+    //         return newStl;
+    //       });
 
-  //       await this.loadAllStl(stlInfoList, gates);
-  //     } else this.clearMeshes();
-  //     if (gates.length > 0) {
-  //       this.gate = {
-  //         normalX: gates[0].normalX,
-  //         normalY: gates[0].normalY,
-  //         normalZ: gates[0].normalZ,
-  //       } as GateInterface;
-  //     }
-  //   } catch (err) {
-  //     console.log(err.message || err.msg || '运行异常，请稍后再试');
-  //   }
+    //       await this.loadAllStl(stlInfoList, gates);
+    //     } else this.clearMeshes();
+    //     if (gates.length > 0) {
+    //       this.gate = {
+    //         normalX: gates[0].normalX,
+    //         normalY: gates[0].normalY,
+    //         normalZ: gates[0].normalZ,
+    //       } as GateInterface;
+    //     }
+    //   } catch (err) {
+    //     console.log(err.message || err.msg || '运行异常，请稍后再试');
+    //   }
   }
   // refresh 3D:end
 }

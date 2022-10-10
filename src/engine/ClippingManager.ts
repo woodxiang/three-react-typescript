@@ -437,7 +437,7 @@ export default class ClippingManager implements IClippingManager {
 
       const mat = mesh.material instanceof Array ? mesh.material[0] : mesh.material;
 
-      const v = (mat as unknown) as ISealable;
+      const v = mat as unknown as ISealable;
 
       const planeMat =
         v.isSealable === undefined || v.isSealable

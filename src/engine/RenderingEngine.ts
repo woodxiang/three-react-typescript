@@ -742,13 +742,13 @@ export default class RenderingEngine implements IActionCallback, IObjectRotation
   private updateMeshAfterProjectMatrix(mesh: Mesh | Points) {
     if (mesh.material instanceof Array) {
       mesh.material.forEach((v) => {
-        const m = (v as unknown) as IAfterProject;
+        const m = v as unknown as IAfterProject;
         if (m.ReplaceAfterProjectMatrix) {
           m.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
         }
       });
     } else {
-      const m = (mesh.material as unknown) as IAfterProject;
+      const m = mesh.material as unknown as IAfterProject;
       if (m.ReplaceAfterProjectMatrix) {
         m.ReplaceAfterProjectMatrix(this.wrappedAfterProjectMatrix);
       }

@@ -266,7 +266,7 @@ export default class FlatManager extends ActionHandlerBase {
           const inactiveFlatMaterial = this.inactiveFlatMaterial.clone();
           inactiveFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
 
-          const m1 = (inactiveFlatMaterial as unknown) as IAfterProject;
+          const m1 = inactiveFlatMaterial as unknown as IAfterProject;
           if (m1 && m1.ReplaceAfterProjectMatrix) {
             m1.ReplaceAfterProjectMatrix((<IAfterProject>(<unknown>mesh.material)).afterProjectMatrix);
           }
@@ -274,7 +274,7 @@ export default class FlatManager extends ActionHandlerBase {
           const activeFlatMaterial = this.activeFlatMaterial.clone();
           activeFlatMaterial.clippingPlanes = mesh.material.clippingPlanes;
 
-          const m2 = (activeFlatMaterial as unknown) as IAfterProject;
+          const m2 = activeFlatMaterial as unknown as IAfterProject;
           if (m2 && m2.ReplaceAfterProjectMatrix) {
             m2.ReplaceAfterProjectMatrix((<IAfterProject>(<unknown>mesh.material)).afterProjectMatrix);
           }

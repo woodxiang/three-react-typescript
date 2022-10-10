@@ -122,7 +122,7 @@ export default class ClippingActionHandler extends ActionHandlerBase {
     this.root.matrix = callback.matrix;
     this.root.matrixAutoUpdate = false;
 
-    const material = (this.clipperMesh.material as unknown) as IAfterProject;
+    const material = this.clipperMesh.material as unknown as IAfterProject;
     material.ReplaceAfterProjectMatrix(callback.afterProjectMatrix);
 
     const ret = callback.renderTargetAndReadFloat(this.scene, offsetX, offsetY, undefined, undefined);
